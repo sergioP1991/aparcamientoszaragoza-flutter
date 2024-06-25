@@ -51,6 +51,10 @@ jobs:
       - name: Flutter CHANGE DIRECTORY
         run: cd aparcamientoszaragoza
 
+      # Flutter change directory
+      - name: Flutter No interactions
+        run: flutter config --no-cli-animations'
+
       # Flutter pub get
       - name: Flutter GET
         run: flutter pub get
