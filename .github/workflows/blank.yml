@@ -75,9 +75,14 @@ jobs:
       - name: Flutter BUILD
         run: flutter build apk
 
+      # Flutter LS
+      - name: Flutter LIST
+        run: ls -la build/app/outputs/flutter-apk
+
       # Flutter deploy APK
       - name: Flutter DEPLOY APK
         uses: actions/upload-artifact@v4.3.3
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
