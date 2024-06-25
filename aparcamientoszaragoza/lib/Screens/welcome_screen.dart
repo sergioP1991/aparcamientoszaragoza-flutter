@@ -58,7 +58,7 @@ class WelcomeScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       Text('Zaragoza\nParking', style: TextStyle(fontSize: 55, fontWeight: FontWeight.bold, color: Colors.white),),
-                      Text('¡Accede a los parking de Zaragoza!', style: TextStyle(fontSize: 18, fontStyle: FontStyle.italic, color: Colors.white),),
+                      Text('¡Accede a los parking de Zaragoza! Desde Github Actions', style: TextStyle(fontSize: 18, fontStyle: FontStyle.italic, color: Colors.white),),
                     ],
                   ),
                 ),),
