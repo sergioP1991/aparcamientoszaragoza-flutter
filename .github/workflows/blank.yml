@@ -53,7 +53,7 @@ jobs:
 
       # Flutter change directory
       - name: Flutter No interactions
-        run: flutter config --no-cli-animations'
+        run: flutter config --no-cli-animations
 
       # Flutter pub get
       - name: Flutter GET
