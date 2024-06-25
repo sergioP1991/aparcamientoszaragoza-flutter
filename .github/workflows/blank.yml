@@ -43,10 +43,6 @@ jobs:
         with:
           channel: 'beta'
 
-      # Flutter LS
-      - name: Flutter LIST
-        run: ls -la
-
       # Flutter change directory
       - name: Flutter CHANGE DIRECTORY
         run: cd aparcamientoszaragoza
@@ -54,6 +50,17 @@ jobs:
       # Flutter change directory
       - name: Flutter No interactions
         run: flutter config --no-cli-animations
+
+
+
+      # Flutter LS
+      - name: Flutter LIST
+        run: ls -la
+
+        
+      # Flutter PWD
+      - name: Flutter PWD
+        run: pwd
 
       # Flutter pub get
       - name: Flutter GET
