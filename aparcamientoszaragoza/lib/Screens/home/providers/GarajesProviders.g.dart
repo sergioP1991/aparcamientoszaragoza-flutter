@@ -6,7 +6,7 @@ part of 'GarajesProviders.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$fetchGarajeHash() => r'a4ca60bab7763a12bd776597a4953e9791b899e6';
+String _$fetchGarajeHash() => r'2e7cc3199888254ba9a46c778a0f121709fee826';
 
 /// See also [fetchGaraje].
 @ProviderFor(fetchGaraje)

@@ -1,5 +1,7 @@
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
+import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
 import 'package:aparcamientoszaragoza/Values/app_models.dart';
+import 'package:aparcamientoszaragoza/main.dart';
 import 'package:aparcamientoszaragoza/widgets/Buttons.dart';
 import 'package:aparcamientoszaragoza/widgets/Spaces.dart';
 import 'package:flutter/cupertino.dart';
@@ -55,7 +57,7 @@ class _DetailsPageState extends State<DetailsGarajePage> {
                     spaceXXXXS(),
                     _buildValue("Ancho", plaza?.ancho.toString() ?? ""),
                     spaceXXXXS(),
-                    ButtonBlueApp('Comentarios', onPressed:() => {} /* => Routemaster.of(context).push("/plaza/${plaza?.id.toString()}")*/),
+                    ButtonBlueApp('Comentarios', onPressed:() => Navigator.of(context).pushNamed(listCommentsPage.routeName)),
                     spaceXXS(),
                   ],
                 )]
