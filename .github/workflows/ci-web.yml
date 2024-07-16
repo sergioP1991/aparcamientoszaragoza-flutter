@@ -73,7 +73,7 @@ jobs:
 
       # Flutter BUILD
       - name: Flutter BUILD
-        run: flutter build web --release
+        run: flutter build web --release --source-maps
 
       #- name: Deploy Web to Github Pages
       #  uses: bluefireteam/flutter-gh-pages@v7
