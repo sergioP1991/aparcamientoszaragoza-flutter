@@ -73,7 +73,7 @@ jobs:
 
       # Flutter BUILD
       - name: Flutter BUILD
-        run: flutter build web --release --source-maps
+        run: flutter build web --release --base-href "/aparcamientoszaragoza-flutter/"
 
       #- name: Deploy Web to Github Pages
       #  uses: bluefireteam/flutter-gh-pages@v7
