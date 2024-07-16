@@ -73,14 +73,10 @@ jobs:
 
       # Flutter BUILD
       - name: Flutter BUILD
-        run: flutter build web
-        
+        run: flutter build web --release
+
       - name: Deploy Web to Github Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: bluefireteam/flutter-gh-pages@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
-          force_orphan: true
-          user_name: 'github-ci[bot]'
-          user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: 'Publish to gh-pages'
+          workingDir: ./aparcamientoszaragoza
+
