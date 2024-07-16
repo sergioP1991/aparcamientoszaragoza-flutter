@@ -3,6 +3,7 @@ import 'package:aparcamientoszaragoza/Screens/detailsGarage/detailsGarage_screen
 import 'package:aparcamientoszaragoza/Screens/home/providers/GarajesProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/providers/CommentsProviders.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../Models/comment.dart';
@@ -135,6 +136,15 @@ Widget commentCard (Comment item){
                 ),
             ],
           ),
+          Text(
+            "Fecha: ",
+            //item?.fecha ?? DateTime.now().toLocal().toString(),
+            style: const TextStyle(
+              fontSize: 16.0,
+            ),
+          ),
+          const SizedBox(height: 16.0),
+
         ],
       ),
     ),
