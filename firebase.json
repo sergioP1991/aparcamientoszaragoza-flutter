@@ -1,6 +1,6 @@
 {
     "hosting": {
-        "public": "aparcamientoszaragoza",
+        "public": "aparcamientoszaragoza/build/web",
         "ignore": [
             "firebase.json",
             "**/.*",
