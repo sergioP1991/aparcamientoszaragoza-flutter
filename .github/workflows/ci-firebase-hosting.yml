@@ -65,7 +65,7 @@ jobs:
 
       # Flutter BUILD
       - name: Flutter BUILD
-        run: flutter build web --release --base-href "/aparcamientoszaragoza-flutter/"
+        run: flutter build web --release
 
       - name: Deploy Web to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
