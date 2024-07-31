@@ -137,8 +137,7 @@ Widget commentCard (Comment item){
             ],
           ),
           Text(
-            "Fecha: ",
-            //item?.fecha ?? DateTime.now().toLocal().toString(),
+            "Fecha: " + item.fecha.toString(),
             style: const TextStyle(
               fontSize: 16.0,
             ),

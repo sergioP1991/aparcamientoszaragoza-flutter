@@ -4,7 +4,7 @@ class Comment{
   String? idUsuario;
   String? titulo;
   String? contenido;
-  DateTime fecha;
+  DateTime? fecha;
   double ranking;
 
   Comment( this.idPlaza,
