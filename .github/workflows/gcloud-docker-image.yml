@@ -6,6 +6,14 @@ on:
   pull_request:
     branches: [ "master" ]
 
+env:
+
+  PROJECT_ID: aparcamientodisponible
+  GAR_LOCATION: us-west2 
+  REGION: us-west2 
+  APP: aparcamientoszaragoza
+  GITHUB_COMMIT_MSG: Aparamientos Zaragoza gCloud App
+
 jobs:
 
   build:
@@ -14,8 +22,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+    - name: Checkout code
 
     - name: 'Google auth'
       id: 'auth'
