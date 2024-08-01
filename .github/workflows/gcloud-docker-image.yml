@@ -1,0 +1,55 @@
+name: Docker Image to Google Cloud
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+
+    - name: 'Google auth'
+      id: 'auth'
+      uses: 'google-github-actions/auth@v2.1.2'
+      with:
+        workload_identity_provider: '${{ secrets.WIF_PROVIDER }}'
+        service_account: '${{ secrets.WIF_SERVICE_ACCOUNT }}'
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v1'
+      with:
+        project_id: '${{ env.PROJECT_ID }}'
+
+    - name: 'Docker auth'
+      run: |-
+         gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
+
+    - name: 'Build and push container'
+      run: |-
+         docker build -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.APP }}/${{ env.APP }}:${{ github.sha }}" ./app
+         docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.APP }}/${{ env.APP }}:${{ github.sha }}"
+
+    - name: 'Create release name'
+      run: |-
+         echo "RELEASE_NAME=${{ env.APP }}-${GITHUB_SHA::7}-${GITHUB_RUN_NUMBER}" >> ${GITHUB_ENV}
+
+    - name: 'Create Cloud Deploy release'
+      uses: 'google-github-actions/create-cloud-deploy-release@v0'
+      with:
+        delivery_pipeline: '${{ env.APP }}'
+        name: '${{ env.RELEASE_NAME }}'
+        region: '${{ env.REGION }}'
+        description: '${{ env.GITHUB_COMMIT_MSG }}'
+        skaffold_file: 'config/skaffold.yaml'
+        images: 'app=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.APP }}/${{ env.APP }}:${{ github.sha }}'
+
+    
