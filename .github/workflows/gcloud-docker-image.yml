@@ -21,8 +21,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    
     - uses: actions/checkout@v4
-    - name: Checkout code
+      name: Checkout code
 
     - name: 'Google auth'
       id: 'auth'
