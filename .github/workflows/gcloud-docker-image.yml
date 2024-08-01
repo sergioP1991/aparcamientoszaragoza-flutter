@@ -9,9 +9,9 @@ on:
 env:
 
   PROJECT_ID: aparcamientodisponible
-  GAR_LOCATION: us-west2 
-  REGION: us-west2 
-  APP: aparcamientoszaragoza
+  GAR_LOCATION: us-central1
+  REGION: us-central1
+  APP: gcf-artifacts
   GITHUB_COMMIT_MSG: Aparamientos Zaragoza gCloud App
 
 jobs:
