@@ -1,6 +1,7 @@
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Screens/detailsGarage/detailsGarage_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/GarajesProviders.dart';
+import 'package:aparcamientoszaragoza/Screens/registerGarage/RegisterGarage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../Values/app_colors.dart';
@@ -124,7 +125,6 @@ Widget makeListTile(Garaje item) {
       const Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 30.0));
 }
 
-
 Widget menuNavigator() {
     return Container(
       height: 55.0,
@@ -140,6 +140,16 @@ Widget menuNavigator() {
             IconButton(
               icon: Icon(Icons.blur_on, color: Colors.white),
               onPressed: () {},
+            ),
+            IconButton(
+              icon: Icon(Icons.settings, color: Colors.white),
+              onPressed: () {},
+              //onPressed:() => Navigator.of(context).pushNamed(settingPage.routeName),
+            ),
+            IconButton(
+              icon: Icon(Icons.add, color: Colors.blue),
+              onPressed: () {},
+              //onPressed:() => Navigator.of(context).pushNamed(registerGarage().routeName),
             )
           ],
         ),

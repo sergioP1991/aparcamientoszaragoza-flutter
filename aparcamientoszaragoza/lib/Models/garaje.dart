@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Garaje{
 
   String? nombre;
   String? direccion; // Necesitamos indicar que admite valores nulos, ya que al instanciar no le damos un valor por defecto
-  int? ancho;
-  int? largo;
+  double? ancho;// ? ancho;
+  double? largo;
   double? latitud;
   double? longitud;
   bool moto;
@@ -22,4 +24,18 @@ class Garaje{
   String toString() {
     return 'Garaje{nombre: $nombre, direccion: $direccion, ancho: $ancho, largo: $largo, latitud: $latitud, longitud: $longitud, moto: $moto, alquilada: $alquilada}';
   }
+
+  factory Garaje.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot) {
+    return Garaje(
+        snapshot.data()!['nombre'],
+        snapshot.data()!['direccion'],
+        snapshot.data()!['ancho'],
+        snapshot.data()!['largo'],
+        snapshot.data()!['latitud'],
+        snapshot.data()!['longitud'],
+        false,
+        true
+    );
+  }
+
 }

@@ -1,4 +1,5 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../Models/garaje.dart';
@@ -8,7 +9,16 @@ part 'GarajesProviders.g.dart';
 
 @riverpod
 Future<List<Garaje>> fetchGaraje(FetchGarajeRef ref) async {
+  /*
   await Future.delayed(const Duration(seconds: 7));
   //return Future.error("Lista no disponible");
   return AppModels.defaultGarajes;
+  */
+
+  final QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance.collection('garaje').get();
+
+  List<Garaje> listResult = snapshot.docs.map<Garaje>((doc) => Garaje.fromFirestore(doc)).toList();
+
+  return listResult;
+
 }

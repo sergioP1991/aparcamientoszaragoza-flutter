@@ -2,6 +2,8 @@ import 'package:aparcamientoszaragoza/Screens/detailsGarage/detailsGarage_screen
 import 'package:aparcamientoszaragoza/Screens/home/home_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/register/register_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/setting/setting_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/registerGarage/RegisterGarage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,8 +12,38 @@ import './Screens/welcome_screen.dart';
 import './Models/auth.dart';
 import 'Screens/login/login_screen.dart';
 
-void main() {
+import 'package:firebase_core/firebase_core.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+
+  /*
+    apiKey: "AIzaSyB-SUptPv8-RdATIDVKyOhSdH1XI1E2Vfk",
+  authDomain: "aparcamientodisponible.firebaseapp.com",
+  databaseURL: "https://aparcamientodisponible-default-rtdb.firebaseio.com",
+  projectId: "aparcamientodisponible",
+  storageBucket: "aparcamientodisponible.appspot.com",
+  messagingSenderId: "342617603309",
+  appId: "1:342617603309:web:8e36ac7ad968c01ac4e0e4",
+  measurementId: "G-21CTBFGFJP"
+   */
+  FirebaseOptions options = FirebaseOptions(
+      apiKey: "AIzaSyB-SUptPv8-RdATIDVKyOhSdH1XI1E2Vfk",
+      appId: "1:342617603309:web:8e36ac7ad968c01ac4e0e4",
+      authDomain: "aparcamientodisponible.firebaseapp.com",
+      storageBucket: "aparcamientodisponible.appspot.com",
+      measurementId: "342617603309",
+      messagingSenderId: "342617603309",
+      databaseURL: "https://aparcamientodisponible-default-rtdb.firebaseio.com",
+      projectId: "aparcamientodisponible");
+
+  await Firebase.initializeApp(
+    options: options,
+  );
+
+  runApp(MyApp());
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -43,8 +75,10 @@ class MyApp extends StatelessWidget {
           RegisterPage.routeName: (context) => RegisterPage(),
           LoginPage.routeName: (context) => LoginPage(),
           HomePage.routeName: (context) => HomePage(),
+          SettingPage.routeName: (Context) => SettingPage(),
           DetailsGarajePage.routeName: (context) => DetailsGarajePage(),
-          listCommentsPage.routeName: (context) => listCommentsPage()
+          listCommentsPage.routeName: (context) => listCommentsPage(),
+          //registerGarage.routeName: (context) => registerGarage()
         },
       ),
     );
