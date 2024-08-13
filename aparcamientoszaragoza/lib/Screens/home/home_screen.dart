@@ -1,7 +1,7 @@
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Screens/detailsGarage/detailsGarage_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/GarajesProviders.dart';
-import 'package:aparcamientoszaragoza/Screens/registerGarage/RegisterGarage.dart';
+import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../Values/app_colors.dart';
@@ -22,7 +22,7 @@ Widget build(BuildContext context, WidgetRef ref) {
   return Scaffold(
     backgroundColor: AppColors.darkBlue,
     body: Container(child:bodyContainer(context, garageList)),
-    bottomNavigationBar: menuNavigator(),
+    bottomNavigationBar: menuNavigator(context),
   );
 }
 
@@ -125,7 +125,7 @@ Widget makeListTile(Garaje item) {
       const Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 30.0));
 }
 
-Widget menuNavigator() {
+Widget menuNavigator(BuildContext context) {
     return Container(
       height: 55.0,
       child: BottomAppBar(
@@ -148,8 +148,8 @@ Widget menuNavigator() {
             ),
             IconButton(
               icon: Icon(Icons.add, color: Colors.blue),
-              onPressed: () {},
-              //onPressed:() => Navigator.of(context).pushNamed(registerGarage().routeName),
+              //onPressed: () {},
+              onPressed:() => Navigator.of(context).pushNamed(RegisterGarage.routeName),
             )
           ],
         ),

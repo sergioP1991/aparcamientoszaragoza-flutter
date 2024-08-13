@@ -4,21 +4,25 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 
-class registerGarage extends StatefulWidget {
+class RegisterGarage extends StatefulWidget {
+
+  static const routeName = '/register-garage';
+
   @override
   _RegisterGarageState createState() => _RegisterGarageState();
 }
 
-class _RegisterGarageState extends State<registerGarage> {
+class _RegisterGarageState extends State<RegisterGarage> {
   final _formKey = GlobalKey<FormState>();
 
   // Controladores de texto para cada campo
+  TextEditingController _nombreController = TextEditingController();
   TextEditingController _direccionController = TextEditingController();
   TextEditingController _latitudController = TextEditingController();
   TextEditingController _longitudController = TextEditingController();
   TextEditingController _largoController = TextEditingController();
   TextEditingController _anchoController = TextEditingController();
-  bool _moto = false;
+  //bool _moto = false;
 
   // Función para guardar los datos en Firebase
   Future<void> _guardarDatos() async {
@@ -26,12 +30,13 @@ class _RegisterGarageState extends State<registerGarage> {
     if (_formKey.currentState!.validate()) {
       // Crear un mapa con los datos
       Map<String, dynamic> data = {
+        'nombre': _nombreController.text,
         'direccion': _direccionController.text,
-        'latitud': _latitudController.text,
-        'longitud': _longitudController.text,
-        'largo': _largoController.text,
-        'ancho': _anchoController.text,
-        'moto': _moto,
+        'latitud': double.parse(_latitudController.text),
+        'longitud': double.parse(_longitudController.text),
+        'largo': int.parse(_largoController.text) ,
+        'ancho': int.parse(_anchoController.text),
+        //'moto': _moto,
       };
 
       if(_longitudController == null || _latitudController == null){
@@ -62,8 +67,8 @@ class _RegisterGarageState extends State<registerGarage> {
         );
       }
       else {
-        // Agregar el documento a la colección "garajes" en Firebase
-        await FirebaseFirestore.instance.collection('garajes').add(data);
+        // Agregar el documento a la colección "garaje" en Firebase
+        await FirebaseFirestore.instance.collection('garaje').add(data);
       }
       // Mostrar un mensaje de éxito o error
       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,6 +88,16 @@ class _RegisterGarageState extends State<registerGarage> {
           child: Column(
             children: [
               // Campos de texto para cada propiedad
+              TextFormField(
+                controller: _nombreController,
+                decoration: InputDecoration(labelText: 'nombre'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, ingresa el nombre';
+                  }
+                  return null;
+                },
+              ),
               TextFormField(
                 controller: _direccionController,
                 decoration: InputDecoration(labelText: 'Dirección'),
@@ -124,8 +139,8 @@ class _RegisterGarageState extends State<registerGarage> {
                 },
               ),
               TextFormField(
-                controller: _direccionController,
-                decoration: InputDecoration(labelText: 'Dirección'),
+                controller: _anchoController,
+                decoration: InputDecoration(labelText: 'ancho'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, ingresa el ancho de la plaza en metros';
@@ -133,6 +148,7 @@ class _RegisterGarageState extends State<registerGarage> {
                   return null;
                 },
               ),
+              /*
               CheckboxListTile(
                 title: Text('moto'),
                 value: _moto,
@@ -142,6 +158,7 @@ class _RegisterGarageState extends State<registerGarage> {
                   });
                 },
               ),
+              */
               // Botón para guardar los datos
               ElevatedButton(
                 onPressed: _guardarDatos,
