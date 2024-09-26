@@ -1,5 +1,10 @@
+import 'dart:math';
+
 import 'package:aparcamientoszaragoza/Screens/home/home_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
@@ -7,23 +12,23 @@ import 'package:quickalert/widgets/quickalert_dialog.dart';
 import '../../Common_widgets/gradient_background.dart';
 import '../../Components/app_text_form_field.dart';
 import '../../Resources/resources.dart';
-import '../../Utils/helpers/snackbar_helper.dart';
 import '../../Values/app_constants.dart';
 import '../../Values/app_regex.dart';
 import '../../Values/app_strings.dart';
 import '../../Values/app_theme.dart';
 
-class LoginPage extends StatefulWidget {
-
+class LoginPage extends ConsumerStatefulWidget {
   static const routeName = '/login-page';
 
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => LoginPageState();
+
 }
 
-class _LoginPageState extends State<LoginPage> {
+class LoginPageState extends ConsumerState<LoginPage> {
+
   final _formKey = GlobalKey<FormState>();
 
   final ValueNotifier<bool> passwordNotifier = ValueNotifier(true);
@@ -33,7 +38,8 @@ class _LoginPageState extends State<LoginPage> {
   late final TextEditingController passwordController;
 
   void initializeControllers() {
-    usernameController = TextEditingController()..addListener(controllerListener);
+    usernameController = TextEditingController()
+      ..addListener(controllerListener);
     passwordController = TextEditingController()
       ..addListener(controllerListener);
   }
@@ -71,6 +77,15 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+
+    AsyncValue<UserCredential?> user = ref.watch(signInWithGoogleProvider);
+
+    if ((user != null) && (user.value?.user?.email != null))  {
+      print("User : ${user.value?.user?.email?.toString()}");
+      Navigator.of(context).pushNamed(
+          HomePage.routeName);
+    }
+
     return Scaffold(
       body: ListView(
         padding: EdgeInsets.zero,
@@ -103,8 +118,8 @@ class _LoginPageState extends State<LoginPage> {
                       return value!.isEmpty
                           ? AppStrings.pleaseEnterEmailAddress
                           : AppConstants.emailRegex.hasMatch(value)
-                              ? null
-                              : AppStrings.invalidEmailAddress;
+                          ? null
+                          : AppStrings.invalidEmailAddress;
                     },
                   ),
                   ValueListenableBuilder(
@@ -121,19 +136,19 @@ class _LoginPageState extends State<LoginPage> {
                           return value!.isEmpty
                               ? AppStrings.pleaseEnterPassword
                               : AppConstants.passwordRegex.hasMatch(value)
-                                  ? null
-                                  : AppStrings.invalidPassword;
+                              ? null
+                              : AppStrings.invalidPassword;
                         },
                         suffixIcon: IconButton(
                           onPressed: () =>
-                              passwordNotifier.value = false,
+                          passwordNotifier.value = false,
                           style: IconButton.styleFrom(
                             minimumSize: const Size.square(48),
                           ),
                           icon: const Icon(
                             //passwordObscure
-                             //   ? Icons.visibility_off_outlined
-                                 Icons.visibility_outlined,
+                            //   ? Icons.visibility_off_outlined
+                            Icons.visibility_outlined,
                             size: 20,
                             color: Colors.black,
                           ),
@@ -152,8 +167,10 @@ class _LoginPageState extends State<LoginPage> {
                       return FilledButton(
                         onPressed: () {
                           if (isValid == true) {
-                            if (usernameController.text == "sergio" && passwordController.text == "sergio") {
-                              Navigator.of(context).pushNamed(HomePage.routeName);
+                            if (usernameController.text == "sergio" &&
+                                passwordController.text == "sergio") {
+                              Navigator.of(context).pushNamed(
+                                  HomePage.routeName);
                               usernameController.clear();
                               passwordController.clear();
                             } else {
@@ -172,7 +189,7 @@ class _LoginPageState extends State<LoginPage> {
                               text: 'Por favor, rellena todos los datos correctamente',
                             );
                           }
-                        } ,
+                        },
                         child: const Text(AppStrings.login),
                       );
                     },
@@ -198,7 +215,9 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {},
+                          onPressed: () {
+                            ref.invalidate(signInWithGoogleProvider);
+                          },
                           icon: SvgPicture.asset(Vectors.google, width: 14),
                           label: const Text(
                             AppStrings.google,
@@ -236,7 +255,7 @@ class _LoginPageState extends State<LoginPage> {
                 /*NavigationHelper.pushReplacementNamed(
                   AppRoutes.register,
                 ),*/
-                onPressed: () {  },
+                onPressed: () {},
                 child: const Text(AppStrings.register),
               ),
             ],

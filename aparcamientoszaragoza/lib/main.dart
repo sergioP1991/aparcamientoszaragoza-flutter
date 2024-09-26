@@ -4,6 +4,7 @@ import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.d
 import 'package:aparcamientoszaragoza/Screens/register/register_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/setting/setting_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +17,6 @@ import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
 
   /*
     apiKey: "AIzaSyB-SUptPv8-RdATIDVKyOhSdH1XI1E2Vfk",
@@ -41,6 +41,11 @@ void main() async {
   await Firebase.initializeApp(
     options: options,
   );
+
+  // Disable persistence on web platforms. Must be called on initialization:
+  //final auth = FirebaseAuth.instanceFor(app: Firebase.app(), persistence: Persistence.LOCAL);
+// To change it after initialization, use `setPersistence()`:
+  //await auth.setPersistence(Persistence.LOCAL);
 
   runApp(MyApp());
 

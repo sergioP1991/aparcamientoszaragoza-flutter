@@ -22,6 +22,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="aparcamientoszaragoza">
+  <meta name="google-signin-client_id" content="342617603309-126hj08escgutrlq6pvjeqtj1rsvm7md.apps.googleusercontent.com">
+
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
@@ -112,7 +114,7 @@
   <script>
     window.addEventListener('load', function(ev) {
       // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
+      _flutter.load({
         serviceWorker: {
           serviceWorkerVersion: serviceWorkerVersion,
         },

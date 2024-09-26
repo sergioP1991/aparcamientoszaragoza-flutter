@@ -1,4 +1,7 @@
+import 'package:aparcamientoszaragoza/Screens/register/providers/RegisterProviders.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../Common_widgets/gradient_background.dart';
 import '../../Components/app_text_form_field.dart';
@@ -10,17 +13,17 @@ import '../../Values/app_routes.dart';
 import '../../Values/app_strings.dart';
 import '../../Values/app_theme.dart';
 
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends ConsumerStatefulWidget {
 
   static const routeName = '/register-page';
 
   const RegisterPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController nameController;
@@ -82,6 +85,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+
+    //AsyncValue<UserCredential?> user = ref.watch(f);
+
     return Scaffold(
       body: ListView(
         children: [
@@ -224,7 +230,10 @@ class _RegisterPageState extends State<RegisterPage> {
                     builder: (_, isValid, __) {
                       return FilledButton(
                         onPressed: () {
-                              SnackbarHelper.showSnackBar(
+
+                          //ref.invalidate(fetchRegisterUserProvider.call(emailController.value.text, passwordController.value.text));},
+
+                          SnackbarHelper.showSnackBar(
                               AppStrings.registrationComplete,
                               );
                               nameController.clear();
@@ -232,7 +241,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               passwordController.clear();
                               confirmPasswordController.clear();
                               },
-                        child: const Text(AppStrings.register),
+                        child: const Text(AppStrings.register)
                       );
                     },
                   ),
@@ -248,9 +257,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 style: AppTheme.bodySmall.copyWith(color: Colors.black),
               ),
               TextButton(
-                onPressed: () => NavigationHelper.pushReplacementNamed(
-                  AppRoutes.login,
-                ),
+                onPressed: () => {
+                },
                 child: const Text(AppStrings.login),
               ),
             ],

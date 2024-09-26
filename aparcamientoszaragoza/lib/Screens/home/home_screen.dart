@@ -4,6 +4,7 @@ import 'package:aparcamientoszaragoza/Screens/home/providers/GarajesProviders.da
 import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import '../../Values/app_colors.dart';
 import '../../Values/app_regex.dart';
 
@@ -21,7 +22,7 @@ Widget build(BuildContext context, WidgetRef ref) {
 
   return Scaffold(
     backgroundColor: AppColors.darkBlue,
-    body: Container(child:bodyContainer(context, garageList)),
+    body: Container(child:bodyContainer(context, ref, garageList)),
     bottomNavigationBar: menuNavigator(context),
   );
 }
@@ -44,12 +45,13 @@ PreferredSizeWidget topAppBar () {
 }
 
 Widget? bodyContainer ( BuildContext context,
+                        WidgetRef ref,
                         AsyncValue<List<Garaje>> garajeList) {
   return garajeList.when(
       loading: () => loadingBody(context),
       error: (err, stack) => Text('error: $err'),
       data: (data) {
-          return ListView.builder(
+        return ListView.builder(
               scrollDirection: Axis.vertical,
               shrinkWrap: true,
               itemCount: data.length,

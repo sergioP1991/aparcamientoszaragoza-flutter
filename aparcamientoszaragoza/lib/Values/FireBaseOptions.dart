@@ -47,13 +47,13 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyA41DDQSPpqajOy6ysc_CbWe3OcHwRSEfM',
-    appId: '1:339482593695:web:bae285656339a91444d5aa',
-    messagingSenderId: '339482593695',
-    projectId: 'chatti-e09fb',
-    authDomain: 'chatti-e09fb.firebaseapp.com',
-    storageBucket: 'chatti-e09fb.appspot.com',
-    measurementId: 'G-HVL9G7YSWD',
+    apiKey: 'AIzaSyB-SUptPv8-RdATIDVKyOhSdH1XI1E2Vfk',
+    appId: '1:342617603309:web:8e36ac7ad968c01ac4e0e4',
+    messagingSenderId: '342617603309',
+    projectId: 'aparcamientodisponible',
+    authDomain: 'aparcamientodisponible.firebaseapp.com',
+    storageBucket: 'aparcamientodisponible.appspot.com"',
+    measurementId: '342617603309',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
