@@ -1,15 +1,16 @@
+import 'dart:io';
+
 import 'package:aparcamientoszaragoza/Screens/register/providers/RegisterProviders.dart';
+import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../Common_widgets/gradient_background.dart';
 import '../../Components/app_text_form_field.dart';
-import '../../Utils/helpers/navigation_helper.dart';
 import '../../Utils/helpers/snackbar_helper.dart';
 import '../../Values/app_constants.dart';
 import '../../Values/app_regex.dart';
-import '../../Values/app_routes.dart';
 import '../../Values/app_strings.dart';
 import '../../Values/app_theme.dart';
 
@@ -86,7 +87,36 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   @override
   Widget build(BuildContext context) {
 
-    //AsyncValue<UserCredential?> user = ref.watch(f);
+    AsyncValue<UserCredential?> result = ref.watch(registerUserProvider);
+
+    if (result.hasError) {
+      SnackbarHelper.showSnackBar(isError: true, result.error.toString(),
+      );
+    } else if (result.value?.user != null) {
+      var snackBar = SnackBar(
+        /// need to set following properties for best effect of awesome_snackbar_content
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        content: AwesomeSnackbarContent(
+          title: 'Registro completo!',
+          message:
+          'Registro completado correctamente!',
+
+          /// change contentType to ContentType.success, ContentType.warning or ContentType.help for variants
+          contentType: ContentType.success,
+        ),
+      );
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) => ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(snackBar));
+
+
+        nameController.clear();
+        emailController.clear();
+        passwordController.clear();
+        confirmPasswordController.clear();
+    }
 
     return Scaffold(
       body: ListView(
@@ -229,18 +259,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     valueListenable: fieldValidNotifier,
                     builder: (_, isValid, __) {
                       return FilledButton(
-                        onPressed: () {
+                        onPressed: () => {
+                          ref.read(registerUserProvider.notifier).register(emailController.text, passwordController.text),
+                        },
 
-                          //ref.invalidate(fetchRegisterUserProvider.call(emailController.value.text, passwordController.value.text));},
-
-                          SnackbarHelper.showSnackBar(
-                              AppStrings.registrationComplete,
-                              );
-                              nameController.clear();
-                              emailController.clear();
-                              passwordController.clear();
-                              confirmPasswordController.clear();
-                              },
                         child: const Text(AppStrings.register)
                       );
                     },
@@ -258,7 +280,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ),
               TextButton(
                 onPressed: () => {
+                  ref.invalidate(fetchRegisterUserProvider)
                 },
+
                 child: const Text(AppStrings.login),
               ),
             ],
