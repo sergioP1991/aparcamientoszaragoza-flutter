@@ -4,9 +4,7 @@ import 'package:aparcamientoszaragoza/Screens/home/providers/GarajesProviders.da
 import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider/provider.dart';
 import '../../Values/app_colors.dart';
-import '../../Values/app_regex.dart';
 
 class HomePage extends ConsumerWidget {
 
@@ -21,6 +19,7 @@ Widget build(BuildContext context, WidgetRef ref) {
   AsyncValue<List<Garaje>> garageList = ref.watch(fetchGarajeProvider);
 
   return Scaffold(
+    appBar: infoHead("Sergio"),
     backgroundColor: AppColors.darkBlue,
     body: Container(child:bodyContainer(context, ref, garageList)),
     bottomNavigationBar: menuNavigator(context),
@@ -126,6 +125,19 @@ Widget makeListTile(Garaje item) {
       trailing:
       const Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 30.0));
 }
+
+AppBar infoHead(String username) {
+  return AppBar(
+      backgroundColor: Color.fromRGBO(108, 116, 136, 1.0),
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: <Widget>[
+          Text("Bienvenido $username")
+        ],
+      ),
+    );
+}
+
 
 Widget menuNavigator(BuildContext context) {
     return Container(
