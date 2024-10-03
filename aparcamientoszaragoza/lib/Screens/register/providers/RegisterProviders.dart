@@ -18,8 +18,8 @@ class UserRegisterState extends StateNotifier<AsyncValue<UserCredential?>> {
         password: password
       );
     });
+    return null;
   }
-
 }
 
 final registerUserProvider = StateNotifierProvider<

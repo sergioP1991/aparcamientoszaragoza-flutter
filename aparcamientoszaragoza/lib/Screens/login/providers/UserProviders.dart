@@ -5,46 +5,57 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'UserProviders.g.dart';
 
-final UserCredential? user = null;
-final int requestUser = 0;
+class UserLoginState extends StateNotifier<AsyncValue<UserCredential?>> {
+  UserLoginState() : super(const AsyncData(null));
 
-final String? token = null;
+  Future<UserCredential?> loginMailUser (String mail, String password) async {
 
-@Riverpod(keepAlive: true)
-UserCredential? userState (UserStateRef ref)=> user;
+    // set the loading state
+    state = const AsyncLoading();
+    // sign in and update the state (data or error)
+    state = await AsyncValue.guard(() async {
+      return await FirebaseAuth.instance.signInWithEmailAndPassword(email: mail, password: password);
+    });
 
-@Riverpod(keepAlive: true)
-final reqUserProvider = StateProvider<int>((ref) {
-  return requestUser;
-});
+    return null;
+  }
 
-@Riverpod(keepAlive: true)
-Future<UserCredential?> signInWithGoogle(SignInWithGoogleRef ref) async {
-  try {
-    const webClientId = "342617603309-126hj08escgutrlq6pvjeqtj1rsvm7md.apps.googleusercontent.com";
-    final GoogleSignIn googleSignIn = await GoogleSignIn(
+  Future<UserCredential?> loginGoogle() async {
+
+    // set the loading state
+    state = const AsyncLoading();
+    // sign in and update the state (data or error)
+    state = await AsyncValue.guard(() async {
+
+      const webClientId = "342617603309-126hj08escgutrlq6pvjeqtj1rsvm7md.apps.googleusercontent.com";
+      final GoogleSignIn googleSignIn = await GoogleSignIn(
         clientId:webClientId,
-    );
+      );
 
-    final googleUser = await googleSignIn!.signIn();
-    final googleAuth = await googleUser!.authentication;
-    final accessToken = googleAuth.accessToken;
-    final idToken = googleAuth.idToken;
+      final googleUser = await googleSignIn.signIn();
+      final googleAuth = await googleUser!.authentication;
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
 
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth?.accessToken,
-      idToken: googleAuth?.idToken,
-    );
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
 
-    UserCredential user = await FirebaseAuth.instance.signInWithCredential(credential);
-    return user;
-    //ref.read(userProvider.notifier).state = user;
-  } on Exception catch (e) {
-    // TODO
-    print('exception->$e');
+      UserCredential user = await FirebaseAuth.instance.signInWithCredential(credential);
+      return user;
+
+    });
+
     return null;
   }
 }
+
+final loginUserProvider = StateNotifierProvider<
+    UserLoginState, AsyncValue<UserCredential?>>((ref) {
+  return UserLoginState();
+});
+
 
 @Riverpod(keepAlive: true)
 Stream<User?> fetchAuthUser(FetchUserRef ref) async* {

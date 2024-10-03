@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:aparcamientoszaragoza/Screens/home/home_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
@@ -78,10 +79,26 @@ class LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
 
-    AsyncValue<UserCredential?> user = ref.watch(signInWithGoogleProvider);
+    AsyncValue<UserCredential?> user = ref.watch(loginUserProvider);
 
-    if ((user != null) && (user.value?.user?.email != null))  {
-      print("User : ${user.value?.user?.email?.toString()}");
+    if (user.error != null) {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) =>
+          QuickAlert.show(
+            context: context,
+            type: QuickAlertType.error,
+            title: 'Error...',
+            text: '¡Error al hacer login! ${user.error?.toString()}',
+          ));
+    } else if ((user.value != null) && (user.value?.user?.email != null))  {
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) =>
+      QuickAlert.show(
+        context: context,
+        type: QuickAlertType.success,
+        title: 'Oops...',
+        text: '¡Login Correcto! ${user.value?.user?.email?.toString()}',
+      ));
+      usernameController.clear();
+      passwordController.clear();
       Navigator.of(context).pushNamed(
           HomePage.routeName);
     }
@@ -167,26 +184,9 @@ class LoginPageState extends ConsumerState<LoginPage> {
                       return FilledButton(
                         onPressed: () {
                           if (isValid == true) {
-                            if (usernameController.text == "sergio" &&
-                                passwordController.text == "sergio") {
-                              Navigator.of(context).pushNamed(
-                                  HomePage.routeName);
-                              usernameController.clear();
-                              passwordController.clear();
-                            } else {
-                              QuickAlert.show(
-                                context: context,
-                                type: QuickAlertType.error,
-                                title: 'Oops...',
-                                text: 'Usuario no encontrado',
-                              );
-                            }
-                          } else {
-                            QuickAlert.show(
-                              context: context,
-                              type: QuickAlertType.warning,
-                              title: 'Cuidado...',
-                              text: 'Por favor, rellena todos los datos correctamente',
+                            ref.read(loginUserProvider.notifier).loginMailUser(
+                              usernameController.text.toString(),
+                              passwordController.text.toString(),
                             );
                           }
                         },
@@ -216,7 +216,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            ref.invalidate(signInWithGoogleProvider);
+                            ref.read(loginUserProvider.notifier).loginGoogle();
                           },
                           icon: SvgPicture.asset(Vectors.google, width: 14),
                           label: const Text(

@@ -6,35 +6,6 @@ part of 'UserProviders.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$userStateHash() => r'b07a6e66b4da17fffaba6d20a6fb42e511b102d3';
-
-/// See also [userState].
-@ProviderFor(userState)
-final userStateProvider = Provider<UserCredential?>.internal(
-  userState,
-  name: r'userStateProvider',
-  debugGetCreateSourceHash:
-      const bool.fromEnvironment('dart.vm.product') ? null : _$userStateHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef UserStateRef = ProviderRef<UserCredential?>;
-String _$signInWithGoogleHash() => r'80756be6af12ec656a038abde3a0d508fdad08c4';
-
-/// See also [signInWithGoogle].
-@ProviderFor(signInWithGoogle)
-final signInWithGoogleProvider = FutureProvider<UserCredential?>.internal(
-  signInWithGoogle,
-  name: r'signInWithGoogleProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$signInWithGoogleHash,
-  dependencies: null,
-  allTransitiveDependencies: null,
-);
-
-typedef SignInWithGoogleRef = FutureProviderRef<UserCredential?>;
 String _$fetchAuthUserHash() => r'cdcaa2561cb4d4a33f8e3bd1d58aea229a0d04a7';
 
 /// See also [fetchAuthUser].
