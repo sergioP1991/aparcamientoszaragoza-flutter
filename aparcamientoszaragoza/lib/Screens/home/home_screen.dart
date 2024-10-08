@@ -21,26 +21,22 @@ Widget build(BuildContext context, WidgetRef ref) {
   AsyncValue<List<Garaje>> garageList = ref.watch(fetchGarajeProvider);
 
   return Scaffold(
+    appBar: infoHead("Sergio"),
     backgroundColor: AppColors.darkBlue,
     body: Container(child:bodyContainer(context, ref, garageList)),
     bottomNavigationBar: menuNavigator(context),
   );
 }
 
-PreferredSizeWidget topAppBar () {
+AppBar infoHead(String username) {
   return AppBar(
-    elevation: 0.3,
-    backgroundColor: AppColors.darkBlue,
-    iconTheme: const IconThemeData(
-      color: Colors.white, //change your color here
+    backgroundColor: Color.fromRGBO(108, 116, 136, 1.0),
+    title: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: <Widget>[
+        Text("Bienvenido $username")
+      ],
     ),
-    title: Text("Title"),
-    actions: <Widget>[
-      IconButton(
-        icon: const Icon(Icons.list, color: Colors.white), onPressed: () {  },
-      ),
-
-    ],
   );
 }
 
