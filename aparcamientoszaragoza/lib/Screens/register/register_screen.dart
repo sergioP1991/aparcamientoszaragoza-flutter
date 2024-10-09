@@ -1,3 +1,4 @@
+import 'package:aparcamientoszaragoza/Models/user-register.dart';
 import 'package:aparcamientoszaragoza/Screens/register/providers/RegisterProviders.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -112,7 +113,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       SnackbarHelper.showSnackBar(isError: true, result.error.toString(),
       );
     } else if (result.value?.user != null) {
-      var snackBar = SnackBar(
+      var snackBar = const SnackBar(
         /// need to set following properties for best effect of awesome_snackbar_content
         elevation: 0,
         behavior: SnackBarBehavior.floating,
@@ -263,7 +264,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                             style: IconButton.styleFrom(
                               minimumSize: const Size.square(48),
                             ),
-                            icon: Icon(
+                            icon: const Icon(
                               //confirmPasswordObscure
                                    Icons.visibility_off_outlined,
                                   // Icons.visibility_outlined,
@@ -293,7 +294,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     builder: (_, isValid, __) {
                       return FilledButton(
                         onPressed: () => {
-                          ref.read(registerUserProvider.notifier).register(emailController.text, passwordController.text),
+                          ref .read(registerUserProvider.notifier)
+                              .register(UserRegister( emailController.text,
+                                                      passwordController.text,
+                                                      urlProfileController.text))
                         },
 
                         child: const Text(AppStrings.register)

@@ -1,3 +1,4 @@
+import 'package:aparcamientoszaragoza/Models/user-register.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -7,16 +8,22 @@ part 'RegisterProviders.g.dart';
 class UserRegisterState extends StateNotifier<AsyncValue<UserCredential?>> {
   UserRegisterState() : super(const AsyncData(null));
 
-  Future<UserCredential?> register(String mail, String password ) async {
+  Future<UserCredential?> register(UserRegister user) async {
 
     // set the loading state
     state = const AsyncLoading();
     // sign in and update the state (data or error)
     state = await AsyncValue.guard(() async {
-      return await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: mail,
-        password: password
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: user.username,
+        password: user.password
       );
+
+      //userCredential.user?.updateDisplayName(displayName)
+      userCredential.user?.updatePhotoURL(user.urlProfile);
+      //userCredential.user?.photoUrl = user.urlProfile;
+
+      return userCredential;
     });
     return null;
   }
