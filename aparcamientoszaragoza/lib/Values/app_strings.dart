@@ -33,4 +33,9 @@ class AppStrings {
   static const String confirmPassword = 'Confirm Password';
   static const String pleaseReEnterPassword = 'Please, Re-Enter Password';
   static const String passwordNotMatched = 'Password not matched!';
+
+  static const String urlProfile = 'URL - Image';
+  static const String pleaseUrlImage = 'Please, URL image';
+  static const String invalidUrlImage = 'Invalid URL image';
+
 }

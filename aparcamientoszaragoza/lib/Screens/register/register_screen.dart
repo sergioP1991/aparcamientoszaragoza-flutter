@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:aparcamientoszaragoza/Screens/register/providers/RegisterProviders.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -31,10 +29,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   late final TextEditingController emailController;
   late final TextEditingController passwordController;
   late final TextEditingController confirmPasswordController;
+  late final TextEditingController urlProfileController;
+
 
   final ValueNotifier<bool> passwordNotifier = ValueNotifier(true);
   final ValueNotifier<bool> confirmPasswordNotifier = ValueNotifier(true);
   final ValueNotifier<bool> fieldValidNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> urlProfileNotifier = ValueNotifier(false);
 
   void initializeControllers() {
     nameController = TextEditingController()..addListener(controllerListener);
@@ -43,6 +44,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       ..addListener(controllerListener);
     confirmPasswordController = TextEditingController()
       ..addListener(controllerListener);
+    urlProfileController = TextEditingController()
+      ..addListener(controllerUrlImageListener);
   }
 
   void disposeControllers() {
@@ -70,6 +73,22 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     } else {
       fieldValidNotifier.value = false;
     }
+  }
+
+  void controllerUrlImageListener() {
+    final urlImageProfile = urlProfileController.text;
+
+    if (urlImageProfile.isEmpty) {
+      urlProfileNotifier.value = false;
+      return;
+    }
+
+    if (AppRegex.urlProfileImageRegex.hasMatch(urlImageProfile)) {
+      fieldValidNotifier.value = true;
+    } else {
+      fieldValidNotifier.value = false;
+    }
+    return;
   }
 
   @override
@@ -253,6 +272,20 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           ),
                         ),
                       );
+                    },
+                  ),
+                  AppTextFormField(
+                    labelText: AppStrings.urlProfile,
+                    controller: urlProfileController,
+                    textInputAction: TextInputAction.next,
+                    keyboardType: TextInputType.url,
+                    onChanged: (_) => _formKey.currentState?.validate(),
+                    validator: (value) {
+                      return value!.isEmpty
+                          ? AppStrings.pleaseUrlImage
+                          : AppRegex.urlProfileImageRegex.hasMatch(value)
+                          ? null
+                          : AppStrings.invalidUrlImage;
                     },
                   ),
                   ValueListenableBuilder(
