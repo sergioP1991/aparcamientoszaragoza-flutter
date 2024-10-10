@@ -295,7 +295,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                       return FilledButton(
                         onPressed: () => {
                           ref .read(registerUserProvider.notifier)
-                              .register(UserRegister( emailController.text,
+                              .register(UserRegister(
+                                                      nameController.text,
+                                                      emailController.text,
                                                       passwordController.text,
                                                       urlProfileController.text))
                         },

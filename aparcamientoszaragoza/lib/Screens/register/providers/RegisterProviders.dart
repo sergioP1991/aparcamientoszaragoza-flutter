@@ -15,13 +15,12 @@ class UserRegisterState extends StateNotifier<AsyncValue<UserCredential?>> {
     // sign in and update the state (data or error)
     state = await AsyncValue.guard(() async {
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: user.username,
+        email: user.mail,
         password: user.password
       );
 
-      //userCredential.user?.updateDisplayName(displayName)
+      userCredential.user?.updateDisplayName(user.username);
       userCredential.user?.updatePhotoURL(user.urlProfile);
-      //userCredential.user?.photoUrl = user.urlProfile;
 
       return userCredential;
     });

@@ -39,7 +39,7 @@ AppBar infoHead(UserCredential? user) {
             : AssetImage('assets/default_icon.png') as ImageProvider,
       ),
       const SizedBox(width: 10),
-      Text(user?.user?.email ?? "Usuario"),
+      Text(user?.user?.displayName ?? "Usuario Registrado"),
       ],
   ));
 }
