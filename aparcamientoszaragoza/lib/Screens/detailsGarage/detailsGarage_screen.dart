@@ -1,10 +1,8 @@
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/GarajesProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
-import 'package:aparcamientoszaragoza/Values/app_models.dart';
 import 'package:aparcamientoszaragoza/widgets/Buttons.dart';
 import 'package:aparcamientoszaragoza/widgets/Spaces.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

@@ -134,7 +134,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                     validator: (value) {
                       return value!.isEmpty
                           ? AppStrings.pleaseEnterEmailAddress
-                          : AppConstants.emailRegex.hasMatch(value)
+                          : AppRegex.emailRegex.hasMatch(value)
                           ? null
                           : AppStrings.invalidEmailAddress;
                     },
@@ -152,7 +152,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                         validator: (value) {
                           return value!.isEmpty
                               ? AppStrings.pleaseEnterPassword
-                              : AppConstants.passwordRegex.hasMatch(value)
+                              : AppRegex.passwordRegex.hasMatch(value)
                               ? null
                               : AppStrings.invalidPassword;
                         },
