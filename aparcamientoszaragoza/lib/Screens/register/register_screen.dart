@@ -132,6 +132,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ..showSnackBar(snackBar));
 
 
+
         nameController.clear();
         emailController.clear();
         passwordController.clear();
