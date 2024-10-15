@@ -107,8 +107,8 @@ class LoginPageState extends ConsumerState<LoginPage> {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const GradientBackground(
-            children: [
+          GradientBackground(
+            children: const [
               Text(
                 AppStrings.signInToYourNAccount,
                 style: AppTheme.titleLarge,

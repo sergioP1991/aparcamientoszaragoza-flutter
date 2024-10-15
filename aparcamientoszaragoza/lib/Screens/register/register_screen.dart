@@ -141,8 +141,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     return Scaffold(
       body: ListView(
         children: [
-          const GradientBackground(
-            children: [
+          GradientBackground(
+            urlCircleImage:  "Imagen",
+            children: const [
               Text(AppStrings.register, style: AppTheme.titleLarge),
               SizedBox(height: 6),
               Text(AppStrings.createYourAccount, style: AppTheme.bodySmall),
