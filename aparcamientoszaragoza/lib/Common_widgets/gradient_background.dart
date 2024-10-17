@@ -68,10 +68,15 @@ class GradientBackground extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                   CircleAvatar(
-                  radius: 45.0,
-                  backgroundImage: NetworkImage(urlCircleImage ?? ""),
-                  backgroundColor: Colors.blueGrey,
-                  )
+                    backgroundColor: Colors.blueGrey,
+                    radius: 45.0,
+                    backgroundImage: const AssetImage('assets/loading.gif'),
+                    child: CircleAvatar(
+                      radius: 65,
+                      backgroundColor: Colors.transparent,
+                      backgroundImage: NetworkImage(urlCircleImage ?? ""),
+                    ),
+                  ),
                 ],
                 );
               } else {
