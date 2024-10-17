@@ -85,9 +85,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     }
 
     if (AppRegex.urlProfileImageRegex.hasMatch(urlImageProfile)) {
-      fieldValidNotifier.value = true;
+      urlProfileNotifier.value = true;
     } else {
-      fieldValidNotifier.value = false;
+      urlProfileNotifier.value = false;
     }
     return;
   }
@@ -131,8 +131,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         ..hideCurrentSnackBar()
         ..showSnackBar(snackBar));
 
-
-
         nameController.clear();
         emailController.clear();
         passwordController.clear();
@@ -143,12 +141,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       body: ListView(
         children: [
           GradientBackground(
-            urlCircleImage:  "Imagen",
-            children: const [
-              Text(AppStrings.register, style: AppTheme.titleLarge),
-              SizedBox(height: 6),
-              Text(AppStrings.createYourAccount, style: AppTheme.bodySmall),
-            ],
+              urlCircleImage:  urlProfileNotifier.value ? urlProfileController.value.text : "",
+              children: const [
+                Text(AppStrings.register, style: AppTheme.titleLarge),
+                SizedBox(height: 6),
+                Text(AppStrings.createYourAccount, style: AppTheme.bodySmall),
+              ],
           ),
           Padding(
             padding: const EdgeInsets.all(20),
@@ -282,14 +280,18 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     controller: urlProfileController,
                     textInputAction: TextInputAction.next,
                     keyboardType: TextInputType.url,
-                    onChanged: (_) => _formKey.currentState?.validate(),
-                    validator: (value) {
+                    onChanged: (text) => {
+                    setState(() {
+                      urlProfileNotifier.value = text.isNotEmpty && AppRegex.urlProfileImageRegex.hasMatch(text);
+                    })
+                    },
+                    /*validator: (value) {
                       return value!.isEmpty
                           ? AppStrings.pleaseUrlImage
                           : AppRegex.urlProfileImageRegex.hasMatch(value)
                           ? null
                           : AppStrings.invalidUrlImage;
-                    },
+                    },*/
                   ),
                   ValueListenableBuilder(
                     valueListenable: fieldValidNotifier,
