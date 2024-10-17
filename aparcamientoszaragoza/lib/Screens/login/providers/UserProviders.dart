@@ -16,8 +16,6 @@ class UserLoginState extends StateNotifier<AsyncValue<UserCredential?>> {
     state = await AsyncValue.guard(() async {
       return await FirebaseAuth.instance.signInWithEmailAndPassword(email: mail, password: password);
     });
-
-    return null;
   }
 
   Future<UserCredential?> loginGoogle() async {

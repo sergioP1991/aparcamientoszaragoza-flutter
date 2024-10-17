@@ -17,17 +17,7 @@ import 'package:firebase_core/firebase_core.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  /*
-    apiKey: "AIzaSyB-SUptPv8-RdATIDVKyOhSdH1XI1E2Vfk",
-  authDomain: "aparcamientodisponible.firebaseapp.com",
-  databaseURL: "https://aparcamientodisponible-default-rtdb.firebaseio.com",
-  projectId: "aparcamientodisponible",
-  storageBucket: "aparcamientodisponible.appspot.com",
-  messagingSenderId: "342617603309",
-  appId: "1:342617603309:web:8e36ac7ad968c01ac4e0e4",
-  measurementId: "G-21CTBFGFJP"
-   */
-  FirebaseOptions options = FirebaseOptions(
+  FirebaseOptions options = const FirebaseOptions(
       apiKey: "AIzaSyB-SUptPv8-RdATIDVKyOhSdH1XI1E2Vfk",
       appId: "1:342617603309:web:8e36ac7ad968c01ac4e0e4",
       authDomain: "aparcamientodisponible.firebaseapp.com",
@@ -46,8 +36,6 @@ void main() async {
 // To change it after initialization, use `setPersistence()`:
   //await auth.setPersistence(Persistence.LOCAL);
 
-  runApp(MyApp());
-
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -64,6 +52,8 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return provider.ChangeNotifierProvider(

@@ -5,6 +5,7 @@ import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:quickalert/models/quickalert_type.dart';
@@ -99,8 +100,12 @@ class LoginPageState extends ConsumerState<LoginPage> {
       ));
       usernameController.clear();
       passwordController.clear();
-      Navigator.of(context).pushNamed(
-          HomePage.routeName);
+
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushNamed(
+            HomePage.routeName);
+      });
+
     }
 
     return Scaffold(
