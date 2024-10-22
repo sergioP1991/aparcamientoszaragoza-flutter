@@ -30,12 +30,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   late final TextEditingController passwordController;
   late final TextEditingController confirmPasswordController;
   late final TextEditingController urlProfileController;
-
+  late final TextEditingController phoneNumberController;
 
   final ValueNotifier<bool> passwordNotifier = ValueNotifier(true);
   final ValueNotifier<bool> confirmPasswordNotifier = ValueNotifier(true);
   final ValueNotifier<bool> fieldValidNotifier = ValueNotifier(false);
   final ValueNotifier<bool> urlProfileNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> phoneNumberNotifier = ValueNotifier(false);
 
   void initializeControllers() {
     nameController = TextEditingController()..addListener(controllerListener);
@@ -46,6 +47,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       ..addListener(controllerListener);
     urlProfileController = TextEditingController()
       ..addListener(controllerUrlImageListener);
+    phoneNumberController = TextEditingController()..addListener(controllerPhoneNumber);
   }
 
   void disposeControllers() {
@@ -89,6 +91,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       urlProfileNotifier.value = false;
     }
     return;
+  }
+
+  void controllerPhoneNumber() {
+    final phoneNumberProfile = phoneNumberController.text;
   }
 
   @override
@@ -280,9 +286,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     textInputAction: TextInputAction.next,
                     keyboardType: TextInputType.url,
                     onChanged: (text) => {
-                    setState(() {
-                      urlProfileNotifier.value = text.isNotEmpty && AppRegex.urlProfileImageRegex.hasMatch(text);
-                    })
+                      setState(() {
+                        urlProfileNotifier.value = text.isNotEmpty && AppRegex.urlProfileImageRegex.hasMatch(text);
+                      }),
+                      _formKey.currentState?.validate(),
                     },
                     /*validator: (value) {
                       return value!.isEmpty
@@ -291,6 +298,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           ? null
                           : AppStrings.invalidUrlImage;
                     },*/
+                  ),
+                  AppTextFormField(
+                    labelText: AppStrings.phoneNumber,
+                    controller: phoneNumberController,
+                    textInputAction: TextInputAction.next,
+                    keyboardType: TextInputType.number,
+                    onChanged: (text) => {
+                      setState(() {
+                        phoneNumberNotifier.value = text.isNotEmpty && AppRegex.phoneNumberRegex.hasMatch(text);
+                      }),
+                      _formKey.currentState?.validate(),
+                    },
+                    validator: (value) {
+                      return value!.isEmpty
+                          ? AppStrings.pleasePhoneNumber
+                          : AppRegex.phoneNumberRegex.hasMatch(value)
+                          ? null
+                          : AppStrings.phoneNumberInvalid;
+                    },
                   ),
                   ValueListenableBuilder(
                     valueListenable: fieldValidNotifier,

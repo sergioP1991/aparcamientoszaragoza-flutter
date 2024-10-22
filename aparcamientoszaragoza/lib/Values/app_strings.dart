@@ -38,4 +38,8 @@ class AppStrings {
   static const String pleaseUrlImage = 'Please, URL image';
   static const String invalidUrlImage = 'Invalid URL image';
 
+  static const String phoneNumber = 'Phone Number';
+  static const String pleasePhoneNumber = 'Please, introduce phone number';
+  static const String phoneNumberInvalid = 'Invalid Phone number';
+
 }

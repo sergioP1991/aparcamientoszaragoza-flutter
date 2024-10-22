@@ -16,4 +16,8 @@ class AppRegex {
     r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])',
   );
 
+  static final RegExp phoneNumberRegex = RegExp(
+      r'(^(?:[+0]9)?[0-9]{10,12}$)'
+  );
+
 }
