@@ -328,7 +328,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                                       nameController.text,
                                                       emailController.text,
                                                       passwordController.text,
-                                                      urlProfileController.text))
+                                                      urlProfileController.text,
+                                                      phoneNumberController.text))
                         },
 
                         child: const Text(AppStrings.register)

@@ -1,0 +1,127 @@
+{
+  "project_info": {
+    "project_number": "342617603309",
+    "firebase_url": "https://aparcamientodisponible-default-rtdb.firebaseio.com",
+    "project_id": "aparcamientodisponible",
+    "storage_bucket": "aparcamientodisponible.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:342617603309:android:91405f7e954b49b5c4e0e4",
+        "android_client_info": {
+          "package_name": "com.sergio.aparcamientos.aparcamientosflutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "342617603309-126hj08escgutrlq6pvjeqtj1rsvm7md.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEmkJJxQPSJ9DgYgdbM3Up7mySrWNw0p0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "342617603309-126hj08escgutrlq6pvjeqtj1rsvm7md.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "342617603309-phfnnfgk0cb21r4gfn3nvkih0njt1v9n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.aparcamientozaragoza"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:342617603309:android:aa2ede37dd821abfc4e0e4",
+        "android_client_info": {
+          "package_name": "com.sergio.aparcamientoszaragoza.aparcamientoszaragoza"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "342617603309-jtu1lfqbilg14vaapslmrcjrvlo81n16.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sergio.aparcamientoszaragoza.aparcamientoszaragoza",
+            "certificate_hash": "9c27b71a28fb33a5fc4cedb9190d0929e4d653c9"
+          }
+        },
+        {
+          "client_id": "342617603309-126hj08escgutrlq6pvjeqtj1rsvm7md.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEmkJJxQPSJ9DgYgdbM3Up7mySrWNw0p0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "342617603309-126hj08escgutrlq6pvjeqtj1rsvm7md.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "342617603309-phfnnfgk0cb21r4gfn3nvkih0njt1v9n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.aparcamientozaragoza"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:342617603309:android:0e58a30314760c8cc4e0e4",
+        "android_client_info": {
+          "package_name": "com.sergiop.aparcamientos"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "342617603309-126hj08escgutrlq6pvjeqtj1rsvm7md.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDEmkJJxQPSJ9DgYgdbM3Up7mySrWNw0p0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "342617603309-126hj08escgutrlq6pvjeqtj1rsvm7md.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "342617603309-phfnnfgk0cb21r4gfn3nvkih0njt1v9n.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.aparcamientozaragoza"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
