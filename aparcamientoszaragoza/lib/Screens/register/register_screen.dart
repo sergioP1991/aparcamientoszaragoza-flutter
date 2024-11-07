@@ -11,6 +11,7 @@ import '../../Utils/helpers/snackbar_helper.dart';
 import '../../Values/app_regex.dart';
 import '../../Values/app_strings.dart';
 import '../../Values/app_theme.dart';
+import '../smsVerified/smsvalidate_screen.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
 
@@ -30,13 +31,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   late final TextEditingController passwordController;
   late final TextEditingController confirmPasswordController;
   late final TextEditingController urlProfileController;
-  late final TextEditingController phoneNumberController;
 
   final ValueNotifier<bool> passwordNotifier = ValueNotifier(true);
   final ValueNotifier<bool> confirmPasswordNotifier = ValueNotifier(true);
   final ValueNotifier<bool> fieldValidNotifier = ValueNotifier(false);
   final ValueNotifier<bool> urlProfileNotifier = ValueNotifier(false);
-  final ValueNotifier<bool> phoneNumberNotifier = ValueNotifier(false);
 
   void initializeControllers() {
     nameController = TextEditingController()..addListener(controllerListener);
@@ -47,7 +46,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
       ..addListener(controllerListener);
     urlProfileController = TextEditingController()
       ..addListener(controllerUrlImageListener);
-    phoneNumberController = TextEditingController()..addListener(controllerPhoneNumber);
   }
 
   void disposeControllers() {
@@ -93,10 +91,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     return;
   }
 
-  void controllerPhoneNumber() {
-    final phoneNumberProfile = phoneNumberController.text;
-  }
-
   @override
   void initState() {
     initializeControllers();
@@ -126,15 +120,19 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         content: AwesomeSnackbarContent(
           title: 'Registro completo!',
           message:
-          'Registro completado correctamente!',
+          'Registro completado correctamente! Verifica ahora tu telefono',
 
           /// change contentType to ContentType.success, ContentType.warning or ContentType.help for variants
           contentType: ContentType.success,
         ),
       );
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) => ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(snackBar));
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) =>
+
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(snackBar));
+
+        Navigator.of(context).pushNamed(SmsValidatePage.routeName);
 
         nameController.clear();
         emailController.clear();
@@ -299,25 +297,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           : AppStrings.invalidUrlImage;
                     },*/
                   ),
-                  AppTextFormField(
-                    labelText: AppStrings.phoneNumber,
-                    controller: phoneNumberController,
-                    textInputAction: TextInputAction.next,
-                    keyboardType: TextInputType.number,
-                    onChanged: (text) => {
-                      setState(() {
-                        phoneNumberNotifier.value = text.isNotEmpty && AppRegex.phoneNumberRegex.hasMatch(text);
-                      }),
-                      _formKey.currentState?.validate(),
-                    },
-                    validator: (value) {
-                      return value!.isEmpty
-                          ? AppStrings.pleasePhoneNumber
-                          : AppRegex.phoneNumberRegex.hasMatch(value)
-                          ? null
-                          : AppStrings.phoneNumberInvalid;
-                    },
-                  ),
                   ValueListenableBuilder(
                     valueListenable: fieldValidNotifier,
                     builder: (_, isValid, __) {
@@ -328,10 +307,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                                       nameController.text,
                                                       emailController.text,
                                                       passwordController.text,
-                                                      urlProfileController.text,
-                                                      phoneNumberController.text))
+                                                      urlProfileController.text)),
                         },
-
                         child: const Text(AppStrings.register)
                       );
                     },
@@ -349,7 +326,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               ),
               TextButton(
                 onPressed: () => {
-                  ref.invalidate(fetchRegisterUserProvider)
                 },
 
                 child: const Text(AppStrings.login),

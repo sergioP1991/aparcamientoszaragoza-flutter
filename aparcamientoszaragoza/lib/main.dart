@@ -3,6 +3,7 @@ import 'package:aparcamientoszaragoza/Screens/home/home_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/register/register_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart';
+import 'package:aparcamientoszaragoza/Screens/smsVerified/smsvalidate_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -71,7 +72,8 @@ class MyApp extends StatelessWidget {
           HomePage.routeName: (context) => HomePage(),
           DetailsGarajePage.routeName: (context) => DetailsGarajePage(),
           listCommentsPage.routeName: (context) => listCommentsPage(),
-          RegisterGarage.routeName: (context) => RegisterGarage()
+          RegisterGarage.routeName: (context) => RegisterGarage(),
+          SmsValidatePage.routeName: (context) => const SmsValidatePage()
         },
       ),
     );

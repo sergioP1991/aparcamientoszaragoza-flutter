@@ -1,5 +1,6 @@
 import 'package:aparcamientoszaragoza/Screens/login/login_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/register/register_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/smsVerified/smsvalidate_screen.dart';
 import 'package:easter_egg_trigger/easter_egg_trigger.dart';
 import 'package:flutter/material.dart';
 

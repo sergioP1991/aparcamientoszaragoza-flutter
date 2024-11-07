@@ -17,48 +17,8 @@ class UserLoginState extends StateNotifier<AsyncValue<UserCredential?>> {
     // sign in and update the state (data or error)
     state = await AsyncValue.guard(() async {
       final userCrendential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: mail, password: password);
-      await authSecondFactor(userCrendential, UserRegister(mail, mail, password, "", "+34651555165"));
       return userCrendential;
     });
-  }
-
-  Future<void> authSecondFactor (UserCredential userCredential, UserRegister userToRegister) async {
-    final session = await userCredential.user?.multiFactor.getSession();
-    final auth = FirebaseAuth.instance;
-    await auth.verifyPhoneNumber(
-      multiFactorSession: session,
-      phoneNumber: userToRegister.phoneNumber,
-      verificationCompleted: (_) {
-        print("Telefono verificado correctamente");
-      },
-      verificationFailed: (_) {
-        print("¡¡ ERROR: Telefono NO verificado correctamente!!");
-      },
-      codeSent: (String verificationId, int? resendToken) async {
-        // See `firebase_auth` example app for a method of retrieving user's sms code:
-        // https://github.com/firebase/flutterfire/blob/master/packages/firebase_auth/firebase_auth/example/lib/auth.dart#L591
-        final smsCode = await SmsAutoDetect().listenForCode;
-
-        /*if (smsCode != null) {
-        // Create a PhoneAuthCredential with the code
-        final credential = PhoneAuthProvider.credential(
-          verificationId: verificationId,
-          smsCode: smsCode,
-        );
-
-        try {
-          await user.multiFactor.enroll(
-            PhoneMultiFactorGenerator.getAssertion(
-              credential,
-            ),
-          );
-        } on FirebaseAuthException catch (e) {
-          print(e.message);
-        }
-      }*/
-      },
-      codeAutoRetrievalTimeout: (_) {},
-    );
   }
 
   Future<UserCredential?> loginGoogle() async {

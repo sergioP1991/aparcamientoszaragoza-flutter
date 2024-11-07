@@ -4,18 +4,16 @@ class UserRegister{
   String mail;
   String password;
   String urlProfile;
-  String phoneNumber;
 
   UserRegister(
       this.username,
       this.mail,
       this.password,
-      this.urlProfile,
-      this.phoneNumber);
+      this.urlProfile);
 
   @override
   String toString() {
-    return 'UserRegister{username: $username, mail: $mail, password: $password, urlProfile: $urlProfile}, phoneNumber: $phoneNumber';
+    return 'UserRegister{username: $username, mail: $mail, password: $password, urlProfile: $urlProfile}';
   }
 
 }
