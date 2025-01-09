@@ -57,6 +57,9 @@ dependencies:
 
   awesome_snackbar_content: ^0.1.4
   sms_autodetect: ^1.1.0
+  web3dart: ^2.7.3
+
+  path: ^1.8.0
 
 dev_dependencies:
   flutter_test:

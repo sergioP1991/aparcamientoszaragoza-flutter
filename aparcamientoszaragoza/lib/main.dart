@@ -8,9 +8,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart';
 import 'package:provider/provider.dart' as provider;
+import 'package:web3dart/web3dart.dart';
 import './Screens/welcome_screen.dart';
 import './Models/auth.dart';
+import 'Screens/bit/bit_screen.dart';
 import 'Screens/login/login_screen.dart';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -73,7 +76,8 @@ class MyApp extends StatelessWidget {
           DetailsGarajePage.routeName: (context) => DetailsGarajePage(),
           listCommentsPage.routeName: (context) => listCommentsPage(),
           RegisterGarage.routeName: (context) => RegisterGarage(),
-          SmsValidatePage.routeName: (context) => const SmsValidatePage()
+          SmsValidatePage.routeName: (context) => const SmsValidatePage(),
+          BitPage.routeName: (context) => const BitPage()
         },
       ),
     );

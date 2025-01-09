@@ -42,4 +42,15 @@ class AppStrings {
   static const String pleasePhoneNumber = 'Please, introduce phone number';
   static const String phoneNumberInvalid = 'Invalid Phone number';
 
+  static const String bit = '¡Apuesta!';
+  static const String createYourBit = 'Genera tu apuesta';
+
+  static const String accountEth = 'Account Eth';
+  static const String pleaseAccountEth = 'Please, Account Eth';
+  static const String invalidAccountEth = 'Invalid Account Eth';
+
+  static const String bitAmount = 'Introduce el valor de la apuesta';
+  static const String pleasebitAmount = 'Please, introduce el valor de la apuesta';
+  static const String invalidBitAmount = 'Invalid Bit Amount';
+
 }

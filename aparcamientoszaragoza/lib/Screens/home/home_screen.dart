@@ -117,11 +117,17 @@ Widget makeListTile(Garaje item) {
             ],
           ),
           Row(
-              children: <Widget>[
-                const Icon(Icons.linear_scale, color: Colors.blueGrey),
-                Text("  Ancho ${item.ancho}  -  Largo: ${item.largo}", style: const TextStyle(color: Colors.white))
-              ],
-            )]
+            children: <Widget>[
+              const Icon(Icons.linear_scale, color: Colors.blueGrey),
+              Text("  Ancho ${item.ancho}  -  Largo: ${item.largo}", style: const TextStyle(color: Colors.white))
+            ],
+          ),
+          Row(
+            children: <Widget>[
+              if (item.alquilada) const Icon(Icons.check, color: Colors.green) else const Icon(Icons.check, color: Colors.red),
+              if (item.alquilada) const Text("Alquilada", style: TextStyle(color: Colors.green)) else const Text("NO Alquilada", style: TextStyle(color: Colors.red))
+            ],
+          )]
       ),
       trailing:
       const Icon(Icons.keyboard_arrow_right, color: Colors.white, size: 30.0));

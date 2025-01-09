@@ -28,7 +28,7 @@ class DetailsGarajePage extends ConsumerWidget {
     Garaje? plaza = garageList[indexPlaza];
 
     _initialCameraPosition = CameraPosition(
-      target: LatLng(plaza?.latitud ?? 0.0, plaza?.longitud ?? 0.0),
+      target: LatLng(plaza.latitud?.toDouble() ?? 0.0, plaza.longitud?.toDouble() ?? 0.0),
       // Handle potential null values
       zoom: 6.0, // Set zoom level
     );
@@ -113,8 +113,8 @@ class DetailsGarajePage extends ConsumerWidget {
                   Marker(
                     markerId: const MarkerId('plaza_marker'),
                     position: LatLng(
-                      plaza?.latitud ?? 0.0,
-                      plaza?.longitud ?? 0.0,
+                      plaza?.latitud?.toDouble() ?? 0,
+                      plaza?.longitud?.toDouble() ?? 0,
                     ),
                   ),
                 },

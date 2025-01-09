@@ -1,3 +1,4 @@
+import 'package:aparcamientoszaragoza/Screens/bit/bit_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/login/login_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/register/register_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/smsVerified/smsvalidate_screen.dart';
@@ -119,6 +120,23 @@ class bodyWelcomeWidget extends StatelessWidget {
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: Colors.lightBlue,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 80,
+                    width: double.infinity,
+                    padding: const EdgeInsets.only(top: 25, left: 24, right: 24),
+                    child: ElevatedButton(
+                      style: raisedButtonStyle,
+                      onPressed: () => Navigator.of(context).pushNamed(BitPage.routeName),
+                      child: const Text(
+                        '¡Apuesta!',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                       ),
                     ),
