@@ -1,4 +1,4 @@
-class CodigoPostal {
+class CodigoPostalApp {
   final String ccom;
   final String cpro;
   final String cmum;
@@ -7,7 +7,7 @@ class CodigoPostal {
   final String cun;
   final String codigoPostal;
 
-  CodigoPostal({
+  CodigoPostalApp({
     required this.ccom,
     required this.cpro,
     required this.cmum,
@@ -17,8 +17,8 @@ class CodigoPostal {
     required this.codigoPostal,
   });
 
-  factory CodigoPostal.fromJson(Map<String, dynamic> json) {
-    return CodigoPostal(
+  factory CodigoPostalApp.fromJson(Map<String, dynamic> json) {
+    return CodigoPostalApp(
       ccom: json['CCOM']?.toString() ?? '',
       cpro: json['CPRO']?.toString() ?? '',
       cmum: json['CMUM']?.toString() ?? '',
@@ -29,8 +29,8 @@ class CodigoPostal {
     );
   }
 
-  static CodigoPostal? getByCodigo(
-      List<CodigoPostal> codigos,
+  static CodigoPostalApp? getByCodigo(
+      List<CodigoPostalApp> codigos,
       String codigoPostal,
       ) {
     try {

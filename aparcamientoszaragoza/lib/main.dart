@@ -1,20 +1,32 @@
+import 'package:aparcamientoszaragoza/Screens/Timeline/timeline_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/detailsGarage/detailsGarage_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/home_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/listComments/addComments_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/register/register_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart';
 import 'package:aparcamientoszaragoza/Screens/smsVerified/smsvalidate_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:aparcamientoszaragoza/Screens/rent/rent_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/userDetails/userDetails_screen.dart';
+import 'package:aparcamientoszaragoza/Values/app_theme.dart';
+import 'package:aparcamientoszaragoza/Screens/ad/ad_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/favorites/favorites_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/my_garages/my_garages_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/settings_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart';
 import 'package:provider/provider.dart' as provider;
-import 'package:web3dart/web3dart.dart';
 import './Screens/welcome_screen.dart';
 import './Models/auth.dart';
-import 'Screens/bit/bit_screen.dart';
+import 'Screens/forgetPassword/ForgetPassword_screen.dart';
 import 'Screens/login/login_screen.dart';
+import 'Screens/tutorial/tutorial_screen.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 
@@ -35,10 +47,12 @@ void main() async {
     options: options,
   );
 
-  // Disable persistence on web platforms. Must be called on initialization:
-  //final auth = FirebaseAuth.instanceFor(app: Firebase.app(), persistence: Persistence.LOCAL);
-// To change it after initialization, use `setPersistence()`:
-  //await auth.setPersistence(Persistence.LOCAL);
+  final remoteConfig = FirebaseRemoteConfig.instance;
+  await remoteConfig.setConfigSettings(RemoteConfigSettings(
+    fetchTimeout: const Duration(seconds: 30),
+    minimumFetchInterval: const Duration(seconds: 0), // Ajusta según necesidad
+  ));
+  await remoteConfig.fetchAndActivate();
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -46,38 +60,60 @@ void main() async {
   ]);
 
   runApp(
-      // For widgets to be able to read providers, we need to wrap the entire
-      // application in a "ProviderScope" widget.
-      // This is where the state of our providers will be stored.
       ProviderScope(
         child: MyApp(),
       ),
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
-  @override
-  Widget build(BuildContext context) {
+@override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    final settings = ref.watch(settingsProvider);
+    
     return provider.ChangeNotifierProvider(
       create: (ctx) => Auth(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
+        theme: AppTheme.getLightTheme(),
+        darkTheme: AppTheme.getDarkTheme(),
+        themeMode: settings.theme == 'light' ? ThemeMode.light : ThemeMode.dark,
+        locale: locale,
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('es', ''),
+          Locale('en', ''),
+        ],
         home: WelcomeScreen(),
         routes: {
           WelcomeScreen.routeName: (context) => WelcomeScreen(),
+          TutorialScreen.routeName: (context) => const TutorialScreen(),
           RegisterPage.routeName: (context) => const RegisterPage(),
           LoginPage.routeName: (context) => const LoginPage(),
           HomePage.routeName: (context) => HomePage(),
           DetailsGarajePage.routeName: (context) => DetailsGarajePage(),
-          listCommentsPage.routeName: (context) => listCommentsPage(),
+          //GaragesMapScreen.routeName: (context) => GaragesMapScreen(),
+          ListCommentsPage.routeName: (context) => ListCommentsPage(),
+          AddComments.routeName: (context) => AddComments(),
           RegisterGarage.routeName: (context) => RegisterGarage(),
+          RentPage.routeName: (context) => RentPage(),
+          //OptionsMyGarage.routeName : (context) => OptionsMyGarage(),
           SmsValidatePage.routeName: (context) => const SmsValidatePage(),
-          BitPage.routeName: (context) => const BitPage()
+          TimelinePage.routeName: (context) => TimelinePage(),
+          UserDetailScreen.routeName: (context) => UserDetailScreen(),
+          ForgetPasswordScreen.routeName: (context) => ForgetPasswordScreen(),
+          AdScreen.routeName: (context) => const AdScreen(),
+          FavoritesScreen.routeName: (context) => const FavoritesScreen(),
+          MyGaragesScreen.routeName: (context) => const MyGaragesScreen(),
+          SettingsScreen.routeName: (context) => const SettingsScreen(),
         },
       ),
     );

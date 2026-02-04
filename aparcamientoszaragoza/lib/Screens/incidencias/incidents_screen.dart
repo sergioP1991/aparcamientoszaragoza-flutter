@@ -1,175 +1,190 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:aparcamientoszaragoza/Components/app_text_form_field.dart';
+import 'package:aparcamientoszaragoza/Screens/incidencias/providers/IncidentsProviders.dart';
+import 'package:aparcamientoszaragoza/Values/app_regex.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 
-import '../login/providers/UserProviders.dart';
-
-class Incidenciasscreen extends ConsumerStatefulWidget {
+class IncidentsPage extends ConsumerStatefulWidget {
 
   static const routeName = '/incidencias';
-
-  //static String idUser;//faltaria inllectar el usuario como en HomeScreen
 
   @override
   _IncidenciasState createState() => _IncidenciasState();
 }
 
-class _IncidenciasState extends ConsumerState<Incidenciasscreen<incidencia> {
+class _IncidenciasState extends ConsumerState<IncidentsPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controladores de texto para cada campo
-  //TextEditingController _nombreController = TextEditingController();
-  TextEditingController _direccionController = TextEditingController();
-  TextEditingController _latitudController = TextEditingController();
-  TextEditingController _longitudController = TextEditingController();
-  TextEditingController _largoController = TextEditingController();
-  TextEditingController _anchoController = TextEditingController();
-  //bool _moto = false;
+  late final TextEditingController titulo;
 
-  // Función para guardar los datos en Firebase
-  Future<void> _guardarDatos() async {
-    // Validar el formulario
-    if (_formKey.currentState!.validate()) {
-      // Crear un mapa con los datos
-      Map<String, dynamic> data = {
-        //'nombre': _nombreController.text,
-        'direccion': _direccionController.text,
-        'latitud': double.parse(_latitudController.text),
-        'longitud': double.parse(_longitudController.text),
-        'largo': int.parse(_largoController.text) ,
-        'ancho': int.parse(_anchoController.text),
-        //'moto': _moto,
-      };
+  List<String> _tiposIncidencia = ['','Tipo1', 'Tipo2', 'Tipo3']; // Lista de opciones
+  String? _tipoIncidenciaSeleccionada; // Variable para almacenar la opción seleccionada
 
-      if(_longitudController == null || _latitudController == null){
-        String error = 'Debe ingresar las conrdenadas en los campos de longitud y latitud para indicar la direccion usable por google maps';
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('¿Permitir acceso a la ubicación?'),
-              content: Text('Los campos de latitud y longitud están vacíos. ¿Deseas obtener tu ubicación actual?'),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text('Cancelar'),
-                ),
-                TextButton (
-                    onPressed: () {  },
-                    child: Text('Aceptar')
-                ),
-              ],
-            );
-          },
-        );
-      }
-      else {
-        // Agregar el documento a la colección "garaje" en Firebase
-        await FirebaseFirestore.instance.collection('garaje').add(data);
-      }
-      // Mostrar un mensaje de éxito o error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Datos guardados correctamente')),
-      );
+  Position? _currentPosition;
+  String _locationErrorMessage = '';
+
+  final ValueNotifier<bool> urlImag = ValueNotifier(false);
+
+  late final TextEditingController descripcion;
+  late final TextEditingController urlPhoto;
+
+  final ValueNotifier<bool> urlImage = ValueNotifier(false);
+
+  void initializeControllers() {
+    titulo = TextEditingController()..addListener(controllerListener);
+    descripcion = TextEditingController()..addListener(controllerListener);
+    urlPhoto = TextEditingController()
+      ..addListener(controllerUrlImageListener);
+  }
+
+  void disposeControllers() {
+    titulo.dispose();
+    descripcion.dispose();
+  }
+
+  void controllerListener() {
+
+  }
+
+  void controllerUrlImageListener() {
+    final urlImageProfile = urlPhoto.text;
+
+    if (urlImageProfile.isEmpty) {
+      urlImage.value = false;
+      return;
     }
+
+    if (AppRegex.urlProfileImageRegex.hasMatch(urlImageProfile)) {
+      urlImage.value = true;
+    } else {
+      urlImage.value = false;
+    }
+    return;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initializeControllers();
+    _getLocation();
   }
 
   @override
   Widget build(BuildContext context) {
-
-    AsyncValue<UserCredential?> user = ref.watch(loginUserProvider);
-
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text('Formulario de Garaje')),
+      appBar: AppBar(title: Text(l10n.incidentsTitle)),
       body: Form(
         key: _formKey,
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // Campos de texto para cada propiedad
-              /*
-              TextFormField(
-                controller: _nombreController,
-                decoration: InputDecoration(labelText: 'nombre'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingresa el nombre';
-                  }
-                  return null;
-                },
+              AppTextFormField(
+                autofocus: true,
+                labelText: l10n.fullNameLabel,
+                keyboardType: TextInputType.name,
+                textInputAction: TextInputAction.next,
+                onChanged: (value) => _formKey.currentState?.validate(),
+                controller: titulo,
               ),
-              */
-              TextFormField(
-                controller: _direccionController,
-                decoration: InputDecoration(labelText: 'Dirección'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingresa la dirección';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _latitudController,
-                decoration: InputDecoration(labelText: 'Altitud'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _longitudController,
-                decoration: InputDecoration(labelText: 'Longitud'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _largoController,
-                decoration: InputDecoration(labelText: 'largo'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingresa el largo de la plaza en metros';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _anchoController,
-                decoration: InputDecoration(labelText: 'ancho'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingresa el ancho de la plaza en metros';
-                  }
-                  return null;
-                },
-              ),
-              /*
-              CheckboxListTile(
-                title: Text('moto'),
-                value: _moto,
-                onChanged: (value) {
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(labelText: l10n.incidentTypeLabel),
+                value: _tipoIncidenciaSeleccionada,
+                items: _tiposIncidencia.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
                   setState(() {
-                    _moto = value!;
+                    _tipoIncidenciaSeleccionada = newValue;
                   });
                 },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return l10n.selectLocationTypeRequired;
+                  }
+                  return null;
+                },
               ),
-              */
-              // Botón para guardar los datos
-              ElevatedButton(
-                onPressed: _guardarDatos,
-                child: Text('Guardar'),
+              AppTextFormField(
+                labelText: l10n.descriptionSection,
+                controller: descripcion,
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.emailAddress,
+                onChanged: (_) => _formKey.currentState?.validate(),
               ),
+              Divider(
+                color: Colors.grey, // Puedes cambiar el color de la línea
+                thickness: 6,      // Puedes cambiar el grosor de la línea
+                indent: 6,        // Espacio al inicio de la línea
+                endIndent: 6,     // Espacio al final de la línea
+              ),TextFormField(
+                controller: urlPhoto,
+                keyboardType: TextInputType.url,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                decoration: InputDecoration(
+                  labelText: l10n.incidentImageUrlLabel,
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return l10n.requiredField;
+                  }
+                  final uri = Uri.tryParse(value);
+                  if (uri == null || !uri.hasAbsolutePath || (uri.scheme != 'http' && uri.scheme != 'https')) {
+                    return l10n.emailInvalidRegister; // Reusing a valid-check label if I have one for generic URL, or better use something else.
+                  }
+                  return null;
+                },
+              ),
+              Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    if (_currentPosition != null)
+                      Text(
+                        l10n.latLongIndicator(_currentPosition!.latitude.toStringAsFixed(2), _currentPosition!.longitude.toStringAsFixed(2)),
+                        style: const TextStyle(fontSize: 18),
+                      )
+                    else
+                      Text(
+                        _locationErrorMessage.isNotEmpty ? _locationErrorMessage : l10n.obtainingLocation,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _getLocation,
+                      child: Text(l10n.reloadLocationAction),
+                    ),
+                    Divider(
+                      color: Colors.grey, // Puedes cambiar el color de la línea
+                      thickness: 6,      // Puedes cambiar el grosor de la línea
+                      indent: 6,        // Espacio al inicio de la línea
+                      endIndent: 6,     // Espacio al final de la línea
+                    ),
+                    Divider(
+                      color: Colors.grey, // Puedes cambiar el color de la línea
+                      thickness: 6,      // Puedes cambiar el grosor de la línea
+                      indent: 6,        // Espacio al inicio de la línea
+                      endIndent: 6,     // Espacio al final de la línea
+                    ),
+                    ElevatedButton(
+                      onPressed: () => {
+                          ref .read(incidentProvider.notifier).newIncidence(
+                              _currentPosition,
+                              _tipoIncidenciaSeleccionada.toString(),
+                              descripcion.text, urlPhoto.text
+                          ),
+                      },
+                      child: Text(l10n.sendIncidentAction),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -177,31 +192,81 @@ class _IncidenciasState extends ConsumerState<Incidenciasscreen<incidencia> {
     );
   }
 
-  Future<void> _obtenerUbicacion() async {
+  Future<void> _getLocation() async {
     try {
-      // Solicitar permiso al usuario para acceder a la ubicación
-      LocationPermission permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        // El usuario denegó el permiso, mostrar un mensaje o tomar alguna acción
-        return;
-      }
-
-      // Obtener la posición actual
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      // Actualizar los controladores de texto con los valores obtenidos
+      final Position? position = await _getCurrentLocation();
       setState(() {
-        _longitudController.text = position.longitude.toString();
-        _latitudController.text = position.latitude.toString();
+        _currentPosition = position;
+        _locationErrorMessage = '';
       });
     } catch (e) {
+      final l10n = AppLocalizations.of(context)!;
+      setState(() {
+        _currentPosition = null;
+        _locationErrorMessage = e.toString();
+      });
       print('Error al obtener la ubicación: $e');
-      // Mostrar un mensaje de error al usuario
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al obtener la ubicación')),
-      );
     }
   }
+  Future<Position?> _getCurrentLocation() async {
+    LocationPermission permission;
+
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    final l10n = AppLocalizations.of(context)!;
+    if (!serviceEnabled) {
+      return Future.error(l10n.locationServicesDisabled);
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return Future.error(l10n.locationPermissionsDenied);
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return Future.error(l10n.locationPermissionsPermanentlyDenied);
+    }
+
+    return await Geolocator.getCurrentPosition();
+  }
+
+}
+
+Future<Position> _determinePosition() async {
+  bool serviceEnabled;
+  LocationPermission permission;
+
+  // Test if location services are enabled.
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    // Location services are not enabled don't continue
+    // accessing the position and request users of the
+    // App to enable the location services.
+    return Future.error('Location services are disabled.');
+  }
+
+  permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      // Permissions are denied, next time you could try
+      // requesting permissions again (this is also where
+      // Android's shouldShowRequestPermissionRationale
+      // returned true. According to Android guidelines
+      // your App should show an explanatory UI now.
+      return Future.error('Location permissions are denied');
+    }
+  }
+
+  if (permission == LocationPermission.deniedForever) {
+    // Permissions are denied forever, handle appropriately.
+    return Future.error(
+        'Location permissions are permanently denied, we cannot request permissions.');
+  }
+
+  // When we reach here, permissions are granted and we can
+  // continue accessing the position of the device.
+  return await Geolocator.getCurrentPosition();
 }

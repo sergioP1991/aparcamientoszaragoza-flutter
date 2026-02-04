@@ -1,43 +1,35 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-class ResetPasswordProvider extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  bool _isLoading = false;
-  String? _errorMessage;
-  String? _successMessage;
+class ForgetPasswordState extends StateNotifier<AsyncValue<String?>> {
+  ForgetPasswordState() : super(const AsyncData(null));
 
-  bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
-  String? get successMessage => _successMessage;
+  Future<bool?> forgetPassword(String email) async {
+    // set the loading state
+    state = const AsyncLoading();
 
-  /// Envía el correo de restablecimiento de contraseña.
-  Future<void> sendPasswordResetEmail(String email) async {
     if (email.isEmpty) {
-      _errorMessage = 'Por favor introduce un correo.';
-      notifyListeners();
-      return;
+      state = AsyncError("Por favor introduce un correo", StackTrace.empty);
+      return false;
     }
-
-    _isLoading = true;
-    _errorMessage = null;
-    _successMessage = null;
-    notifyListeners();
 
     try {
-      await _auth.sendPasswordResetEmail(email: email.trim());
-      _successMessage =
-      'Se ha enviado un correo para restablecer tu contraseña.';
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email.trim());
+      state = const AsyncData('Se ha enviado un correo para restablecer tu contraseña.');
     } on FirebaseAuthException catch (e) {
       print(e.message);
+      state =  AsyncError(e?.message ?? "", e?.stackTrace ?? StackTrace.empty);
     }
+    return true;
   }
-
-  @riverpod
-  final incidentProvider = StateNotifierProvider<
-      IncidentsRegisterState, AsyncValue<Incidencias?>>((ref) {
-    return IncidentsRegisterState();
-  });
-
 }
+
+@riverpod
+final forgetPasswordProvider = StateNotifierProvider<ForgetPasswordState, AsyncValue<String?>>((ref) {
+  return ForgetPasswordState();
+});
+

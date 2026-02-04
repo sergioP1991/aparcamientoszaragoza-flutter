@@ -1,0 +1,2 @@
+C:/Users/Pamplona/Multiplataforma/AparcamientosZaragoza/aparcamientoszaragoza-flutter/aparcamientoszaragoza/android/app/.cxx/Debug/17s4y6f6/x86/CMakeFiles/edit_cache.dir
+C:/Users/Pamplona/Multiplataforma/AparcamientosZaragoza/aparcamientoszaragoza-flutter/aparcamientoszaragoza/android/app/.cxx/Debug/17s4y6f6/x86/CMakeFiles/rebuild_cache.dir

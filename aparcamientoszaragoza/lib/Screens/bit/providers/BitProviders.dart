@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
-import 'package:web3dart/web3dart.dart';
 import 'package:path/path.dart' as p;
 
 class BitState extends StateNotifier<AsyncValue<String>> {
@@ -17,12 +16,13 @@ class BitState extends StateNotifier<AsyncValue<String>> {
       var apiUrl = "http://127.0.0.1:8545/"; //Replace with your API
 
       var httpClient = Client();
-      var ethClient = Web3Client(apiUrl, httpClient);
+      //var ethClient = Web3Client(apiUrl, httpClient);
 
-      var credentials = EthPrivateKey.fromHex(ethAccount);
-      EtherAmount balance = await ethClient.getBalance(credentials.address);
+      //var credentials = EthPrivateKey.fromHex(ethAccount);
+      //EtherAmount balance = await ethClient.getBalance(credentials.address);
 
-      return "" + balance.getInEther.toString();
+     // return "" + balance.getInEther.toString();
+      return "";
     });
     return BigInt.zero;
   }
@@ -30,7 +30,7 @@ class BitState extends StateNotifier<AsyncValue<String>> {
   Future<String> createBit(String ethAccount, String amount) async {
 
     // set the loading state
-    state = const AsyncLoading();
+   /* state = const AsyncLoading();
 
     String privateKey = ethAccount;
     final EthereumAddress contractAddr =
@@ -75,7 +75,7 @@ class BitState extends StateNotifier<AsyncValue<String>> {
         ),
       );
 
-    });*/
+    });*/*/
     return "Error transactions";
   }
 }

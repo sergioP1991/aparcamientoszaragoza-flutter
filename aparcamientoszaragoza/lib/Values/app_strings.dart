@@ -9,11 +9,12 @@ class AppStrings {
   static const String doNotHaveAnAccount = "¿No tienes una cuenta?";
   static const String facebook = 'Facebook';
   static const String google = 'Google';
-  static const String signInToYourNAccount = 'Logueate con tu\n Cuenta';
-  static const String signInToYourAccount = '¡Logueate ahora y mira todas las plazas de Zaragoza!';
+  //static const String signInToYourNAccount = 'Logueate con tu Cuenta';
+  static const String signInToYourAccount = '¡Logueate ahora y mira todas las plazas didponibles para poder alquilarlas!';
   static const String iHaveAnAccount = 'Tienes una cuenta?';
   static const String forgotPassword = '¿Olvidaste tu contraseña?';
   static const String orLoginWith = 'ó logueate con';
+  static const String youContact = '¡Contactanos!';
 
   static const String loggedIn = 'Logged In!';
   static const String registrationComplete = 'Registration Complete!';

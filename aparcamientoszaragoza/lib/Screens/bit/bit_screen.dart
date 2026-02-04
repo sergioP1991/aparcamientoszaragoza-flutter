@@ -5,6 +5,7 @@ import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 
 import '../../Common_widgets/gradient_background.dart';
 import '../../Components/app_text_form_field.dart';
@@ -79,10 +80,10 @@ class _BitPageState extends ConsumerState<BitPage> {
       body: ListView(
         children: [
           GradientBackground(
-              children: const [
-                Text(AppStrings.bit, style: AppTheme.titleLarge),
-                SizedBox(height: 6),
-                Text(AppStrings.createYourBit, style: AppTheme.bodySmall),
+              children: [
+                Text(AppLocalizations.of(context)!.bitTitle, style: AppTheme.titleLarge),
+                const SizedBox(height: 6),
+                Text(AppLocalizations.of(context)!.createBitSubtitle, style: AppTheme.bodySmall),
               ],
           ),
           Padding(
@@ -95,30 +96,28 @@ class _BitPageState extends ConsumerState<BitPage> {
                   Text("${ethNumber} ETH", style: AppTheme.bodySmall),
                   AppTextFormField(
                     autofocus: true,
-                    labelText: AppStrings.accountEth,
+                    labelText: AppLocalizations.of(context)!.accountEthLabel,
                     keyboardType: TextInputType.name,
                     textInputAction: TextInputAction.next,
                     onChanged: (value) => _formKey.currentState?.validate(),
                     validator: (value) {
-                      return value!.isEmpty
-                          ? AppStrings.pleaseAccountEth
-                          : value.length < 4
-                              ? AppStrings.invalidAccountEth
-                              : null;
+                      if (value == null || value.isEmpty) return AppLocalizations.of(context)!.pleaseEnterEthAccount;
+                      return value.length < 4
+                          ? AppLocalizations.of(context)!.invalidEthAccount
+                          : null;
                     },
                     controller: ethAccountController,
                   ),
                   AppTextFormField(
                     autofocus: true,
-                    labelText: AppStrings.bitAmount,
+                    labelText: AppLocalizations.of(context)!.bitAmountLabel,
                     keyboardType: TextInputType.name,
                     textInputAction: TextInputAction.next,
                     onChanged: (value) => _formKey.currentState?.validate(),
                     validator: (value) {
-                      return value!.isEmpty
-                          ? AppStrings.pleasebitAmount
-                          : value.length < 4
-                          ? AppStrings.invalidBitAmount
+                      if (value == null || value.isEmpty) return AppLocalizations.of(context)!.pleaseEnterBitAmount;
+                      return value.length < 4
+                          ? AppLocalizations.of(context)!.invalidBitAmount
                           : null;
                     },
                     controller: bitAmountController,
@@ -131,7 +130,7 @@ class _BitPageState extends ConsumerState<BitPage> {
                           ref .read(bitProvider.notifier)
                               .createBit(ethAccountController.text, bitAmountController.text),
                         },
-                        child: const Text(AppStrings.bit)
+                        child: Text(AppLocalizations.of(context)!.bitTitle)
                       );
                     },
                   ),

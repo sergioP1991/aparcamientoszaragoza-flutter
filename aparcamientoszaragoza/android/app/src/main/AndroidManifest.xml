@@ -3,6 +3,11 @@
         android:label="aparcamientoszaragoza"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDEmkJJxQPSJ9DgYgdbM3Up7mySrWNw0p0" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

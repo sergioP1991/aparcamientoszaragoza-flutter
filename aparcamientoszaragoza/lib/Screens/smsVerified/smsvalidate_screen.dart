@@ -2,6 +2,7 @@ import 'package:aparcamientoszaragoza/Screens/smsVerified/providers/SmsValidateP
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sms_autodetect/sms_autodetect.dart';
+import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 
 import '../../Components/app_text_form_field.dart';
 import '../../Values/app_regex.dart';
@@ -41,7 +42,7 @@ class _SmsValidateState extends ConsumerState<SmsValidatePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Introduce el código SMS'),
+        title: Text(AppLocalizations.of(context)!.smsCodeTitle),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -49,7 +50,7 @@ class _SmsValidateState extends ConsumerState<SmsValidatePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             AppTextFormField(
-              labelText: AppStrings.phoneNumber,
+              labelText: AppLocalizations.of(context)!.phoneNumberLabel,
               controller: phoneNumberController,
               textInputAction: TextInputAction.next,
               keyboardType: TextInputType.number,
@@ -59,11 +60,12 @@ class _SmsValidateState extends ConsumerState<SmsValidatePage> {
                 }),
               },
               validator: (value) {
-                return value!.isEmpty
-                    ? AppStrings.pleasePhoneNumber
-                    : AppRegex.phoneNumberRegex.hasMatch(value)
+                if (value == null || value.isEmpty) {
+                  return AppLocalizations.of(context)!.pleaseEnterPhoneNumber;
+                }
+                return AppRegex.phoneNumberRegex.hasMatch(value)
                     ? null
-                    : AppStrings.phoneNumberInvalid;
+                    : AppLocalizations.of(context)!.phoneNumberInvalid;
               },
             ),
             PinCodeTextField(
@@ -81,7 +83,7 @@ class _SmsValidateState extends ConsumerState<SmsValidatePage> {
               animationType: AnimationType.fade,
               validator: (v) {
                 if (v!.length < 6) {
-                  return "Please enter valid OTP";
+                  return AppLocalizations.of(context)!.pleaseEnterValidOTP;
                 } else {
                   return null;
                 }
@@ -134,7 +136,7 @@ class _SmsValidateState extends ConsumerState<SmsValidatePage> {
               onPressed: () {
                 ref .read(smsValidateProvider.notifier).verifiedSMS(phoneNumberController.text);
               },
-              child: const Text('Verificar'),
+              child: Text(AppLocalizations.of(context)!.verifyAction),
             ),
           ],
         ),

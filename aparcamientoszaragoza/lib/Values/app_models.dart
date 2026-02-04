@@ -1,45 +1,22 @@
 import 'package:aparcamientoszaragoza/Models/comment.dart';
-import 'package:aparcamientoszaragoza/Models/garaje.dart';
+import 'package:aparcamientoszaragoza/Models/history.dart';
 
 class AppModels {
   const AppModels._();
-/*
-  static List<Garaje> defaultGarajes = [
-    Garaje("Garaje 1", "Direccion Garaje 1", 10, 20, 23.4, 34.5, true, false),
-    Garaje("Garaje 2", "Direccion Garaje 2", 10, 20, 23.4, 34.5, true, false),
-    Garaje("Garaje 3", "Direccion Garaje 3", 10, 20, 23.4, 34.5, true, false),
-    Garaje("Garaje 4", "Direccion Garaje 4", 10, 20, 23.4, 34.5, true, true),
-    Garaje("Garaje 5", "Direccion Garaje 5", 10, 20, 23.4, 34.5, true, true),
-    Garaje("Garaje 6", "Direccion Garaje 5", 10, 20, 23.4, 34.5, true, false),
-    Garaje("Garaje 7", "Direccion Garaje 6", 10, 20, 23.4, 34.5, true, true),
-    Garaje("Garaje 8", "Direccion Garaje 7", 10, 20, 23.4, 34.5, true, true),
-    Garaje("Garaje 9", "Direccion Garaje 8", 10, 20, 23.4, 34.5, true, true),
-    Garaje("Garaje 10", "Direccion Garaje 10", 10, 20, 23.4, 34.5, true, true),
-    Garaje("Garaje 11", "Direccion Garaje 11", 10, 20, 23.4, 34.5, true, false),
-    Garaje("Garaje 12", "Direccion Garaje 12", 10, 20, 23.4, 34.5, true, false),
-    Garaje("Garaje 13", "Direccion Garaje 13", 10, 20, 23.4, 34.5, true, true),
-    Garaje("Garaje 14", "Direccion Garaje 14", 10, 20, 23.4, 34.5, true, false),
-    Garaje("Garaje 15", "Direccion Garaje 15", 10, 20, 23.4, 34.5, true, true),
-    Garaje("Garaje 16", "Direccion Garaje 16", 10, 20, 23.4, 34.5, true, false),
-    Garaje("Garaje 17", "Direccion Garaje 17", 10, 20, 23.4, 34.5, true, false),
-    Garaje("Garaje 18", "Direccion Garaje 18", 10, 20, 23.4, 34.5, true, true),
-  ];
-*/
 
   static String privateKeyEthAccount = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
   static String addresContract = "0x057ef64E23666F000b34aE31332854aCBd1c8544";
   static String apiUrlEth = "http://localhost:8545/";
   static String ethContractAbi = "[\r\n\t{\r\n\t\t\"inputs\": [],\r\n\t\t\"stateMutability\": \"nonpayable\",\r\n\t\t\"type\": \"constructor\"\r\n\t},\r\n\t{\r\n\t\t\"anonymous\": false,\r\n\t\t\"inputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"indexed\": true,\r\n\t\t\t\t\"internalType\": \"address\",\r\n\t\t\t\t\"name\": \"contratoAlquiler\",\r\n\t\t\t\t\"type\": \"address\"\r\n\t\t\t},\r\n\t\t\t{\r\n\t\t\t\t\"indexed\": true,\r\n\t\t\t\t\"internalType\": \"address\",\r\n\t\t\t\t\"name\": \"owner\",\r\n\t\t\t\t\"type\": \"address\"\r\n\t\t\t},\r\n\t\t\t{\r\n\t\t\t\t\"indexed\": false,\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"idPlaza\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"name\": \"AlquilerCreado\",\r\n\t\t\"type\": \"event\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"address\",\r\n\t\t\t\t\"name\": \"ownerPlaza\",\r\n\t\t\t\t\"type\": \"address\"\r\n\t\t\t},\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"_idplaza\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t},\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"_duracionAlquiler\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t},\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"_montoAlquiler\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"name\": \"crearAlquiler\",\r\n\t\t\"outputs\": [],\r\n\t\t\"stateMutability\": \"payable\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"alquiler\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"name\": \"finalizarAlquiler\",\r\n\t\t\"outputs\": [],\r\n\t\t\"stateMutability\": \"nonpayable\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [],\r\n\t\t\"name\": \"withdraw\",\r\n\t\t\"outputs\": [],\r\n\t\t\"stateMutability\": \"nonpayable\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"name\": \"_exists\",\r\n\t\t\"outputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"bool\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"bool\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"stateMutability\": \"view\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"name\": \"alquileres\",\r\n\t\t\"outputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"contract Alquiler\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"address\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"stateMutability\": \"view\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"address\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"address\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"name\": \"alquileresPorOwner\",\r\n\t\t\"outputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"stateMutability\": \"view\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"alquiler\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"name\": \"getAlquiler\",\r\n\t\t\"outputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"contract Alquiler\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"address\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"stateMutability\": \"view\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [],\r\n\t\t\"name\": \"getAlquileres\",\r\n\t\t\"outputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"address[]\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"address[]\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"stateMutability\": \"view\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"address\",\r\n\t\t\t\t\"name\": \"ownerAddres\",\r\n\t\t\t\t\"type\": \"address\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"name\": \"getAlquileresPorOwner\",\r\n\t\t\"outputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"stateMutability\": \"view\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [],\r\n\t\t\"name\": \"getNumAlquileres\",\r\n\t\t\"outputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"stateMutability\": \"view\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"idPlaza\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"name\": \"isAlquilado\",\r\n\t\t\"outputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"bool\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"bool\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"stateMutability\": \"view\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [],\r\n\t\t\"name\": \"numAlquileres\",\r\n\t\t\"outputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"uint256\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"uint256\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"stateMutability\": \"view\",\r\n\t\t\"type\": \"function\"\r\n\t},\r\n\t{\r\n\t\t\"inputs\": [],\r\n\t\t\"name\": \"owner\",\r\n\t\t\"outputs\": [\r\n\t\t\t{\r\n\t\t\t\t\"internalType\": \"address\",\r\n\t\t\t\t\"name\": \"\",\r\n\t\t\t\t\"type\": \"address\"\r\n\t\t\t}\r\n\t\t],\r\n\t\t\"stateMutability\": \"view\",\r\n\t\t\"type\": \"function\"\r\n\t}\r\n]";
   static List<Comment> defaultComments = [
-    Comment("1", "123", "Excelente plaza!", "Me encantó la plaza, está muy bien cuidada y tiene mucho espacio para jugar.", DateTime(2024, 07, 04), 5,),
-    Comment("2", "456", "Plaza bonita pero ruidosa", "La plaza es bonita, pero está ubicada en una zona muy ruidosa.", DateTime(2024, 07, 03),3),
-    Comment("3", "789", "Plaza ideal para familias", "La plaza es ideal para familias, tiene un parque infantil y mucho espacio verde.", DateTime(2024, 07, 02), 4),
-    Comment("3", "123", "Excelente plaza!", "Me encantó la plaza, está muy bien cuidada y tiene mucho espacio para jugar.", DateTime(2024, 07, 04), 5,),
-    Comment("1", "456", "Plaza bonita pero ruidosa", "La plaza es bonita, pero está ubicada en una zona muy ruidosa.", DateTime(2024, 07, 03),3),
-    Comment("2", "789", "Plaza ideal para familias", "La plaza es ideal para familias, tiene un parque infantil y mucho espacio verde.", DateTime(2024, 07, 02), 4),
-    Comment("2", "123", "Excelente plaza!", "Me encantó la plaza, está muy bien cuidada y tiene mucho espacio para jugar.", DateTime(2024, 07, 04), 5,),
-    Comment("3", "456", "Plaza bonita pero ruidosa", "La plaza es bonita, pero está ubicada en una zona muy ruidosa.", DateTime(2024, 07, 03),3),
-    Comment("1", "789", "Plaza ideal para familias", "La plaza es ideal para familias, tiene un parque infantil y mucho espacio verde.", DateTime(2024, 07, 02), 4,
-    ),
+    Comment("123", "Excelente plaza!", "Me encantó la plaza, está muy bien cuidada y tiene mucho espacio para jugar.", DateTime(2024, 07, 04), 5,),
+    Comment("456", "Plaza bonita pero ruidosa", "La plaza es bonita, pero está ubicada en una zona muy ruidosa.", DateTime(2024, 07, 03),3),
+    Comment("789", "Plaza ideal para familias", "La plaza es ideal para familias, tiene un parque infantil y mucho espacio verde.", DateTime(2024, 07, 02), 4),
+    Comment("434", "Excelente plaza!", "Me encantó la plaza, está muy bien cuidada y tiene mucho espacio para jugar.", DateTime(2024, 07, 04), 5,),
+    Comment("456", "Plaza bonita pero ruidosa", "La plaza es bonita, pero está ubicada en una zona muy ruidosa.", DateTime(2024, 07, 03),3),
+    Comment("789", "Plaza ideal para familias", "La plaza es ideal para familias, tiene un parque infantil y mucho espacio verde.", DateTime(2024, 07, 02), 4),
+    Comment("123", "Excelente plaza!", "Me encantó la plaza, está muy bien cuidada y tiene mucho espacio para jugar.", DateTime(2024, 07, 04), 5,),
+    Comment("456", "Plaza bonita pero ruidosa", "La plaza es bonita, pero está ubicada en una zona muy ruidosa.", DateTime(2024, 07, 03),3),
+    Comment("789", "Plaza ideal para familias", "La plaza es ideal para familias, tiene un parque infantil y mucho espacio verde.", DateTime(2024, 07, 02), 4),
   ];
 }

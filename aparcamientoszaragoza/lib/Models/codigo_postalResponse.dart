@@ -1,10 +1,11 @@
+
 import 'codigo_postal.dart';
 
 class CodigosPostalesResponse {
   final int currentPage;
   final String updateDate;
   final int size;
-  final List<CodigoPostal> data;
+  final List<CodigoPostalApp> data;
 
   CodigosPostalesResponse({
     required this.currentPage,
@@ -19,7 +20,7 @@ class CodigosPostalesResponse {
       updateDate: json['update_date']?.toString() ?? '',
       size: json['size'] ?? 0,
       data: (json['data'] as List)
-          .map((e) => CodigoPostal.fromJson(e))
+          .map((e) => CodigoPostalApp.fromJson(e))
           .toList(),
     );
   }
