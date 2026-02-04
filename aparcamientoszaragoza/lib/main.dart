@@ -13,6 +13,7 @@ import 'package:aparcamientoszaragoza/Screens/ad/ad_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/favorites/favorites_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/my_garages/my_garages_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/settings_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/help_support_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
@@ -114,6 +115,7 @@ class MyApp extends ConsumerWidget {
           FavoritesScreen.routeName: (context) => const FavoritesScreen(),
           MyGaragesScreen.routeName: (context) => const MyGaragesScreen(),
           SettingsScreen.routeName: (context) => const SettingsScreen(),
+          HelpSupportScreen.routeName: (context) => const HelpSupportScreen(),
         },
       ),
     );

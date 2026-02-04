@@ -42,7 +42,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get helpSupport => 'Help & Support';
 
   @override
+  String get faqTitle => 'Frequently Asked Questions';
+
+  @override
+  String get contactSection => 'Contact';
+
+  @override
+  String get emailSupport => 'Send us an email';
+
+  @override
+  String get callSupport => 'Call us';
+
+  @override
+  String get searchHelpHint => 'Search for help...';
+
+  @override
+  String get versionLabel => 'Version';
+
+  @override
   String get spanish => 'Spanish';
+
+  @override
+  String get helpCenter => 'Help Center';
+
+  @override
+  String get reportProblem => 'Report a problem';
+
+  @override
+  String get sendFeedback => 'Send feedback';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get termsConditions => 'Terms & Conditions';
+
+  @override
+  String get contactUs => 'Contact Us';
+
+  @override
+  String get licenses => 'Open Source Licenses';
 
   @override
   String get english => 'English';
@@ -505,9 +544,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get andThe => ' and the ';
-
-  @override
-  String get privacyPolicy => 'Privacy Policy';
 
   @override
   String get acceptTermsSuffix =>

@@ -164,11 +164,89 @@ abstract class AppLocalizations {
   /// **'Ayuda y Soporte'**
   String get helpSupport;
 
+  /// No description provided for @faqTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Preguntas frecuentes'**
+  String get faqTitle;
+
+  /// No description provided for @contactSection.
+  ///
+  /// In es, this message translates to:
+  /// **'Contacto'**
+  String get contactSection;
+
+  /// No description provided for @emailSupport.
+  ///
+  /// In es, this message translates to:
+  /// **'Envíanos un correo'**
+  String get emailSupport;
+
+  /// No description provided for @callSupport.
+  ///
+  /// In es, this message translates to:
+  /// **'Llámanos'**
+  String get callSupport;
+
+  /// No description provided for @searchHelpHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar ayuda...'**
+  String get searchHelpHint;
+
+  /// No description provided for @versionLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Versión'**
+  String get versionLabel;
+
   /// No description provided for @spanish.
   ///
   /// In es, this message translates to:
   /// **'Español'**
   String get spanish;
+
+  /// No description provided for @helpCenter.
+  ///
+  /// In es, this message translates to:
+  /// **'Centro de Ayuda'**
+  String get helpCenter;
+
+  /// No description provided for @reportProblem.
+  ///
+  /// In es, this message translates to:
+  /// **'Informar de un problema'**
+  String get reportProblem;
+
+  /// No description provided for @sendFeedback.
+  ///
+  /// In es, this message translates to:
+  /// **'Enviar sugerencias'**
+  String get sendFeedback;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In es, this message translates to:
+  /// **'Política de Privacidad'**
+  String get privacyPolicy;
+
+  /// No description provided for @termsConditions.
+  ///
+  /// In es, this message translates to:
+  /// **'Términos y condiciones'**
+  String get termsConditions;
+
+  /// No description provided for @contactUs.
+  ///
+  /// In es, this message translates to:
+  /// **'Contáctanos'**
+  String get contactUs;
+
+  /// No description provided for @licenses.
+  ///
+  /// In es, this message translates to:
+  /// **'Licencias de código abierto'**
+  String get licenses;
 
   /// No description provided for @english.
   ///
@@ -1051,12 +1129,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **' y la '**
   String get andThe;
-
-  /// No description provided for @privacyPolicy.
-  ///
-  /// In es, this message translates to:
-  /// **'Política de Privacidad'**
-  String get privacyPolicy;
 
   /// No description provided for @acceptTermsSuffix.
   ///
