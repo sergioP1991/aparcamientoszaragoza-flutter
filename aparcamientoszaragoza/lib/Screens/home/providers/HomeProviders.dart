@@ -1,5 +1,6 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -8,33 +9,79 @@ import 'package:web3dart/web3dart.dart' as web3;
 
 import '../../../Models/garaje.dart';
 import '../../../Values/app_models.dart';
-
+import '../../login/providers/UserProviders.dart';
 part 'GarajesProviders.g.dart';
 
-final List<Garaje> garajesList = List<Garaje>.empty();
+final GarageListState garajesList = GarageListState();
 
-@Riverpod(keepAlive: true)
-final garajeListProvider = StateProvider<List<Garaje>>((ref) {
-  return garajesList;
+final garajeListProvider = StateNotifierProvider<
+    GarageListState, AsyncValue<List<Garaje>>>((ref) {
+  return GarageListState();
 });
 
-@Riverpod(keepAlive: true)
-Future<List<Garaje>> fetchGaraje(FetchGarajeRef ref) async {
+class GarageListState extends StateNotifier<AsyncValue<List<Garaje>>> {
+  GarageListState() : super(AsyncData(List<Garaje>.empty(growable: true)));
 
-  final QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance.collection('garaje').get();
+  Future<bool> fetchGarajeLessFilter(User? user) async {
 
-  List<Garaje> listResult = snapshot.docs.map<Garaje>((doc) => Garaje.fromFirestore(doc)).toList();
-  /*listResult.forEach((plaza) async {
-    plaza.alquilada = await isAlquilada(AppModels.privateKeyEthAccount, plaza.idPlaza ?? 0);
-  });*/
+    //state = const AsyncLoading();
 
-  listResult[0].alquilada = await isAlquilada(AppModels.privateKeyEthAccount, 0);
-  listResult[1].alquilada = await isAlquilada(AppModels.privateKeyEthAccount, 1);
+    state = await AsyncValue.guard(() async {
+      List<Garaje> filtrada = List.empty(growable: false);
+      final QuerySnapshot<
+          Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
+          .collection('garaje').get();
+      List<Garaje> listResult = snapshot.docs.map<Garaje>((doc) =>
+          Garaje.fromFirestore(doc)).toList();
 
-  ref.read(garajeListProvider.notifier).state = listResult;
+      for (int i = 0; i < listResult.length; i++) {
+        if (listResult[i].propietario == user?.uid) {
+          filtrada.add(listResult[i]);
+        }
+      }
+      return filtrada;
+    });
 
-  return listResult;
+    //state = AsyncValue.data(filtrada);
+    return true;
+  }
+
+  Future<List<Garaje>> fetchGarajeNotOwnedByUser(String userId) async {
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
+        .collection('garaje')
+        .where('propietario', isNotEqualTo: userId)  // Filtra los que NO pertenecen al usuario
+        .get();
+
+    List<Garaje> listResult = snapshot.docs.map<Garaje>((doc) => Garaje.fromFirestore(doc)).toList();
+
+    //ref.read(garajeListProvider.notifier).state = listResult;
+
+    return listResult;
+  }
+
+
 }
+
+@Riverpod(keepAlive: true)
+Future<List<Garaje>> fetchGarajeLessFilter(FetchGarajeLessFilterRef ref) async {
+
+  AsyncValue<UserCredential?> user = ref.watch(loginUserProvider);
+
+  List<Garaje> filtrada = List.empty(growable: false);
+    final QuerySnapshot<
+        Map<String, dynamic>> snapshot = await FirebaseFirestore.instance
+        .collection('garaje').get();
+    List<Garaje> listResult = snapshot.docs.map<Garaje>((doc) =>
+        Garaje.fromFirestore(doc)).toList();
+
+    for (int i = 0; i < listResult.length; i++) {
+      if (listResult[i].propietario == user?.value?.user?.uid) {
+        filtrada.add(listResult[i]);
+      }
+    }
+    return filtrada;
+}
+
 
 Future<bool> isAlquilada(String ethAccount, int idPlaza) async {
 
