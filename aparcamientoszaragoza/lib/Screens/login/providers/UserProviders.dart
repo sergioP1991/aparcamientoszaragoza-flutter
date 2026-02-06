@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 class UserLoginState extends StateNotifier<AsyncValue<User?>> {
@@ -21,8 +22,24 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
     // sign in and update the state (data or error)
     state = await AsyncValue.guard(() async {
       final userCrendential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: mail, password: password);
-      return userCrendential.user;
+      final user = userCrendential.user;
+      // Almacenar último usuario
+      if (user != null) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('lastUserEmail', user.email ?? '');
+          await prefs.setString('lastUserDisplayName', user.displayName ?? '');
+          await prefs.setString('lastUserPhoto', user.photoURL ?? '');
+        } catch (e) {
+          // no bloquear el login por fallo en prefs
+          print('Error saving last user: $e');
+        }
+      }
+      return user;
     });
+
+    // Devolver el usuario resultante (o null)
+    return state.value;
   }
 
   void _init() {
@@ -31,6 +48,14 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
       // No actualizar si estamos en proceso de logout
       if (!_isLoggingOut) {
         state = AsyncData(user);
+        // Guardar último usuario si aplica
+        if (user != null) {
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString('lastUserEmail', user.email ?? '');
+            prefs.setString('lastUserDisplayName', user.displayName ?? '');
+            prefs.setString('lastUserPhoto', user.photoURL ?? '');
+          }).catchError((e) => print('Error saving last user on auth change: $e'));
+        }
       }
     });
 

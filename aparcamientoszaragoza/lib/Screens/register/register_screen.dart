@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart';
 
 import '../../Utils/helpers/snackbar_helper.dart';
 import '../../Values/app_regex.dart';
@@ -1002,7 +1003,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           child: _buildSocialButton(
             icon: 'assets/vectors/google.svg',
             label: 'Google',
-            onPressed: () {},
+            onPressed: () async {
+              try {
+                await ref.read(loginUserProvider.notifier).signIn();
+              } catch (e) {
+                SnackbarHelper.showSnackBar(isError: true, e.toString());
+              }
+            },
           ),
         ),
         const SizedBox(width: 16),

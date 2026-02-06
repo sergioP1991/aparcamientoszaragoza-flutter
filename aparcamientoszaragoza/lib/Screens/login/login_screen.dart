@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,7 +71,34 @@ class LoginPageState extends ConsumerState<LoginPage> {
   @override
   void initState() {
     initializeControllers();
+    _loadRememberedUser();
     super.initState();
+  }
+
+  bool _hasRemembered = false;
+  String _rememberedEmail = '';
+  String _rememberedDisplayName = '';
+  String _rememberedPhoto = '';
+  bool _useRememberedMode = false; // when true, username field hidden and only password is shown
+
+  Future<void> _loadRememberedUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString('lastUserEmail') ?? '';
+      final name = prefs.getString('lastUserDisplayName') ?? '';
+      final photo = prefs.getString('lastUserPhoto') ?? '';
+      if (email.isNotEmpty) {
+        setState(() {
+          _hasRemembered = true;
+          _rememberedEmail = email;
+          _rememberedDisplayName = name;
+          _rememberedPhoto = photo;
+          _useRememberedMode = true;
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   Widget countFree(int alquiladas, int total, AppLocalizations l10n) {
@@ -215,46 +243,150 @@ class LoginPageState extends ConsumerState<LoginPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Email
-                        Text(
-                          l10n.emailLabel,
-                          style: const TextStyle(
-                             color: Colors.white60, 
-                             fontWeight: FontWeight.w600,
-                             fontSize: 12,
-                             letterSpacing: 1.0
+                        // Email or remembered user display
+                        if (_hasRemembered && _useRememberedMode) ...[
+                          Row(
+                            children: [
+                              Container(
+                                width: 86,
+                                height: 86,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                ),
+                                child: ClipOval(
+                                  child: Builder(builder: (_) {
+                                    if (_rememberedPhoto.isEmpty) {
+                                      return Image.asset('assets/default_icon.png', fit: BoxFit.cover);
+                                    }
+
+                                    // Para evitar problemas CORS en web, usar un proxy público si es necesario
+                                    String photoUrl = _rememberedPhoto;
+                                    if (kIsWeb && !_rememberedPhoto.contains('api.allorigins.win')) {
+                                      photoUrl = 'https://api.allorigins.win/raw?url=${Uri.encodeFull(_rememberedPhoto)}';
+                                    }
+
+                                    return Image.network(
+                                      photoUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Image.asset('assets/default_icon.png', fit: BoxFit.cover),
+                                    );
+                                  }),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _rememberedDisplayName.isNotEmpty ? _rememberedDisplayName : _rememberedEmail,
+                                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _rememberedEmail,
+                                      style: TextStyle(color: Colors.white70),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                            Expanded(
+                                              child: ElevatedButton.icon(
+                                                onPressed: () {
+                                                  // switch to password-only mode (keep remembered email)
+                                                  setState(() {
+                                                    _useRememberedMode = true;
+                                                    usernameController.text = _rememberedEmail;
+                                                  });
+                                                },
+                                                icon: const Icon(Icons.login, size: 18, color: Colors.white),
+                                                label: const Text('Entrar como este usuario', style: TextStyle(color: Colors.white)),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(0xFF448AFF),
+                                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: OutlinedButton.icon(
+                                                onPressed: () async {
+                                                  // forget remembered user and allow entering new credentials
+                                                  final prefs = await SharedPreferences.getInstance();
+                                                  await prefs.remove('lastUserEmail');
+                                                  await prefs.remove('lastUserDisplayName');
+                                                  await prefs.remove('lastUserPhoto');
+                                                  setState(() {
+                                                    _hasRemembered = false;
+                                                    _useRememberedMode = false;
+                                                    _rememberedEmail = '';
+                                                    _rememberedDisplayName = '';
+                                                    _rememberedPhoto = '';
+                                                    usernameController.clear();
+                                                  });
+                                                },
+                                                icon: const Icon(Icons.switch_account, size: 18, color: Colors.white70),
+                                                label: const Text('Usar otra cuenta', style: TextStyle(color: Colors.white70)),
+                                                style: OutlinedButton.styleFrom(
+                                                  side: BorderSide(color: Colors.white.withOpacity(0.08)),
+                                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                  backgroundColor: Colors.transparent,
+                                                ),
+                                              ),
+                                            ),
+                                      ],
+                                    )
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: usernameController,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFF1E2235).withOpacity(0.8),
-                            hintText: l10n.emailHint,
-                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                            prefixIcon: Icon(Icons.email_outlined, color: Colors.white.withOpacity(0.5)),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: const Color(0xFF2962FF)),
+                          const SizedBox(height: 24),
+                        ] else ...[
+                          Text(
+                            l10n.emailLabel,
+                            style: const TextStyle(
+                               color: Colors.white60, 
+                               fontWeight: FontWeight.w600,
+                               fontSize: 12,
+                               letterSpacing: 1.0
                             ),
                           ),
-                          onChanged: (_) => _formKey.currentState?.validate(),
-                          validator: (value) {
-                             if (value == null || value.isEmpty) return l10n.emailRequired;
-                             if (!AppRegex.emailRegex.hasMatch(value)) return l10n.invalidEmail;
-                             return null;
-                          },
-                        ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: usernameController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: const Color(0xFF1E2235).withOpacity(0.8),
+                              hintText: l10n.emailHint,
+                              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                              prefixIcon: Icon(Icons.email_outlined, color: Colors.white.withOpacity(0.5)),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: const BorderSide(color: const Color(0xFF2962FF)),
+                              ),
+                            ),
+                            onChanged: (_) => _formKey.currentState?.validate(),
+                            validator: (value) {
+                               if (value == null || value.isEmpty) return l10n.emailRequired;
+                               if (!AppRegex.emailRegex.hasMatch(value)) return l10n.invalidEmail;
+                               return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                         
                         const SizedBox(height: 24),
                         
@@ -330,46 +462,59 @@ class LoginPageState extends ConsumerState<LoginPage> {
                         const SizedBox(height: 32),
                         
                         // Login Button
-                        ValueListenableBuilder(
-                          valueListenable: fieldValidNotifier,
-                           builder: (_, isValid, __) {
-                             return SizedBox(
-                                width: double.infinity,
-                                height: 56,
-                                child: ElevatedButton(
-                                  onPressed: !todosAlquilados ? () {
-                                    if (_formKey.currentState!.validate()) {
-                                       ref.read(loginUserProvider.notifier).loginMailUser(
-                                          usernameController.text.trim(),
-                                          passwordController.text.trim(),
-                                       );
-                                    }
-                                  } : null,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF2962FF), // Brand Blue
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    elevation: 4,
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        l10n.loginButton,
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Icon(Icons.arrow_forward_rounded, color: Colors.white),
-                                    ],
+                        SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: !todosAlquilados ? () async {
+                              // If a remembered user is used, username comes from remembered email
+                              final emailToUse = (_hasRemembered && _useRememberedMode) ? _rememberedEmail : usernameController.text.trim();
+                              final password = passwordController.text.trim();
+                              if (emailToUse.isEmpty) {
+                                // show validation
+                                QuickAlert.show(
+                                  context: context,
+                                  type: QuickAlertType.error,
+                                  title: l10n.errorTitle,
+                                  text: l10n.emailRequired,
+                                );
+                                return;
+                              }
+                              if (password.isEmpty) {
+                                QuickAlert.show(
+                                  context: context,
+                                  type: QuickAlertType.error,
+                                  title: l10n.errorTitle,
+                                  text: l10n.passwordRequired,
+                                );
+                                return;
+                              }
+
+                              await ref.read(loginUserProvider.notifier).loginMailUser(emailToUse, password);
+                            } : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2962FF), // Brand Blue
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 4,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  l10n.loginButton,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
                                   ),
                                 ),
-                             );
-                           }
+                                const SizedBox(width: 8),
+                                const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                              ],
+                            ),
+                          ),
                         ),
                         
                         const SizedBox(height: 32),
