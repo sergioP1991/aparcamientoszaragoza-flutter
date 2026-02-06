@@ -71,6 +71,7 @@ dependencies:
   timeline_list: ^0.1.0
   firebase_remote_config: ^6.0.0
   firebase_analytics: ^12.0.0
+  cloud_functions: ^6.0.6
 
   #simple_timer_count_down: ^1.0.7
   #google_mobile_ads: ^6.0.0

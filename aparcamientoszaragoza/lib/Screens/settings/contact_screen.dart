@@ -1,3 +1,4 @@
+import 'package:aparcamientoszaragoza/Screens/settings/compose_email_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
@@ -125,13 +126,13 @@ class ContactScreen extends ConsumerWidget {
               context: context,
               icon: Icons.email_outlined,
               title: 'Enviar email',
-              subtitle: _email,
+              subtitle: 'Escríbenos tu consulta',
               description: 'Respuesta en 24-48h',
               color: const Color(0xFFFF9800),
               isDark: isDark,
               cardColor: cardColor,
               textColor: textColor,
-              onTap: () => _sendEmail(),
+              onTap: () => Navigator.pushNamed(context, ComposeEmailScreen.routeName),
             ),
 
             const SizedBox(height: 16),

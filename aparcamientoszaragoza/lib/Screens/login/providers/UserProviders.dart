@@ -8,12 +8,14 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   final List<String> _scopes = ['email', 'profile'];
+  bool _isLoggingOut = false; // Flag para controlar el logout
 
   UserLoginState() : super(AsyncData(FirebaseAuth.instance.currentUser ?? null)) {
     _init();
   }
 
   Future<User?> loginMailUser (String mail, String password) async {
+    _isLoggingOut = false; // Resetear flag al intentar login
     // set the loading state
     state = const AsyncLoading();
     // sign in and update the state (data or error)
@@ -26,7 +28,10 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
   void _init() {
     // Escuchar cambios de FirebaseAuth
     FirebaseAuth.instance.authStateChanges().listen((user) {
-      state = AsyncData(user);
+      // No actualizar si estamos en proceso de logout
+      if (!_isLoggingOut) {
+        state = AsyncData(user);
+      }
     });
 
     // Escuchar eventos de GoogleSignIn
@@ -59,6 +64,7 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
   }
 
   Future<void> signIn() async {
+    _isLoggingOut = false; // Resetear flag al intentar login
     if (kIsWeb) {
       // En Web → usar Firebase directo
       await FirebaseAuth.instance.signInWithPopup(GoogleAuthProvider());
@@ -70,8 +76,35 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
   }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
-    await FirebaseAuth.instance.signOut();
+    _isLoggingOut = true; // Marcar que estamos cerrando sesión
+    
+    try {
+      // Primero actualizar el estado a null para evitar navegación automática
+      state = const AsyncData(null);
+      
+      // Cerrar sesión de Google (disconnect para eliminar tokens)
+      try {
+        await _googleSignIn.disconnect();
+      } catch (e) {
+        print("Error al desconectar Google: $e");
+        // Intentar signOut si disconnect falla
+        try {
+          await _googleSignIn.signOut();
+        } catch (e2) {
+          print("Error al signOut Google: $e2");
+        }
+      }
+      
+      // Cerrar sesión de Firebase
+      await FirebaseAuth.instance.signOut();
+      
+      print("✅ Sesión cerrada correctamente");
+    } catch (e) {
+      print("❌ Error al cerrar sesión: $e");
+    }
+    
+    // Asegurar que el estado quede en null
+    state = const AsyncData(null);
   }
 }
 

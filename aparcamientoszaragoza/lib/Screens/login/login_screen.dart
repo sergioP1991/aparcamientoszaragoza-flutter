@@ -99,6 +99,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
   var countAllPraking = 0;
   var lastUpdate ="";
   var priceValue = "";
+  bool _hasNavigated = false; // Evitar navegación múltiple
 
   @override
   Widget build(BuildContext context) {
@@ -114,13 +115,21 @@ class LoginPageState extends ConsumerState<LoginPage> {
                 title: l10n.errorTitle,
                 text: '${l10n.loginError} ${next.error?.toString()}',
               );
-        } else if (next.value != null && next.value?.email != null) {
+        } else if (next.value != null && next.value?.email != null && !_hasNavigated) {
              // Login exitoso - navegar directamente sin mostrar popup
+             // Solo si no hemos navegado ya (evita múltiples navegaciones)
+             _hasNavigated = true;
              usernameController.clear();
              passwordController.clear();
              SchedulerBinding.instance.addPostFrameCallback((_) {
-                Navigator.of(context).pushNamed(home.HomePage.routeName);
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  home.HomePage.routeName,
+                  (route) => false,
+                );
              });
+        } else if (next.value == null) {
+             // Usuario cerró sesión - resetear flag
+             _hasNavigated = false;
         }
     });
 

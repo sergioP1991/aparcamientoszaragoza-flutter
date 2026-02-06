@@ -15,6 +15,7 @@ import 'package:aparcamientoszaragoza/Screens/my_garages/my_garages_screen.dart'
 import 'package:aparcamientoszaragoza/Screens/settings/settings_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/help_support_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/contact_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/compose_email_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
 import 'package:aparcamientoszaragoza/Services/faq_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -123,6 +124,7 @@ class MyApp extends ConsumerWidget {
           SettingsScreen.routeName: (context) => const SettingsScreen(),
           HelpSupportScreen.routeName: (context) => const HelpSupportScreen(),
           ContactScreen.routeName: (context) => const ContactScreen(),
+          ComposeEmailScreen.routeName: (context) => const ComposeEmailScreen(),
         },
       ),
     );
