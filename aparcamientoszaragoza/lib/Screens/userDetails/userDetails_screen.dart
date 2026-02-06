@@ -5,6 +5,7 @@ import 'package:aparcamientoszaragoza/Screens/login/login_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/my_garages/my_garages_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/settings_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/help_support_screen.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -82,6 +83,15 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
                       icon: Icons.credit_card_rounded,
                       title: l10n.paymentMethods,
                       onTap: () {},
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildGridItem(
+                      context,
+                      icon: Icons.help_outline_rounded,
+                      title: l10n.helpSupport,
+                      onTap: () => Navigator.pushNamed(context, HelpSupportScreen.routeName),
                     ),
                   ),
                 ],
@@ -267,9 +277,54 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
   Widget _buildLogoutButton(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
     return InkWell(
       onTap: () async {
-        await ref.read(loginUserProvider.notifier).signOut();
-        if (mounted) {
-          Navigator.of(context).pushNamedAndRemoveUntil(LoginPage.routeName, (route) => false);
+        // Mostrar diálogo de confirmación
+        final shouldLogout = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1A1F2E),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              l10n.logoutAction,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              '¿Estás seguro de que deseas cerrar sesión?',
+              style: TextStyle(
+                color: Colors.white70,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(
+                  'Cancelar',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xffFF5252),
+                ),
+                child: Text(
+                  l10n.logoutAction,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldLogout == true) {
+          await ref.read(loginUserProvider.notifier).signOut();
+          if (mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil(LoginPage.routeName, (route) => false);
+          }
         }
       },
       borderRadius: BorderRadius.circular(16),

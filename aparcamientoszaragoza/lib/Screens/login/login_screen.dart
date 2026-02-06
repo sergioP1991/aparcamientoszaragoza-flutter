@@ -115,12 +115,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                 text: '${l10n.loginError} ${next.error?.toString()}',
               );
         } else if (next.value != null && next.value?.email != null) {
-             QuickAlert.show(
-                context: context,
-                type: QuickAlertType.success,
-                title: l10n.loginWelcomeTitle,
-                text: '${l10n.loginSuccess} ${next.value?.email?.toString()}',
-              );
+             // Login exitoso - navegar directamente sin mostrar popup
              usernameController.clear();
              passwordController.clear();
              SchedulerBinding.instance.addPostFrameCallback((_) {

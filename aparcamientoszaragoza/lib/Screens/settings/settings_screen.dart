@@ -85,10 +85,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               }),
               const Divider(color: Colors.white10),
               _buildSettingsItem(Icons.credit_card, l10n.paymentMethods, ""),
-              const Divider(color: Colors.white10),
-              _buildSettingsItem(Icons.help_outline, l10n.helpSupport, "", onTap: () {
-                Navigator.pushNamed(context, HelpSupportScreen.routeName);
-              }),
             ]),
           ],
         ),

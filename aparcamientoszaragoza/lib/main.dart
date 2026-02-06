@@ -14,7 +14,9 @@ import 'package:aparcamientoszaragoza/Screens/favorites/favorites_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/my_garages/my_garages_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/settings_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/help_support_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/contact_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
+import 'package:aparcamientoszaragoza/Services/faq_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
@@ -54,6 +56,10 @@ void main() async {
     minimumFetchInterval: const Duration(seconds: 0), // Ajusta según necesidad
   ));
   await remoteConfig.fetchAndActivate();
+
+  // Inicializar FAQs en Firebase si no existen
+  final faqService = FAQService();
+  await faqService.initializeFAQsIfEmpty();
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -116,6 +122,7 @@ class MyApp extends ConsumerWidget {
           MyGaragesScreen.routeName: (context) => const MyGaragesScreen(),
           SettingsScreen.routeName: (context) => const SettingsScreen(),
           HelpSupportScreen.routeName: (context) => const HelpSupportScreen(),
+          ContactScreen.routeName: (context) => const ContactScreen(),
         },
       ),
     );
