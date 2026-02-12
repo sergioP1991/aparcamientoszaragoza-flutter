@@ -4,6 +4,7 @@ import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/help_support_screen.dart';
 
 class ForgetPasswordScreen extends ConsumerStatefulWidget {
   static const routeName = '/password-page';
@@ -283,7 +284,7 @@ class _ForgetPasswordScreenState
                   ),
                   GestureDetector(
                     onTap: () {
-                      // Support action
+                      Navigator.of(context).pushNamed(HelpSupportScreen.routeName);
                     },
                     child: Text(
                       AppLocalizations.of(context)!.contactSupport,

@@ -30,12 +30,25 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.darkestBlue,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          l10n.navProfile,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
               _buildProfileHeader(user),
               const SizedBox(height: 40),
               
@@ -253,7 +266,9 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Colors.blue.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
@@ -321,9 +336,19 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
         );
 
         if (shouldLogout == true) {
+          // Cerrar sesión
           await ref.read(loginUserProvider.notifier).signOut();
+          
+          // Invalidar providers para limpiar el estado
+          ref.invalidate(loginUserProvider);
+          ref.invalidate(fetchHomeProvider(allGarages: true, onlyMine: false));
+          
           if (mounted) {
-            Navigator.of(context).pushNamedAndRemoveUntil(LoginPage.routeName, (route) => false);
+            // Navegar al login y eliminar todas las rutas anteriores
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              LoginPage.routeName, 
+              (route) => false,
+            );
           }
         }
       },
