@@ -123,11 +123,40 @@ class LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
+  Future<void> _submitLogin() async {
+    if (todosAlquilados) return;
+    final l10n = AppLocalizations.of(context)!;
+    // If a remembered user is used, username comes from remembered email
+    final emailToUse = (_hasRemembered && _useRememberedMode) ? _rememberedEmail : usernameController.text.trim();
+    final password = passwordController.text.trim();
+    if (emailToUse.isEmpty) {
+      QuickAlert.show(
+        context: context,
+        type: QuickAlertType.error,
+        title: l10n.errorTitle,
+        text: l10n.emailRequired,
+      );
+      return;
+    }
+    if (password.isEmpty) {
+      QuickAlert.show(
+        context: context,
+        type: QuickAlertType.error,
+        title: l10n.errorTitle,
+        text: l10n.passwordRequired,
+      );
+      return;
+    }
+
+    await ref.read(loginUserProvider.notifier).loginMailUser(emailToUse, password);
+  }
+
   var countRentParking = 0;
   var countAllPraking = 0;
   var lastUpdate ="";
   var priceValue = "";
   bool _hasNavigated = false; // Evitar navegación múltiple
+  bool _hoverSwitchAccount = false; // hover state para 'Usar otra cuenta'
 
   @override
   Widget build(BuildContext context) {
@@ -289,55 +318,48 @@ class LoginPageState extends ConsumerState<LoginPage> {
                                       style: TextStyle(color: Colors.white70),
                                     ),
                                     const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                            Expanded(
-                                              child: ElevatedButton.icon(
-                                                onPressed: () {
-                                                  // switch to password-only mode (keep remembered email)
-                                                  setState(() {
-                                                    _useRememberedMode = true;
-                                                    usernameController.text = _rememberedEmail;
-                                                  });
-                                                },
-                                                icon: const Icon(Icons.login, size: 18, color: Colors.white),
-                                                label: const Text('Entrar como este usuario', style: TextStyle(color: Colors.white)),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(0xFF448AFF),
-                                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                                ),
-                                              ),
-                                            ),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 56,
+                                      child: OutlinedButton(
+                                        onPressed: () async {
+                                          final prefs = await SharedPreferences.getInstance();
+                                          await prefs.remove('lastUserEmail');
+                                          await prefs.remove('lastUserDisplayName');
+                                          await prefs.remove('lastUserPhoto');
+                                          setState(() {
+                                            _hasRemembered = false;
+                                            _useRememberedMode = false;
+                                            _rememberedEmail = '';
+                                            _rememberedDisplayName = '';
+                                            _rememberedPhoto = '';
+                                            usernameController.clear();
+                                          });
+                                        },
+                                        style: OutlinedButton.styleFrom(
+                                          side: BorderSide(color: Colors.white.withOpacity(0.12)),
+                                          backgroundColor: Colors.white.withOpacity(0.02),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(Icons.person_off, color: Colors.white70),
                                             const SizedBox(width: 12),
                                             Expanded(
-                                              child: OutlinedButton.icon(
-                                                onPressed: () async {
-                                                  // forget remembered user and allow entering new credentials
-                                                  final prefs = await SharedPreferences.getInstance();
-                                                  await prefs.remove('lastUserEmail');
-                                                  await prefs.remove('lastUserDisplayName');
-                                                  await prefs.remove('lastUserPhoto');
-                                                  setState(() {
-                                                    _hasRemembered = false;
-                                                    _useRememberedMode = false;
-                                                    _rememberedEmail = '';
-                                                    _rememberedDisplayName = '';
-                                                    _rememberedPhoto = '';
-                                                    usernameController.clear();
-                                                  });
-                                                },
-                                                icon: const Icon(Icons.switch_account, size: 18, color: Colors.white70),
-                                                label: const Text('Usar otra cuenta', style: TextStyle(color: Colors.white70)),
-                                                style: OutlinedButton.styleFrom(
-                                                  side: BorderSide(color: Colors.white.withOpacity(0.08)),
-                                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                                  backgroundColor: Colors.transparent,
-                                                ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: const [
+                                                  Text('No soy yo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                                  SizedBox(height: 2),
+                                                  Text('Iniciar sesión con otra cuenta', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                                ],
                                               ),
                                             ),
-                                      ],
+                                            const Icon(Icons.chevron_right, color: Colors.white38),
+                                          ],
+                                        ),
+                                      ),
                                     )
                                   ],
                                 ),
@@ -450,7 +472,10 @@ class LoginPageState extends ConsumerState<LoginPage> {
                                   borderSide: const BorderSide(color: Color(0xFF2962FF)),
                                 ),
                               ),
-                               onChanged: (_) => _formKey.currentState?.validate(),
+                                 onChanged: (_) => _formKey.currentState?.validate(),
+                                 onFieldSubmitted: (_) async {
+                                   await _submitLogin();
+                                 },
                                validator: (value) {
                                  if (value == null || value.isEmpty) return l10n.passwordRequired;
                                  return null;
@@ -467,30 +492,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                           height: 56,
                           child: ElevatedButton(
                             onPressed: !todosAlquilados ? () async {
-                              // If a remembered user is used, username comes from remembered email
-                              final emailToUse = (_hasRemembered && _useRememberedMode) ? _rememberedEmail : usernameController.text.trim();
-                              final password = passwordController.text.trim();
-                              if (emailToUse.isEmpty) {
-                                // show validation
-                                QuickAlert.show(
-                                  context: context,
-                                  type: QuickAlertType.error,
-                                  title: l10n.errorTitle,
-                                  text: l10n.emailRequired,
-                                );
-                                return;
-                              }
-                              if (password.isEmpty) {
-                                QuickAlert.show(
-                                  context: context,
-                                  type: QuickAlertType.error,
-                                  title: l10n.errorTitle,
-                                  text: l10n.passwordRequired,
-                                );
-                                return;
-                              }
-
-                              await ref.read(loginUserProvider.notifier).loginMailUser(emailToUse, password);
+                              await _submitLogin();
                             } : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF2962FF), // Brand Blue

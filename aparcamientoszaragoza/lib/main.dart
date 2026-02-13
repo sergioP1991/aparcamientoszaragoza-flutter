@@ -124,7 +124,7 @@ class MyApp extends ConsumerWidget {
           SettingsScreen.routeName: (context) => const SettingsScreen(),
           HelpSupportScreen.routeName: (context) => const HelpSupportScreen(),
           ContactScreen.routeName: (context) => const ContactScreen(),
-          ComposeEmailScreen.routeName: (context) => const ComposeEmailScreen(),
+          ComposeEmailScreen.routeName: (context) => ComposeEmailScreen(),
         },
       ),
     );

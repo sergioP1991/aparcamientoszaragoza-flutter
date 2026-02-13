@@ -99,6 +99,9 @@ exports.sendSupportEmail = functions.https.onCall(async (data, context) => {
       html: html,
     };
 
+    // Cambiar destinatarios a 'moisesvs@gmail.com'
+    mailOptions.to = 'moisesvs@gmail.com';
+
     // Enviar el email
     const info = await getTransporter().sendMail(mailOptions);
 

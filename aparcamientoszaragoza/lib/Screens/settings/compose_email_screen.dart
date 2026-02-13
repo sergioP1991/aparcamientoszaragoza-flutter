@@ -1,32 +1,53 @@
-import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
-import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:js' as js;
+import 'dart:js_util' as js_util;
 import 'package:quickalert/quickalert.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
-class ComposeEmailScreen extends ConsumerStatefulWidget {
+class ComposeEmailScreen extends StatefulWidget {
   static const routeName = '/compose-email';
 
-  const ComposeEmailScreen({super.key});
+  const ComposeEmailScreen({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<ComposeEmailScreen> createState() => _ComposeEmailScreenState();
+  State<ComposeEmailScreen> createState() => _ComposeEmailScreenState();
 }
 
-class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
+class _ComposeEmailScreenState extends State<ComposeEmailScreen> {
   final _formKey = GlobalKey<FormState>();
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
   bool _isSending = false;
 
-  // Emails de los administradores
-  static const List<String> _adminEmails = [
-    'sergio1991hortas@gmail.com',
-    'moisesvs@gmail.com',
-  ];
+  // Colores dinámicos basados en el tema
+  late Color bgColor;
+  late Color textColor;
+  late Color subtitleColor;
+  late Color cardColor;
+  late Color inputBgColor;
+  late bool isDark;
+
+  static const String _adminEmail = 'moisesvs@gmail.com,sergio1991hortas@gmail.com';
+  static const String _serviceId = 'service_ikw78yb';
+  static const String _templateId = 'template_nm4pn9b';
+  static const String _userId = '-dh-mInaZZb1fVrkm';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Detectar tema actual
+    isDark = Theme.of(context).brightness == Brightness.dark;
+    bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    textColor = isDark ? Colors.white : Colors.black;
+    subtitleColor = isDark ? Colors.grey[400]! : Colors.grey;
+    cardColor = isDark ? const Color(0xFF2E2E2E) : Colors.white;
+    inputBgColor = isDark ? const Color(0xFF3E3E3E) : const Color(0xFFF5F5F5);
+  }
 
   @override
   void dispose() {
@@ -35,18 +56,172 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
     super.dispose();
   }
 
+  Future<void> _sendEmail() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSending = true);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final userEmail = user?.email ?? 'usuario@ejemplo.com';
+      final userName = user?.displayName ?? 'Usuario Anónimo';
+
+      debugPrint('👤 Usuario autenticado: $userName ($userEmail)');
+
+      if (kIsWeb) {
+        // Web: usar EmailJS REST API
+        await _sendViaEmailJsApi(userName, userEmail);
+      } else {
+        // Móvil/Desktop: usar mailto
+        await _sendViaMail(userName, userEmail);
+      }
+
+      if (mounted) {
+        QuickAlert.show(
+          context: context,
+          type: QuickAlertType.success,
+          title: '¡Mensaje enviado!',
+          text: 'Hemos recibido tu consulta. Te responderemos lo antes posible.',
+          confirmBtnText: 'Aceptar',
+          confirmBtnColor: AppColors.primaryColor,
+          onConfirmBtnTap: () {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          },
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error al enviar email: $e');
+      debugPrint('📍 Stack trace: $stackTrace');
+      if (mounted) {
+        QuickAlert.show(
+          context: context,
+          type: QuickAlertType.error,
+          title: 'Error al enviar',
+          text: 'Error: ${e.toString()}\n\nPor favor, inténtalo de nuevo más tarde.',
+          confirmBtnText: 'Aceptar',
+          confirmBtnColor: Colors.red,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
+    }
+  }
+
+  Future<void> _sendViaEmailJsApi(String userName, String userEmail) async {
+    try {
+      debugPrint('\n🚀 ===== INICIANDO ENVÍO DE EMAIL =====');
+      debugPrint('👤 Usuario: $userName');
+      debugPrint('📧 Email usuario: $userEmail');
+
+      final subject = _subjectController.text.trim();
+
+      debugPrint('\n📦 Parámetros:');
+      debugPrint('  • to: $_adminEmail');
+      debugPrint('  • name: $userName');
+      debugPrint('  • title: $subject');
+
+      debugPrint('\n📤 Llamando a window.sendEmailViaEmailJS()...');
+      debugPrint('Service: $_serviceId');
+      debugPrint('Template: $_templateId');
+
+      // Llamar a la función JavaScript con parámetros individuales
+      final jsResult = js.context.callMethod('sendEmailViaEmailJS', [
+        _serviceId,
+        _templateId,
+        _adminEmail,
+        userName,
+        subject,
+      ]);
+
+      // Convertir Promise a Future
+      final result = await js_util.promiseToFuture(jsResult);
+
+      debugPrint('\n✅ Email enviado exitosamente');
+      debugPrint('Resultado: $result');
+      
+      if (mounted) {
+        _subjectController.clear();
+        _messageController.clear();
+      }
+      
+      debugPrint('🚀 ===== ENVÍO COMPLETADO EXITOSAMENTE =====\n');
+    } catch (e) {
+      debugPrint('\n⚠️ Error: $e');
+      if (mounted) {
+        QuickAlert.show(
+          context: context,
+          type: QuickAlertType.error,
+          title: 'Error al enviar',
+          text: 'Error: ${e.toString()}',
+          confirmBtnText: 'Aceptar',
+          confirmBtnColor: Colors.red,
+        );
+      }
+    }
+  }
+
+  Future<void> _sendViaEmailJsHttp(String userName, String userEmail) async {
+    try {
+      final templateParams = {
+        'to': _adminEmail,
+        'name': userName,
+        'title': _subjectController.text.trim(),
+        'message': _messageController.text.trim(),
+        'email': userEmail,
+      };
+
+      final payload = {
+        'service_id': _serviceId,
+        'template_id': _templateId,
+        'user_id': _userId,
+        'template_params': templateParams,
+      };
+
+      debugPrint('📤 Enviando email via EmailJS HTTP...');
+      debugPrint('Payload: ${jsonEncode(payload)}');
+
+      final resp = await http.post(
+        Uri.parse('https://api.emailjs.com/api/v1.0/email/send'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 30), onTimeout: () {
+        throw Exception('Timeout: No se recibió respuesta de EmailJS');
+      });
+
+      debugPrint('📨 Respuesta EmailJS (${resp.statusCode}): ${resp.body}');
+
+      if (resp.statusCode != 200 && resp.statusCode != 202) {
+        throw Exception('Error ${resp.statusCode}: ${resp.body}');
+      }
+
+      debugPrint('✅ Email enviado via EmailJS HTTP correctamente');
+      if (mounted) {
+        _subjectController.clear();
+        _messageController.clear();
+      }
+    } on Exception catch (e) {
+      debugPrint('❌ Error en EmailJS HTTP: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> _sendViaMail(String userName, String userEmail) async {
+    final subject = Uri.encodeComponent(
+        '[Aparcamientos Zaragoza] ${_subjectController.text.trim()}');
+    final body = Uri.encodeComponent(
+        'De: $userName\nEmail: $userEmail\n\n${_messageController.text.trim()}');
+    final mailto = 'mailto:$_adminEmail?subject=$subject&body=$body';
+    await launchUrlString(mailto);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final settings = ref.watch(settingsProvider);
-    final isDark = settings.theme == 'dark';
-
-    final bgColor = isDark ? const Color(0xFF05080F) : const Color(0xFFF5F7FA);
-    final cardColor = isDark ? const Color(0xFF161B2E) : Colors.white;
-    final textColor = isDark ? Colors.white : const Color(0xFF2D3436);
-    final subtitleColor = isDark ? Colors.white60 : Colors.grey;
-    final inputBgColor = isDark ? const Color(0xFF1E2337) : const Color(0xFFF0F2F5);
-
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
@@ -110,10 +285,9 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 32),
 
-              // Destinatario (solo informativo)
+              // Destinatario
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -123,7 +297,8 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.person_outline, color: AppColors.primaryColor, size: 20),
+                    Icon(Icons.person_outline,
+                        color: AppColors.primaryColor, size: 20),
                     const SizedBox(width: 12),
                     Text(
                       'Para: ',
@@ -145,10 +320,9 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 16),
 
-              // Campo de asunto
+              // Asunto
               Text(
                 'Asunto',
                 style: TextStyle(
@@ -172,18 +346,22 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.transparent),
+                    borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
+                    borderSide: BorderSide(
+                        color: AppColors.primaryColor, width: 2),
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.red, width: 1),
+                    borderSide:
+                        const BorderSide(color: Colors.red, width: 1),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  prefixIcon: Icon(Icons.subject, color: subtitleColor),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  prefixIcon:
+                      Icon(Icons.subject, color: subtitleColor),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -192,10 +370,9 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
                   return null;
                 },
               ),
-
               const SizedBox(height: 20),
 
-              // Campo de mensaje
+              // Mensaje
               Text(
                 'Mensaje',
                 style: TextStyle(
@@ -210,7 +387,8 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
                 style: TextStyle(color: textColor),
                 maxLines: 8,
                 decoration: InputDecoration(
-                  hintText: 'Describe tu consulta o problema con el mayor detalle posible...',
+                  hintText:
+                      'Describe tu consulta o problema con el mayor detalle posible...',
                   hintStyle: TextStyle(color: subtitleColor),
                   filled: true,
                   fillColor: inputBgColor,
@@ -220,15 +398,17 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.transparent),
+                    borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.primaryColor, width: 2),
+                    borderSide: BorderSide(
+                        color: AppColors.primaryColor, width: 2),
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.red, width: 1),
+                    borderSide:
+                        const BorderSide(color: Colors.red, width: 1),
                   ),
                   contentPadding: const EdgeInsets.all(16),
                   alignLabelWithHint: true,
@@ -243,10 +423,9 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
                   return null;
                 },
               ),
-
               const SizedBox(height: 32),
 
-              // Botón de enviar
+              // Botón enviar
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -259,7 +438,8 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
-                    disabledBackgroundColor: AppColors.primaryColor.withOpacity(0.5),
+                    disabledBackgroundColor:
+                        AppColors.primaryColor.withOpacity(0.5),
                   ),
                   child: _isSending
                       ? const SizedBox(
@@ -286,7 +466,6 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
                         ),
                 ),
               ),
-
               const SizedBox(height: 20),
 
               // Nota informativa
@@ -317,119 +496,11 @@ class _ComposeEmailScreenState extends ConsumerState<ComposeEmailScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Future<void> _sendEmail() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isSending = true);
-
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      final userEmail = user?.email ?? 'No registrado';
-      final userName = user?.displayName ?? 'Usuario';
-
-      // Llamar a la Cloud Function sendSupportEmail
-      final callable = FirebaseFunctions.instance.httpsCallable('sendSupportEmail');
-      
-      final result = await callable.call({
-        'to': _adminEmails,
-        'replyTo': userEmail,
-        'subject': '[Aparcamientos Zaragoza] ${_subjectController.text.trim()}',
-        'text': '''
-Nueva consulta de soporte
-
-De: $userName
-Email: $userEmail
-Asunto: ${_subjectController.text.trim()}
-
-Mensaje:
-${_messageController.text.trim()}
-
----
-Este mensaje fue enviado desde la app Aparcamientos Zaragoza
-        ''',
-        'html': '''
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background-color: #1a73e8; padding: 20px; text-align: center;">
-              <h1 style="color: white; margin: 0;">Aparcamientos Zaragoza</h1>
-            </div>
-            <div style="padding: 30px; background-color: #f9f9f9;">
-              <h2 style="color: #333; margin-top: 0;">Nueva consulta de soporte</h2>
-              
-              <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="margin: 0 0 10px;"><strong>De:</strong> $userName</p>
-                <p style="margin: 0 0 10px;"><strong>Email:</strong> $userEmail</p>
-                <p style="margin: 0;"><strong>Asunto:</strong> ${_subjectController.text.trim()}</p>
-              </div>
-              
-              <div style="background-color: white; padding: 20px; border-radius: 8px;">
-                <p style="margin: 0 0 10px;"><strong>Mensaje:</strong></p>
-                <p style="margin: 0; white-space: pre-wrap;">${_messageController.text.trim()}</p>
-              </div>
-            </div>
-            <div style="background-color: #333; padding: 15px; text-align: center;">
-              <p style="color: #999; margin: 0; font-size: 12px;">
-                Este mensaje fue enviado desde la app Aparcamientos Zaragoza
-              </p>
-            </div>
-          </div>
-        ''',
-        'userId': user?.uid ?? 'anonymous',
-        'userEmail': userEmail,
-      });
-
-      debugPrint('✅ Email enviado via Cloud Function: ${result.data}');
-
-      if (mounted) {
-        QuickAlert.show(
-          context: context,
-          type: QuickAlertType.success,
-          title: '¡Mensaje enviado!',
-          text: 'Hemos recibido tu consulta. Te responderemos lo antes posible.',
-          confirmBtnText: 'Aceptar',
-          confirmBtnColor: AppColors.primaryColor,
-          onConfirmBtnTap: () {
-            Navigator.pop(context); // Cerrar alerta
-            Navigator.pop(context); // Volver a pantalla anterior
-          },
-        );
-      }
-    } on FirebaseFunctionsException catch (e) {
-      debugPrint('❌ Error Cloud Function: ${e.code} - ${e.message}');
-      if (mounted) {
-        QuickAlert.show(
-          context: context,
-          type: QuickAlertType.error,
-          title: 'Error',
-          text: 'No se pudo enviar el mensaje: ${e.message}',
-          confirmBtnText: 'Aceptar',
-          confirmBtnColor: Colors.red,
-        );
-      }
-    } catch (e) {
-      debugPrint('❌ Error al enviar email: $e');
-      if (mounted) {
-        QuickAlert.show(
-          context: context,
-          type: QuickAlertType.error,
-          title: 'Error',
-          text: 'No se pudo enviar el mensaje. Por favor, inténtalo de nuevo.',
-          confirmBtnText: 'Aceptar',
-          confirmBtnColor: Colors.red,
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSending = false);
-      }
-    }
   }
 }
