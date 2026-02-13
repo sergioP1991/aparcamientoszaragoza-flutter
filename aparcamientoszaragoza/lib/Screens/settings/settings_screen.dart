@@ -1,6 +1,5 @@
 import 'package:aparcamientoszaragoza/Screens/forgetPassword/ForgetPassword_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/help_support_screen.dart';
-import 'package:aparcamientoszaragoza/Screens/admin/AdminPlazasScreen.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
 import 'package:aparcamientoszaragoza/Models/user_settings.dart';
@@ -18,8 +17,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  int _versionTapCount = 0;
-  static const int _adminTapThreshold = 5;
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
@@ -35,26 +32,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: GestureDetector(
-          onTap: () {
-            setState(() {
-              _versionTapCount++;
-            });
-            if (_versionTapCount >= _adminTapThreshold) {
-              _versionTapCount = 0;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('🔧 Panel Admin desbloqueado')),
-              );
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminPlazasScreen()),
-              );
-            }
-          },
-          child: Text(
-            l10n.settingsTitle,
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
+        title: Text(
+          l10n.settingsTitle,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),

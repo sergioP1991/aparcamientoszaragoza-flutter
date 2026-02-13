@@ -519,11 +519,6 @@ class HomePageState extends ConsumerState<HomePage> {
 
         List<Garaje> filteredList = List.from(data.listGarajes);
 
-        // Always filter out my own garages in the map view to be double sure
-        if (stateHome == _ScafollState.localizacion) {
-          filteredList = filteredList.where((g) => g.propietario != data.user?.uid).toList();
-        }
-
         // Search Filter
         if (_searchQuery.isNotEmpty) {
           filteredList = filteredList.where((g) => 

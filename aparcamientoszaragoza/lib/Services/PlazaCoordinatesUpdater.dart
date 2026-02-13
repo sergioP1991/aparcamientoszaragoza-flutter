@@ -42,6 +42,16 @@ class PlazaCoordinatesUpdater {
     
     // San José
     'San José': {'latitud': 41.6380, 'longitud': -0.9050},
+    
+    // Nuevas direcciones detectadas en Firestore
+    'Plaza 1 direccion Moises': {'latitud': 41.6450, 'longitud': -0.8920},
+    'direccion3': {'latitud': 41.6600, 'longitud': -0.8850},
+    'Plaza2': {'latitud': 41.6550, 'longitud': -0.8900},
+    'Direccion Sergio': {'latitud': 41.6480, 'longitud': -0.8870},
+    'direccion7': {'latitud': 41.6520, 'longitud': -0.8930},
+    'direccion': {'latitud': 41.6470, 'longitud': -0.8880},
+    'nueva': {'latitud': 41.6490, 'longitud': -0.8910},
+    'Calle Ibon de Catieras': {'latitud': 41.6320, 'longitud': -0.9040},
   };
 
   /// Actualiza todas las coordenadas de las plazas en Firestore
