@@ -18,7 +18,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Say hello
-        run: echo "### Hello Flutter CI! ###"
+        run: |
+          echo "### Hello Flutter CI! ###"
 
       - name: Configurate JAVA
         uses: actions/setup-java@v4

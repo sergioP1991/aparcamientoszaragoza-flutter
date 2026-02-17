@@ -30,7 +30,8 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: Run a one-line script
-        run: echo ### Hello Flutter CI! ###
+        run: |
+          echo "### Hello Flutter CI! ###"
 
       # Runs a JAVA
       - name: Configurate JAVA
