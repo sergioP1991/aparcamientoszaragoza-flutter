@@ -2,8 +2,6 @@
 
 name: Flutter APK CI
 
-name: Flutter APK CI
-
 on:
   push:
     branches: [ "main", "master" ]
@@ -72,5 +70,4 @@ jobs:
         with:
           name: release-apk
           path: ${{ env.PROJECT_DIR }}/build/app/outputs/flutter-apk/app-release.apk
-        working-directory: ./aparcamientoszaragoza
 
