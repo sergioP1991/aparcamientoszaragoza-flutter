@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aparcamientoszaragoza/Screens/welcome_screen.dart';
-import 'package:aparcamientoszaragoza/Screens/home/home_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/login/login_screen.dart';
 
-/// Pantalla que decide si mostrar el Welcome o ir directamente al Home
-/// basándose en si hay usuario recordado
+/// Pantalla que decide si mostrar el Welcome o el Login
+/// - Welcome: Si no hay usuario recordado
+/// - Login: Si hay usuario recordado (permite cambiar de usuario o continuar)
+/// - NO va automáticamente al Home (el login/firebase auth lo maneja)
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({Key? key}) : super(key: key);
 
@@ -40,9 +42,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
           );
         }
 
-        // Si hay usuario recordado, ir al home
+        // Si hay usuario recordado, ir a login (para poder cambiar o continuar)
+        // NO ir automáticamente al home (eso lo maneja Firebase auth)
         if (snapshot.hasData && snapshot.data == true) {
-          return HomePage();
+          return LoginPage();
         }
 
         // Si no hay usuario recordado, mostrar welcome

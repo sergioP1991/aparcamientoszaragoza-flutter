@@ -1,36 +1,34 @@
-/// Servicio para generar URLs de imágenes únicas y variadas para cada plaza
+/// Servicio para generar URLs de imágenes únicas y variadas para cada plaza de garaje
 class PlazaImageService {
-  /// Lista de proveedores de imágenes con diferentes estilos
+  /// Lista de proveedores de imágenes especializados en garajes y plazas de aparcamiento
   static const List<String> _imageProviders = [
-    'picsum.photos',      // Fotos random
-    'unsplash.com',       // Fotos de calidad
-    'loremflickr.com',    // Imágenes tematizadas
+    'loremflickr_parking',      // Imágenes de parkings y plazas
+    'loremflickr_garage',       // Imágenes de garajes
+    'loremflickr_parking_lot',  // Imágenes de lotes de estacionamiento
   ];
 
   /// Genera una URL de imagen única basada en el ID de plaza
-  /// Asegura variedad usando diferentes proveedores
+  /// Asegura que todas las imágenes sean de plazas de garaje y estacionamiento
   static String getImageUrl(int plazaId, {int width = 400, int height = 300}) {
     // Usar diferente proveedor según el ID para variedad
     final providerIndex = plazaId % _imageProviders.length;
     
     switch (providerIndex) {
       case 0:
-        // picsum.photos - amplia variedad, siempre diferente
-        return 'https://picsum.photos/seed/garage_$plazaId/$width/$height?random=${plazaId * 12345}';
+        // loremflickr con keyword "parking" - plazas de estacionamiento
+        return 'https://loremflickr.com/$width/$height/parking,garage?lock=${plazaId * 12345}';
       
       case 1:
-        // loremflickr - imágenes tematizadas por palabra clave
-        final keywords = ['parking', 'garage', 'car', 'vehicle', 'street', 'city'];
-        final keyword = keywords[plazaId % keywords.length];
-        return 'https://loremflickr.com/$width/$height/$keyword?random=${plazaId * 12345}';
+        // loremflickr con keyword "garage" - garajes
+        return 'https://loremflickr.com/$width/$height/garage,parking?lock=${plazaId * 23456}';
       
       case 2:
-        // Alternativa: usar diferentes seeds de picsum
-        return 'https://picsum.photos/seed/park_${plazaId}_space/$width/$height?random=${plazaId * 67890}';
+        // loremflickr con keyword "parking lot" - lotes de estacionamiento
+        return 'https://loremflickr.com/$width/$height/parking,lot,space?lock=${plazaId * 34567}';
       
       default:
-        // Fallback a picsum por defecto
-        return 'https://picsum.photos/seed/garage_$plazaId/$width/$height';
+        // Fallback a parking
+        return 'https://loremflickr.com/$width/$height/parking,garage?lock=${plazaId * 12345}';
     }
   }
 

@@ -107,6 +107,10 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
       // Primero actualizar el estado a null para evitar navegación automática
       state = const AsyncData(null);
       
+      // NO limpiar SharedPreferences - mantener usuario recordado para mostrar en login
+      // El usuario recordado permite que el LoginScreen muestre "¿No eres tú?"
+      // pero NO causa entrada automática al home (eso lo controla AuthWrapper)
+      
       // Cerrar sesión de Google (disconnect para eliminar tokens)
       try {
         await _googleSignIn.disconnect();
