@@ -189,42 +189,44 @@ class HomePageState extends ConsumerState<HomePage> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppColors.searchBackground,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: TextField(
-                style: const TextStyle(color: Colors.white),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  icon: const Icon(Icons.search, color: Colors.white54),
-                  hintText: AppLocalizations.of(context)!.searchHint,
-                  hintStyle: const TextStyle(color: Colors.white54),
-                  border: InputBorder.none,
-                ),
-              ),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.searchBackground,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
+          ],
+        ),
+        child: TextField(
+          style: const TextStyle(color: Colors.white, fontSize: 16),
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 22),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                    onPressed: () {
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                  )
+                : null,
+            hintText: AppLocalizations.of(context)!.searchHint,
+            hintStyle: const TextStyle(color: Colors.white54, fontSize: 15),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 14),
           ),
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.searchBackground,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Icon(Icons.tune, color: Colors.white),
-          ),
-        ],
+        ),
       ),
     );
   }
