@@ -2,46 +2,32 @@
 
 name: Flutter APK CI
 
-# Controls when the workflow will run
+name: Flutter APK CI
+
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: ./aparcamientoszaragoza
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: Checkout repository Flutter
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo ### Hello Flutter CI! ###
+      - name: Say hello
+        run: echo "### Hello Flutter CI! ###"
 
-      # Runs a JAVA
       - name: Configurate JAVA
         uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'temurin'
 
-      # Flutter actions setup
       - name: Flutter actions setup
         uses: subosito/flutter-action@v2
         with:
@@ -50,42 +36,31 @@ jobs:
       - name: Flutter doctor (diagnose)
         run: flutter doctor -v
 
-      # Flutter change directory
       - name: Flutter No interactions
         run: flutter config --no-cli-animations
+        working-directory: ./aparcamientoszaragoza
 
-      # Flutter LS
-      - name: Flutter LIST
+      - name: List repo root
         run: ls -la
 
-      # Flutter PWD
-      - name: Flutter PWD
+      - name: Print working dir
         run: pwd
 
-      # Flutter pub get
-      - name: Flutter GET
+      - name: Flutter pub get
         run: flutter pub get
+        working-directory: ./aparcamientoszaragoza
 
-      # Flutter format
-      #- name: Flutter FORMAT
-      #  run: flutter format --set-exit-if-changed
+      - name: Flutter build apk
+        run: flutter build apk --release
+        working-directory: ./aparcamientoszaragoza
 
-      # Flutter ANALYZE
-      #- name: Flutter ANALYZE
-      #  run: flutter analyze .
+      - name: List apk output
+        run: ls -la ./aparcamientoszaragoza/build/app/outputs/flutter-apk || true
 
-      # Flutter BUILD
-      - name: Flutter BUILD
-        run: flutter build apk
-
-      # Flutter LS
-      - name: Flutter LIST
-        run: ls -la build/app/outputs/flutter-apk
-
-      # Flutter deploy APK
-      - name: Flutter DEPLOY APK
-        uses: actions/upload-artifact@v4.3.3
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: ./aparcamientoszaragoza/build/app/outputs/flutter-apk/app-release.apk
+        working-directory: ./aparcamientoszaragoza
 
