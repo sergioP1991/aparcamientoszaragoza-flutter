@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:quickalert/models/quickalert_type.dart';
 import 'package:quickalert/widgets/quickalert_dialog.dart';
+import 'package:aparcamientoszaragoza/widgets/network_image_loader.dart';
 
 import '../../Common_widgets/gradient_background.dart';
 import '../../Components/app_text_form_field.dart';
@@ -289,16 +290,12 @@ class LoginPageState extends ConsumerState<LoginPage> {
                                       return Image.asset('assets/default_icon.png', fit: BoxFit.cover);
                                     }
 
-                                    // Para evitar problemas CORS en web, usar un proxy público si es necesario
-                                    String photoUrl = _rememberedPhoto;
-                                    if (kIsWeb && !_rememberedPhoto.contains('api.allorigins.win')) {
-                                      photoUrl = 'https://api.allorigins.win/raw?url=${Uri.encodeFull(_rememberedPhoto)}';
-                                    }
-
-                                    return Image.network(
-                                      photoUrl,
+                                    return NetworkImageLoader(
+                                      imageUrl: _rememberedPhoto,
+                                      width: 86,
+                                      height: 86,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Image.asset('assets/default_icon.png', fit: BoxFit.cover),
+                                      fallbackAsset: 'assets/default_icon.png',
                                     );
                                   }),
                                 ),

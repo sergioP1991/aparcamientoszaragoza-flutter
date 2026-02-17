@@ -10,6 +10,7 @@ import 'package:aparcamientoszaragoza/Screens/rent/rent_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart';
 import 'package:aparcamientoszaragoza/Screens/registerGarage/providers/RegisterGarageProviders.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
+import 'package:aparcamientoszaragoza/widgets/network_image_loader.dart';
 
 class GarageCard extends StatelessWidget {
   final Garaje item;
@@ -61,30 +62,15 @@ class GarageCard extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                   ClipRRect(
+                  ClipRRect(
                     borderRadius: BorderRadius.circular(15),
-                    child: (item.imagen != null && item.imagen!.isNotEmpty)
-                        ? (item.imagen!.startsWith('assets/')
-                            ? Image.asset(
-                                item.imagen!,
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Image.asset("assets/garaje2.jpeg", fit: BoxFit.cover),
-                              )
-                            : Image.network(
-                                item.imagen!,
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Image.asset("assets/garaje2.jpeg", fit: BoxFit.cover),
-                              ))
-                        : Image.asset(
-                            "assets/garaje2.jpeg",
-                            width: 120,
-                            height: 120,
-                            fit: BoxFit.cover,
-                          ),
+                    child: NetworkImageLoader(
+                      imageUrl: item.imagen ?? '',
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.cover,
+                      fallbackAsset: 'assets/garaje2.jpeg',
+                    ),
                   ),
                   Positioned(
                     top: 8,

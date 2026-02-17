@@ -27,6 +27,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' as provider;
 import './Screens/welcome_screen.dart';
+import './Screens/auth_wrapper.dart';
 import './Models/auth.dart';
 import 'Screens/forgetPassword/ForgetPassword_screen.dart';
 import 'Screens/login/login_screen.dart';
@@ -100,7 +101,7 @@ class MyApp extends ConsumerWidget {
           Locale('es', ''),
           Locale('en', ''),
         ],
-        home: WelcomeScreen(),
+        home: const AuthWrapper(),
         routes: {
           WelcomeScreen.routeName: (context) => WelcomeScreen(),
           TutorialScreen.routeName: (context) => const TutorialScreen(),

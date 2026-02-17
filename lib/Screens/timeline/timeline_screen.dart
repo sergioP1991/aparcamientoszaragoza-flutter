@@ -1,6 +1,6 @@
 import 'package:aparcamientoszaragoza/Models/history.dart';
 import 'package:aparcamientoszaragoza/Screens/detailsGarage/detailsGarage_screen.dart';
-import 'package:aparcamientoszaragoza/Screens/Timeline/providers/ActivityProvider.dart';
+import 'package:aparcamientoszaragoza/Screens/timeline/providers/ActivityProvider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

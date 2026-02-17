@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:aparcamientoszaragoza/widgets/network_image_loader.dart';
 
 Widget bodyLocation(BuildContext context, WidgetRef ref, LocationState locationState, AsyncValue<HomeData?> homeData, [Function(int)? onGarageTap]) {
   return homeData.when(
@@ -258,32 +259,13 @@ class _MapViewState extends State<MapView> {
                       const SizedBox(width: 16),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: (garage.imagen != null && garage.imagen!.isNotEmpty)
-                            ? (garage.imagen!.startsWith('assets/')
-                                ? Image.asset(
-                                    garage.imagen!,
-                                    width: 110,
-                                    height: 110,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Image.network(
-                                    garage.imagen!,
-                                    width: 110,
-                                    height: 110,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Image.asset(
-                                      'assets/garaje2.jpeg',
-                                      width: 110,
-                                      height: 110,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ))
-                            : Image.asset(
-                                'assets/garaje2.jpeg',
-                                width: 110,
-                                height: 110,
-                                fit: BoxFit.cover,
-                              ),
+                        child: NetworkImageLoader(
+                          imageUrl: garage.imagen ?? '',
+                          width: 110,
+                          height: 110,
+                          fit: BoxFit.cover,
+                          fallbackAsset: 'assets/garaje2.jpeg',
+                        ),
                       ),
                     ],
                   ),

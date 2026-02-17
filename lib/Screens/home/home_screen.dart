@@ -1,4 +1,4 @@
-import 'package:aparcamientoszaragoza/Screens/Timeline/timeline_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/timeline/timeline_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/ConfigurationProvider.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/LocationProvider.dart';

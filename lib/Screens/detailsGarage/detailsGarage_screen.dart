@@ -1,6 +1,6 @@
 import 'package:aparcamientoszaragoza/Models/favorite.dart';
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
-import 'package:aparcamientoszaragoza/Screens/Timeline/timeline_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/timeline/timeline_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/rent_screen.dart' hide Text;
