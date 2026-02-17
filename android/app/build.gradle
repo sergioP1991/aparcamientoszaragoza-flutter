@@ -47,7 +47,7 @@ android {
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         def minSdkProp = localProperties.getProperty('flutter.minSdkVersion')
         def targetSdkProp = localProperties.getProperty('flutter.targetSdkVersion')
-        def minSdk = (minSdkProp != null && minSdkProp.trim() != '') ? minSdkProp.toInteger() : 21
+        def minSdk = (minSdkProp != null && minSdkProp.trim() != '') ? minSdkProp.toInteger() : 23
         def targetSdk = (targetSdkProp != null && targetSdkProp.trim() != '') ? targetSdkProp.toInteger() : 33
         minSdkVersion minSdk
         targetSdkVersion targetSdk
