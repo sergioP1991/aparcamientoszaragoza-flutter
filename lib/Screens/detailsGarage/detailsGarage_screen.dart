@@ -1,5 +1,6 @@
 import 'package:aparcamientoszaragoza/Models/favorite.dart';
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
+import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Screens/timeline/timeline_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
@@ -120,7 +121,7 @@ class DetailsGarajePage extends ConsumerWidget {
                   ? (plaza.imagen!.startsWith('assets/') 
                       ? AssetImage(plaza.imagen!)
                       : NetworkImage(plaza.imagen!) as ImageProvider)
-                  : const AssetImage('assets/garaje2.jpeg'),
+                  : NetworkImage(PlazaImageService.getLargeUrl(plaza.idPlaza ?? 0)) as ImageProvider,
               fit: BoxFit.cover,
             ),
           ),

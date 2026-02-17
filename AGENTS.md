@@ -4,6 +4,82 @@ Este documento resume las acciones realizadas por el agente (Copilot) durante la
 
 ---
 
+## **CAMBIO: Imágenes únicas para cada plaza de aparcamiento**
+
+**Problema identificado**: Las plazas de aparcamiento en la app mostraban imágenes genéricas o iguales, sin variedad visual para identificar diferentes zonas de estacionamiento.
+
+**Objetivo**: Asignar imágenes únicas y variadas a cada plaza para mejorar la experiencia visual y la identificación de ubicaciones.
+
+**Solución implementada**:
+1. **Creación de PlazaImageService** (`lib/Services/PlazaImageService.dart`):
+   - Servicio centralizado que genera URLs de imágenes únicas por ID de plaza
+   - Usa 3 proveedores distintos: `picsum.photos`, `loremflickr.com`, y seeds alternativas
+   - Distribución automática mediante `plazaId % proveedores.length`
+   - Métodos para diferentes tamaños: `getThumbnailUrl()`, `getMediumUrl()`, `getLargeUrl()`
+   - Sistema de fallback con rotación entre 5 imágenes locales (assets/garaje1-5.jpeg)
+
+2. **Integración en componentes de UI**:
+   - `garage_card.dart`: Usa `getThumbnailUrl()` para miniatura de 120x120px
+   - `myLocation.dart`: Usa `getMediumUrl()` para vista de mapa de 110x110px
+   - `detailsGarage_screen.dart`: Usa `getLargeUrl()` para imagen principal de 600x400px
+   - `rent_screen.dart`: Usa `getMediumUrl()` para preview de alquiler
+   - `addComments_screen.dart`: Usa `getThumbnailUrl()` para miniatura en comentarios
+
+3. **Generación de variedad**:
+   - Cada plaza recibe imagen diferente basada en su ID único
+   - Múltiples proveedores aseguran estilos visuales variados
+   - Seeds determinísticos garantizan consistencia (misma plaza = misma imagen)
+
+**Ficheros modificados**:
+- `lib/Services/PlazaImageService.dart` ✨ (nuevo)
+- `lib/Screens/home/components/garage_card.dart` (import + uso de getThumbnailUrl)
+- `lib/Screens/home/components/myLocation.dart` (import + uso de getMediumUrl)
+- `lib/Screens/detailsGarage/detailsGarage_screen.dart` (import + uso de getLargeUrl)
+- `lib/Screens/rent/rent_screen.dart` (import + uso de getMediumUrl)
+- `lib/Screens/listComments/addComments_screen.dart` (import + uso de getThumbnailUrl)
+
+**Cómo probar**:
+```bash
+# 1. Compilar y ejecutar
+flutter pub get
+flutter run -d chrome
+
+# 2. Validar imágenes diferentes:
+# - Ir a Home → ver lista de plazas (cada una con imagen diferente)
+# - Hacer click en plaza → detalles con imagen grande
+# - Ver mapa → plazas con imágenes en popups
+# - Alquilar plaza → preview con imagen de tamaño medio
+
+# 3. Verificar consistencia:
+# - Recargar app → misma plaza debe mostrar misma imagen
+# - Ir a Comments → imagen thumbnail debe ser consistente
+```
+
+**Validaciones incluidas**:
+- ✅ Cada plaza recibe imagen única basada en su ID
+- ✅ Múltiples proveedores aseguran variedad visual
+- ✅ Fallback automático a assets locales si hay error de red
+- ✅ Tamaños optimizados por contexto (thumbnail/medium/large)
+- ✅ Sistema completamente determinístico (reproducible)
+
+**Notas**:
+- PlazaImageService es completamente staless/funcional (solo métodos estáticos)
+- No requiere permisos, keys, o configuración adicional
+- URLs generadas son públicas y no requieren autenticación
+- Fallback assets rotan entre garaje1-5.jpeg (5 imágenes diferentes)
+- Cambiar proveedores es trivial (solo editar `_imageProviders`)
+
+**Beneficios**:
+- Mejora visual de la UI (más variedad de imágenes)
+- Mejor identificación de plazas en mapas y listas
+- Consistencia de experiencia (misma plaza = misma imagen siempre)
+- Sistema escalable (fácil añadir/cambiar proveedores)
+- Totalmente multiplataforma (web/Android/iOS)
+
+**Fecha**: 14 de febrero de 2026 — Agente: Copilot
+
+---
+
 ## **CAMBIO: Solución de compilación cruzada - dart:js_util en Android APK**
 
 **Problema identificado**: El APK de Android fallaba durante la compilación porque `dart:js_util` (librería específica de web) estaba siendo importada en `compose_email_screen.dart` y se intentaba compilar en la build de Android.

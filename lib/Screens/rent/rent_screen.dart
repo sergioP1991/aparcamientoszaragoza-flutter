@@ -1,6 +1,7 @@
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Models/normal.dart';
 import 'package:aparcamientoszaragoza/Models/especial.dart';
+import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/providers/RentProvider.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -140,10 +141,16 @@ class _RentPageState extends ConsumerState<RentPage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.network(
-              "https://picsum.photos/seed/${plaza.idPlaza}/200/200",
+              PlazaImageService.getMediumUrl(plaza.idPlaza ?? 0),
               width: 80,
               height: 80,
               fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                width: 80,
+                height: 80,
+                color: Colors.grey,
+                child: const Icon(Icons.image_not_supported, color: Colors.white, size: 24),
+              ),
             ),
           ),
         ],

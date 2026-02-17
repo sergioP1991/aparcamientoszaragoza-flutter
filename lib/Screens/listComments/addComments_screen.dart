@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:aparcamientoszaragoza/Models/comment.dart';
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
+import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/providers/CommentsProviders.dart';
@@ -226,10 +227,16 @@ class _AddCommentsState extends ConsumerState<AddComments> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
-                  "https://picsum.photos/seed/${plaza.idPlaza}/100/100",
+                  PlazaImageService.getThumbnailUrl(plaza.idPlaza ?? 0),
                   width: 45,
                   height: 45,
                   fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: 45,
+                    height: 45,
+                    color: Colors.grey,
+                    child: const Icon(Icons.image_not_supported, color: Colors.white, size: 20),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),

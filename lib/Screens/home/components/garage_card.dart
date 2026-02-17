@@ -11,6 +11,7 @@ import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart
 import 'package:aparcamientoszaragoza/Screens/registerGarage/providers/RegisterGarageProviders.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:aparcamientoszaragoza/widgets/network_image_loader.dart';
+import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 
 class GarageCard extends StatelessWidget {
   final Garaje item;
@@ -65,11 +66,11 @@ class GarageCard extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(15),
                     child: NetworkImageLoader(
-                      imageUrl: item.imagen ?? '',
+                      imageUrl: item.imagen ?? PlazaImageService.getThumbnailUrl(item.idPlaza ?? 0),
                       width: 120,
                       height: 120,
                       fit: BoxFit.cover,
-                      fallbackAsset: 'assets/garaje2.jpeg',
+                      fallbackAsset: PlazaImageService.getFallbackAsset(item.idPlaza ?? 0),
                     ),
                   ),
                   Positioned(

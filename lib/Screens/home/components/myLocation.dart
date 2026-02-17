@@ -2,6 +2,7 @@ import 'package:aparcamientoszaragoza/ModelsUI/homeData.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/LocationProvider.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
+import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Screens/detailsGarage/detailsGarage_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
@@ -260,11 +261,11 @@ class _MapViewState extends State<MapView> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
                         child: NetworkImageLoader(
-                          imageUrl: garage.imagen ?? '',
+                          imageUrl: garage.imagen ?? PlazaImageService.getMediumUrl(garage.idPlaza ?? 0),
                           width: 110,
                           height: 110,
                           fit: BoxFit.cover,
-                          fallbackAsset: 'assets/garaje2.jpeg',
+                          fallbackAsset: PlazaImageService.getFallbackAsset(garage.idPlaza ?? 0),
                         ),
                       ),
                     ],
