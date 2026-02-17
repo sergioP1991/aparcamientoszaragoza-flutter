@@ -48,10 +48,20 @@ jobs:
       - name: Flutter doctor (diagnose)
         run: flutter doctor -v
 
+      - name: Detect Flutter project directory
+        id: detect_project
+        run: |
+          if [ -d "./aparcamientoszaragoza" ]; then echo "PROJECT_DIR=./aparcamientoszaragoza" >> $GITHUB_ENV
+          elif [ -f "pubspec.yaml" ]; then echo "PROJECT_DIR=." >> $GITHUB_ENV
+          else
+            found=$(find . -maxdepth 3 -type f -name pubspec.yaml | head -n1 | xargs -I{} dirname {}) || true
+            if [ -n "$found" ]; then echo "PROJECT_DIR=$found" >> $GITHUB_ENV; else echo "PROJECT_DIR=." >> $GITHUB_ENV; fi
+          fi
+
       # Flutter change directory
       - name: Flutter No interactions
         run: flutter config --no-cli-animations
-        working-directory: ./aparcamientoszaragoza
+        working-directory: ${{ env.PROJECT_DIR }}
 
       # Flutter LS
       - name: Flutter LIST (repo root)
@@ -64,7 +74,7 @@ jobs:
       # Flutter pub get
       - name: Flutter GET
         run: flutter pub get
-        working-directory: ./aparcamientoszaragoza
+        working-directory: ${{ env.PROJECT_DIR }}
 
       # Flutter format
       #- name: Flutter FORMAT
@@ -77,7 +87,7 @@ jobs:
       # Flutter BUILD
       - name: Flutter BUILD
         run: flutter build web --release --base-href "/aparcamientoszaragoza-flutter/"
-        working-directory: ./aparcamientoszaragoza
+        working-directory: ${{ env.PROJECT_DIR }}
 
       #- name: Deploy Web to Github Pages
       #  uses: bluefireteam/flutter-gh-pages@v7
@@ -89,7 +99,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./aparcamientoszaragoza/build/web
+          publish_dir: ${{ env.PROJECT_DIR }}/build/web
           force_orphan: true
           user_name: 'github-ci[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
