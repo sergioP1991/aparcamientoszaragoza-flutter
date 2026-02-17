@@ -35,9 +35,10 @@ jobs:
 
       # Runs a JAVA
       - name: Configurate JAVA
+        id: setup-java
         uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: '17'
           distribution: 'temurin'
 
       # Flutter actions setup
