@@ -2,9 +2,9 @@ name: Docker Image to Google Cloud
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main", "master" ]
 
 env:
 

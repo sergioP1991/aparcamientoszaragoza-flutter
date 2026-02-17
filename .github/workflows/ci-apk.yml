@@ -6,9 +6,9 @@ name: Flutter APK CI
 on:
   # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "master"]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main", "master" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -36,16 +36,19 @@ jobs:
 
       # Runs a JAVA
       - name: Configurate JAVA
-        uses: actions/setup-java@v4.2.1
+        uses: actions/setup-java@v4
         with:
-          java-version: '19'
-          distribution: 'zulu' 
+          java-version: '11'
+          distribution: 'temurin'
 
       # Flutter actions setup
       - name: Flutter actions setup
-        uses: subosito/flutter-action@v1
+        uses: subosito/flutter-action@v2
         with:
-          channel: 'beta'
+          channel: 'stable'
+
+      - name: Flutter doctor (diagnose)
+        run: flutter doctor -v
 
       # Flutter change directory
       - name: Flutter No interactions
