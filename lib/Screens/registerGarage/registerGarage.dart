@@ -290,7 +290,15 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
               const SizedBox(height: 16),
               _buildMapPreview(l10n),
               const SizedBox(height: 25),
-              
+              Text(
+                l10n.manualLocationHint,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(child: _buildCoordsField(_latitudController, "41.6488")),
@@ -460,8 +468,6 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
             missingField = l10n.municipioLabel;
           } else if (_selectedCP == null) {
             missingField = l10n.cpLabel;
-          } else if (_latitudController.text.isEmpty || _longitudController.text.isEmpty) {
-            missingField = l10n.gpsField;
           } else if (_largoController.text.trim().isEmpty) {
             missingField = l10n.lengthLabel;
           } else if (_anchoController.text.trim().isEmpty) {

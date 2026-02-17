@@ -339,6 +339,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get getGps => 'Get GPS';
 
   @override
+  String get manualLocationHint =>
+      'You can enter coordinates manually. Use format: Latitude (41.6488), Longitude (-0.8891)';
+
+  @override
   String get measuresSection => 'MEASURES & LEVEL';
 
   @override

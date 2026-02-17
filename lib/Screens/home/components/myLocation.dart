@@ -38,7 +38,7 @@ class MapView extends StatefulWidget {
 class _MapViewState extends State<MapView> {
   GoogleMapController? _mapController;
   Garaje? _selectedGarage;
-  final DraggableScrollableController _sheetController = DraggableScrollableController();
+  bool _sheetOpen = false;
 
   final String _darkMapStyle = '''
 [
@@ -84,11 +84,8 @@ class _MapViewState extends State<MapView> {
         ),
         onTap: () {
           if (garage.propietario == widget.currentUserId) return; // Disable for owner
-          
           print('DEBUG: Marker tapped for garage ${garage.idPlaza}');
-          setState(() {
-            _selectedGarage = garage;
-          });
+          _openGarageSheet(garage);
         },
       );
     }).toSet();
@@ -135,210 +132,212 @@ class _MapViewState extends State<MapView> {
           },
           padding: const EdgeInsets.only(top: 140), 
         ),
-        
-        // Layer Button
-        Positioned(
-          bottom: 120,
-          right: 20,
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.darkBlue.withOpacity(0.9),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4)),
-              ],
-            ),
-            child: const Icon(Icons.layers_outlined, color: Colors.white, size: 24),
-          ),
-        ),
 
-        // Bottom Details Sheet
-        if (_selectedGarage != null)
-          SizedBox.expand(
-            child: _buildDraggableSheet(),
-          ),
+        // Bottom Details Sheet handled via modal bottom sheet
       ],
     );
   }
 
   Widget _buildDraggableSheet() {
-    print('DEBUG: Building sheet for ${_selectedGarage?.idPlaza}');
-    return DraggableScrollableSheet(
-      key: ValueKey(_selectedGarage?.idPlaza), // Force rebuild when garage changes
-      controller: _sheetController,
-      initialChildSize: 0.45,
-      minChildSize: 0.2,
-      maxChildSize: 0.6,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: AppColors.darkBlue,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black45,
-                blurRadius: 20,
-                offset: Offset(0, -5),
-              ),
-            ],
-          ),
-          child: ListView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(24),
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
+    // Deprecated: inline draggable sheet removed. Use modal bottom sheet instead.
+    return const SizedBox.shrink();
+  }
+
+  void _openGarageSheet(Garaje garage) async {
+    if (_sheetOpen) {
+      Navigator.of(context).pop();
+      _sheetOpen = false;
+      await Future.delayed(const Duration(milliseconds: 200));
+    }
+
+    _selectedGarage = garage;
+    _sheetOpen = true;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.45,
+          minChildSize: 0.2,
+          maxChildSize: 0.6,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: AppColors.darkBlue,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black45,
+                    blurRadius: 20,
+                    offset: Offset(0, -5),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 24),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(24),
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildBadge(AppLocalizations.of(context)!.availableLabel, AppColors.accentGreen),
-                            const SizedBox(width: 8),
-                            _buildRating("4.8"),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _selectedGarage?.direccion ?? AppLocalizations.of(context)!.unknownAddress,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on, color: Colors.white54, size: 16),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                "${_selectedGarage?.direccion}, Zaragoza",
-                                style: const TextStyle(color: Colors.white54, fontSize: 14),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                            Row(
+                              children: [
+                                _buildBadge(AppLocalizations.of(context)!.availableLabel, AppColors.accentGreen),
+                                const SizedBox(width: 8),
+                                _buildRating("4.8"),
+                              ],
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
+                            const SizedBox(height: 12),
                             Text(
-                              "${_selectedGarage?.precio.toStringAsFixed(2)}€",
+                              garage.direccion ?? AppLocalizations.of(context)!.unknownAddress,
                               style: const TextStyle(
-                                color: AppColors.primaryColor,
-                                fontSize: 28,
+                                color: Colors.white,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 4, left: 4),
-                              child: Text(
-                                AppLocalizations.of(context)!.perHourLabel,
-                                style: const TextStyle(color: Colors.white54, fontSize: 14),
-                              ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, color: Colors.white54, size: 16),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    "${garage.direccion}, Zaragoza",
+                                    style: const TextStyle(color: Colors.white54, fontSize: 14),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  "${garage.precio.toStringAsFixed(2)}€",
+                                  style: const TextStyle(
+                                    color: AppColors.primaryColor,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 4, left: 4),
+                                  child: Text(
+                                    AppLocalizations.of(context)!.perHourLabel,
+                                    style: const TextStyle(color: Colors.white54, fontSize: 14),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 16),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: (garage.imagen != null && garage.imagen!.isNotEmpty)
+                            ? (garage.imagen!.startsWith('assets/')
+                                ? Image.asset(
+                                    garage.imagen!,
+                                    width: 110,
+                                    height: 110,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.network(
+                                    garage.imagen!,
+                                    width: 110,
+                                    height: 110,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                                      'assets/garaje2.jpeg',
+                                      width: 110,
+                                      height: 110,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ))
+                            : Image.asset(
+                                'assets/garaje2.jpeg',
+                                width: 110,
+                                height: 110,
+                                fit: BoxFit.cover,
+                              ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: (_selectedGarage?.imagen != null && _selectedGarage!.imagen!.isNotEmpty)
-                        ? (_selectedGarage!.imagen!.startsWith('assets/')
-                            ? Image.asset(
-                                _selectedGarage!.imagen!,
-                                width: 110,
-                                height: 110,
-                                fit: BoxFit.cover,
-                              )
-                            : Image.network(
-                                _selectedGarage!.imagen!,
-                                width: 110,
-                                height: 110,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => Image.asset(
-                                  'assets/garaje2.jpeg',
-                                  width: 110,
-                                  height: 110,
-                                  fit: BoxFit.cover,
-                                ),
-                              ))
-                        : Image.asset(
-                            'assets/garaje2.jpeg',
-                            width: 110,
-                            height: 110,
-                            fit: BoxFit.cover,
+                  const SizedBox(height: 32),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {},
+                          icon: const Icon(Icons.directions_outlined, size: 20),
+                          label: Text(AppLocalizations.of(context)!.getDirectionsAction, style: const TextStyle(fontSize: 15)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                           ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            if (widget.onTap != null) {
+                              widget.onTap!(garage.idPlaza!);
+                            } else {
+                              Navigator.of(context).pushNamed(DetailsGarajePage.routeName, arguments: garage.idPlaza);
+                            }
+                          },
+                          icon: const Icon(Icons.check_circle_outline, size: 20),
+                          label: Text(AppLocalizations.of(context)!.reserveNowAction, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accentGreen,
+                            foregroundColor: AppColors.darkestBlue,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 20), // Bottom padding
                 ],
               ),
-              const SizedBox(height: 32),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.directions_outlined, size: 20),
-                      label: Text(AppLocalizations.of(context)!.getDirectionsAction, style: const TextStyle(fontSize: 15)),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withOpacity(0.3)),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        if (widget.onTap != null && _selectedGarage != null) {
-                          widget.onTap!(_selectedGarage!.idPlaza!);
-                        } else if (_selectedGarage != null) {
-                          Navigator.of(context).pushNamed(DetailsGarajePage.routeName, arguments: _selectedGarage!.idPlaza);
-                        }
-                      },
-                      icon: const Icon(Icons.check_circle_outline, size: 20),
-                      label: Text(AppLocalizations.of(context)!.reserveNowAction, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accentGreen,
-                        foregroundColor: AppColors.darkestBlue,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20), // Bottom padding
-            ],
-          ),
+            );
+          },
         );
       },
-    );
+    ).whenComplete(() {
+      _sheetOpen = false;
+      _selectedGarage = null;
+      setState(() {});
+    });
   }
 
   Widget _buildBadge(String label, Color color) {

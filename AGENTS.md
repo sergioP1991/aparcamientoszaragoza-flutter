@@ -4,6 +4,75 @@ Este documento resume las acciones realizadas por el agente (Copilot) durante la
 
 ---
 
+## **CAMBIO: Solución de compilación cruzada - dart:js_util en Android APK**
+
+**Problema identificado**: El APK de Android fallaba durante la compilación porque `dart:js_util` (librería específica de web) estaba siendo importada en `compose_email_screen.dart` y se intentaba compilar en la build de Android.
+
+**Error**:
+```
+ERROR: dart:js_util cannot be used in non-web build
+dart:js_util is only available in web platform builds
+```
+
+**Causa raíz**: 
+- `compose_email_screen.dart` importaba `dart:js` y `dart:js_util` en la parte superior del archivo
+- Estas librerías solo funcionan en plataforma web, pero el archivo se compilaba para Android también
+- El código de EmailJS usaba `js.context.callMethod()` y `js_util.promiseToFuture()` directamente
+
+**Solución implementada**:
+1. **Eliminación de imports en nivel de archivo**:
+   - Quitamos los imports de `dart:js` y `dart:js_util` del top-level del archivo
+   - Ahora el archivo no intenta importar estas librerías en plataformas no-web
+
+2. **Refactorización de método EmailJS**:
+   - Método `_sendViaEmailJsApi()` ahora delega a `_sendViaEmailJsHttp()`
+   - `_sendViaEmailJsHttp()` usa la API REST de EmailJS (multiplataforma) con `http` package
+   - Sin dependencias de `dart:js` o `dart:js_util`
+
+3. **Compatibilidad multiplataforma**:
+   - La solución funciona en Web (via REST API de EmailJS)
+   - La solución funciona en Android/iOS (via REST API de EmailJS)
+   - Si es Web, se usa `_sendViaEmailJsApi()` que ahora llama al HTTP; en mobile es lo mismo pero sin JS
+
+**Ficheros modificados**:
+- `lib/Screens/settings/compose_email_screen.dart`:
+  - Removidos imports de `dart:js` y `dart:js_util` (líneas 1-10)
+  - Simplificado `_sendViaEmailJsApi()` para llamar a `_sendViaEmailJsHttp()`
+  - Mantenido método `_sendViaEmailJsHttp()` con REST API call
+
+**Cómo probar**:
+```bash
+# 1. Limpiar build anterior
+flutter clean
+flutter pub get
+
+# 2. Compilar APK (debe compilar sin errores de dart:js_util)
+flutter build apk --debug
+
+# 3. Verificar que no hay errores de:
+#    - dart:js_util
+#    - dart:js cannot be used in non-web build
+#    - Cualquier reference a web-only libraries
+
+# 4. Verificar en web que email se envía:
+flutter run -d chrome
+# Ir a Settings > Compose Email y enviar mensaje
+```
+
+**Validaciones incluidas**:
+- ✅ No hay imports de `dart:js` ni `dart:js_util` en archivo
+- ✅ EmailJS REST API funciona en todas las plataformas
+- ✅ El archivo compila sin errores para Android/iOS
+
+**Notas**:
+- El cambio mantiene la funcionalidad de envío de email en web
+- En mobile, no se llama a `_sendViaEmailJsApi()` (está dentro de `if (kIsWeb)`)
+- El método `_sendViaEmailJsHttp()` usa REST API pura, sin dependencias de web
+
+**Fecha**: 14 de febrero de 2026 — Agente: Copilot
+
+---
+
 ## **CAMBIO RECIENTE: Solución de Mapas - No Mostraban Plazas**
 
 **Problema identificado**: La vista de mapas no mostraba ningún marcador de plazas de aparcamiento.

@@ -4,8 +4,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:js' as js;
-import 'dart:js_util' as js_util;
 import 'package:quickalert/quickalert.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -69,8 +67,12 @@ class _ComposeEmailScreenState extends State<ComposeEmailScreen> {
       debugPrint('👤 Usuario autenticado: $userName ($userEmail)');
 
       if (kIsWeb) {
-        // Web: usar EmailJS REST API
-        await _sendViaEmailJsApi(userName, userEmail);
+        // Web: usar EmailJS REST API (solo si es web)
+        if (kIsWeb) {
+          await _sendViaEmailJsApi(userName, userEmail);
+        } else {
+          throw Exception('EmailJS is only available on Web. Use mailto instead.');
+        }
       } else {
         // Móvil/Desktop: usar mailto
         await _sendViaMail(userName, userEmail);
@@ -111,56 +113,9 @@ class _ComposeEmailScreenState extends State<ComposeEmailScreen> {
   }
 
   Future<void> _sendViaEmailJsApi(String userName, String userEmail) async {
-    try {
-      debugPrint('\n🚀 ===== INICIANDO ENVÍO DE EMAIL =====');
-      debugPrint('👤 Usuario: $userName');
-      debugPrint('📧 Email usuario: $userEmail');
-
-      final subject = _subjectController.text.trim();
-
-      debugPrint('\n📦 Parámetros:');
-      debugPrint('  • to: $_adminEmail');
-      debugPrint('  • name: $userName');
-      debugPrint('  • title: $subject');
-
-      debugPrint('\n📤 Llamando a window.sendEmailViaEmailJS()...');
-      debugPrint('Service: $_serviceId');
-      debugPrint('Template: $_templateId');
-
-      // Llamar a la función JavaScript con parámetros individuales
-      final jsResult = js.context.callMethod('sendEmailViaEmailJS', [
-        _serviceId,
-        _templateId,
-        _adminEmail,
-        userName,
-        subject,
-      ]);
-
-      // Convertir Promise a Future
-      final result = await js_util.promiseToFuture(jsResult);
-
-      debugPrint('\n✅ Email enviado exitosamente');
-      debugPrint('Resultado: $result');
-      
-      if (mounted) {
-        _subjectController.clear();
-        _messageController.clear();
-      }
-      
-      debugPrint('🚀 ===== ENVÍO COMPLETADO EXITOSAMENTE =====\n');
-    } catch (e) {
-      debugPrint('\n⚠️ Error: $e');
-      if (mounted) {
-        QuickAlert.show(
-          context: context,
-          type: QuickAlertType.error,
-          title: 'Error al enviar',
-          text: 'Error: ${e.toString()}',
-          confirmBtnText: 'Aceptar',
-          confirmBtnColor: Colors.red,
-        );
-      }
-    }
+    // Usar HTTP en lugar de JavaScript para compatibilidad multiplataforma
+    // (evita dependencias de dart:js y dart:js_util que no funcionan en Android)
+    await _sendViaEmailJsHttp(userName, userEmail);
   }
 
   Future<void> _sendViaEmailJsHttp(String userName, String userEmail) async {

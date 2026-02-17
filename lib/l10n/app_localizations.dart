@@ -746,6 +746,12 @@ abstract class AppLocalizations {
   /// **'Obtener GPS'**
   String get getGps;
 
+  /// No description provided for @manualLocationHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Puedes introducir las coordenadas manualmente. Usa el formato: Latitud (41.6488), Longitud (-0.8891)'**
+  String get manualLocationHint;
+
   /// No description provided for @measuresSection.
   ///
   /// In es, this message translates to:

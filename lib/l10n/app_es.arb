@@ -108,6 +108,7 @@
   "municipioHint": "Zaragoza",
   "cpLabel": "Código Postal",
   "getGps": "Obtener GPS",
+  "manualLocationHint": "Puedes introducir las coordenadas manualmente. Usa el formato: Latitud (41.6488), Longitud (-0.8891)",
   "measuresSection": "MEDIDAS Y NIVEL",
   "lengthLabel": "Largo (m)",
   "widthLabel": "Ancho (m)",
