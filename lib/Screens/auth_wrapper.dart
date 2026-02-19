@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aparcamientoszaragoza/Screens/welcome_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/login/login_screen.dart';
+import 'package:aparcamientoszaragoza/Services/SecurityService.dart';
 
 /// Pantalla que decide si mostrar el Welcome o el Login
 /// - Welcome: Si no hay usuario recordado
@@ -23,10 +24,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
     _hasRememberedUser = _checkRememberedUser();
   }
 
+  /// ✅ Verificar si hay usuario recordado
   Future<bool> _checkRememberedUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lastUserEmail = prefs.getString('lastUserEmail');
-    return lastUserEmail != null && lastUserEmail.isNotEmpty;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastUserEmail = prefs.getString('lastUserEmail');
+      return lastUserEmail != null && lastUserEmail.isNotEmpty;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override

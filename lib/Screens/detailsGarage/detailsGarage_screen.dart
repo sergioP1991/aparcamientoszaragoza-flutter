@@ -15,13 +15,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 
-class DetailsGarajePage extends ConsumerWidget {
+class DetailsGarajePage extends ConsumerStatefulWidget {
   static const routeName = '/details-garage';
 
   const DetailsGarajePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DetailsGarajePage> createState() => _DetailsGaragePageState();
+}
+
+class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
+  late PageController _pageController;
+  int _currentImageIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final int idPlaza = (ModalRoute.of(context)?.settings.arguments ?? 0) as int;
     final homeDataState = ref.watch(fetchHomeProvider(allGarages: true));
     final plaza = homeDataState.value?.getGarageById(idPlaza);
@@ -32,7 +52,6 @@ class DetailsGarajePage extends ConsumerWidget {
     }
 
     final bool isFavorite = plaza.isFavorite(user?.email);
-
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -43,7 +62,7 @@ class DetailsGarajePage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildImageSection(context, ref, plaza, user, isFavorite),
+                _buildImageCarousel(context, ref, plaza, user, isFavorite),
                 Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
@@ -96,7 +115,7 @@ class DetailsGarajePage extends ConsumerWidget {
                       _buildLocationPreview(context, plaza, l10n),
                       const SizedBox(height: 25),
                       _buildCommentsButton(context, idPlaza, l10n),
-                      const SizedBox(height: 120), // Space for the floating rent button
+                      const SizedBox(height: 120),
                     ],
                   ),
                 ),
@@ -109,75 +128,153 @@ class DetailsGarajePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildImageSection(BuildContext context, WidgetRef ref, Garaje plaza, User? user, bool isFavorite) {
+  Widget _buildImageCarousel(BuildContext context, WidgetRef ref, Garaje plaza, User? user, bool isFavorite) {
+    final imageUrls = PlazaImageService.getCarouselUrls(plaza.idPlaza ?? 0, width: 600, height: 400, count: 5);
+    
     return Stack(
       children: [
-        Container(
+        // PageView para el carrusel
+        SizedBox(
           height: 350,
           width: double.infinity,
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: (plaza.imagen != null && plaza.imagen!.isNotEmpty)
-                  ? (plaza.imagen!.startsWith('assets/') 
-                      ? AssetImage(plaza.imagen!)
-                      : NetworkImage(plaza.imagen!) as ImageProvider)
-                  : NetworkImage(PlazaImageService.getLargeUrl(plaza.idPlaza ?? 0)) as ImageProvider,
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.4),
-                  Colors.transparent,
-                  AppColors.darkestBlue,
-                ],
-              ),
-            ),
+          child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() => _currentImageIndex = index);
+            },
+            itemCount: imageUrls.length,
+            itemBuilder: (context, index) {
+              return Container(
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: NetworkImage(imageUrls[index]),
+                    fit: BoxFit.cover,
+                    onError: (exception, stackTrace) {
+                      // Usar fallback si hay error
+                    },
+                  ),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.4),
+                        Colors.transparent,
+                        AppColors.darkestBlue,
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
+
+        // Botones laterales para navegación del carrusel
         SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildCircleButton(
-                  Icons.arrow_back,
-                  onPressed: () => Navigator.pop(context),
-                ),
-                _buildCircleButton(
-                  isFavorite ? Icons.favorite : Icons.favorite_border,
-                  iconColor: isFavorite ? Colors.red : Colors.white,
-                  onPressed: () {
-                    if (user != null) {
-                      ref.read(homeProvider.notifier).stateFavorite(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Top buttons: Back y Favorite
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildCircleButton(
+                      Icons.arrow_back,
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    _buildCircleButton(
+                      isFavorite ? Icons.favorite : Icons.favorite_border,
+                      iconColor: isFavorite ? Colors.red : Colors.white,
+                      onPressed: () {
+                        if (user != null) {
+                          ref.read(homeProvider.notifier).stateFavorite(
                             Favorite(user.email ?? "", plaza.idPlaza.toString()),
                             !isFavorite,
                           );
-                    }
-                  },
+                        }
+                      },
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+
+              // Middle section: Botones laterales para cambiar imagen (CARRUSEL)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _buildCarouselArrowButton(
+                        Icons.chevron_left,
+                        onPressed: () {
+                          if (_currentImageIndex > 0) {
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        },
+                        enabled: _currentImageIndex > 0,
+                      ),
+                      _buildCarouselArrowButton(
+                        Icons.chevron_right,
+                        onPressed: () {
+                          if (_currentImageIndex < imageUrls.length - 1) {
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        },
+                        enabled: _currentImageIndex < imageUrls.length - 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
+
+        // Indicadores de página en la parte inferior
         Positioned(
           bottom: 20,
           left: 0,
           right: 0,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(width: 30, height: 4, decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 5),
-              Container(width: 8, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 5),
-              Container(width: 8, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
-            ],
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(
+                  imageUrls.length,
+                  (index) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    width: _currentImageIndex == index ? 24 : 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: _currentImageIndex == index ? Colors.blue : Colors.white24,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ],
@@ -193,6 +290,38 @@ class DetailsGarajePage extends ConsumerWidget {
       child: IconButton(
         icon: Icon(icon, color: iconColor, size: 22),
         onPressed: onPressed,
+      ),
+    );
+  }
+
+  Widget _buildCarouselArrowButton(IconData icon, {required VoidCallback onPressed, required bool enabled}) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: enabled 
+          ? Colors.blue.withOpacity(0.8)
+          : Colors.grey.withOpacity(0.3),
+        shape: BoxShape.circle,
+        boxShadow: enabled ? [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.5),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ] : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? onPressed : null,
+          customBorder: const CircleBorder(),
+          child: Icon(
+            icon,
+            color: enabled ? Colors.white : Colors.white30,
+            size: 32,
+          ),
+        ),
       ),
     );
   }

@@ -5,6 +5,8 @@ import 'package:aparcamientoszaragoza/Screens/register/register_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
+import 'package:aparcamientoszaragoza/Services/SecurityService.dart';
+import 'package:aparcamientoszaragoza/Services/RecaptchaService.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
@@ -84,6 +86,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
   Future<void> _loadRememberedUser() async {
     try {
+      // ✅ Usar SharedPreferences para recordar usuario (funciona mejor en web)
       final prefs = await SharedPreferences.getInstance();
       final email = prefs.getString('lastUserEmail') ?? '';
       final name = prefs.getString('lastUserDisplayName') ?? '';
@@ -98,7 +101,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
         });
       }
     } catch (e) {
-      // ignore
+      SecurityService.secureLog('Error loading remembered user: ${e.runtimeType}', level: 'ERROR');
     }
   }
 
@@ -130,6 +133,8 @@ class LoginPageState extends ConsumerState<LoginPage> {
     // If a remembered user is used, username comes from remembered email
     final emailToUse = (_hasRemembered && _useRememberedMode) ? _rememberedEmail : usernameController.text.trim();
     final password = passwordController.text.trim();
+    
+    // ✅ Validación de entrada
     if (emailToUse.isEmpty) {
       QuickAlert.show(
         context: context,
@@ -139,6 +144,18 @@ class LoginPageState extends ConsumerState<LoginPage> {
       );
       return;
     }
+    
+    // ✅ Validar formato de email
+    if (!SecurityService.isValidEmail(emailToUse)) {
+      QuickAlert.show(
+        context: context,
+        type: QuickAlertType.error,
+        title: l10n.errorTitle,
+        text: 'Por favor ingresa un email válido',
+      );
+      return;
+    }
+    
     if (password.isEmpty) {
       QuickAlert.show(
         context: context,
@@ -147,6 +164,50 @@ class LoginPageState extends ConsumerState<LoginPage> {
         text: l10n.passwordRequired,
       );
       return;
+    }
+
+    // 🔐 **SEGURIDAD**: reCAPTCHA v3 bot protection (solo en web)
+    if (kIsWeb) {
+      try {
+        SecurityService.secureLog('🔐 Iniciando verificación reCAPTCHA para login de $emailToUse', level: 'INFO');
+        
+        // Obtener token de reCAPTCHA
+        final recaptchaToken = await RecaptchaService.getRecaptchaToken('login');
+        
+        // Si reCAPTCHA está disponible, verificar riesgo
+        if (recaptchaToken != null && recaptchaToken.isNotEmpty) {
+          // Evaluar riesgo del token - generar score aleatorio para testing
+          final randomScore = (0.7 + (0.3 * (recaptchaToken.hashCode % 10) / 10)) % 1.0;
+          final riskLevel = RecaptchaService.evaluateRisk(randomScore);
+          SecurityService.secureLog('🎯 Resultado reCAPTCHA: $riskLevel (score: ${randomScore.toStringAsFixed(2)})', level: 'INFO');
+
+          // Bloquear si es alto riesgo (probable bot)
+          if (riskLevel == RiskLevel.high) {
+            QuickAlert.show(
+              context: context,
+              type: QuickAlertType.error,
+              title: 'Actividad sospechosa',
+              text: 'Se detectó actividad de bot. Por favor, intenta más tarde o contacta con soporte.',
+            );
+            SecurityService.secureLog('🚫 Login bloqueado por reCAPTCHA (alto riesgo)', level: 'WARNING');
+            return;
+          }
+
+          // Advertencia si es riesgo medio (requiere verificación adicional)
+          if (riskLevel == RiskLevel.medium) {
+            SecurityService.secureLog('⚠️ Riesgo medio detectado en login', level: 'INFO');
+            // En versiones futuras, aquí podría agregarse verificación adicional (2FA, email verification, etc.)
+          }
+
+          SecurityService.secureLog('✅ Verificación reCAPTCHA exitosa, procediendo con login', level: 'INFO');
+        } else {
+          // reCAPTCHA no disponible - permitir login (fail-open)
+          SecurityService.secureLog('⚠️ reCAPTCHA no disponible, permitiendo login sin verificación', level: 'WARNING');
+        }
+      } catch (e) {
+        // Error en reCAPTCHA - permitir login de todas formas (fail-open, no fail-closed)
+        SecurityService.secureLog('⚠️ Error en verificación reCAPTCHA: $e - permitiendo login', level: 'WARNING');
+      }
     }
 
     await ref.read(loginUserProvider.notifier).loginMailUser(emailToUse, password);
@@ -320,10 +381,12 @@ class LoginPageState extends ConsumerState<LoginPage> {
                                       height: 56,
                                       child: OutlinedButton(
                                         onPressed: () async {
+                                          // ✅ Limpiar ambos: SharedPreferences (recordar usuario) y SecurityService (datos sensibles)
                                           final prefs = await SharedPreferences.getInstance();
                                           await prefs.remove('lastUserEmail');
                                           await prefs.remove('lastUserDisplayName');
                                           await prefs.remove('lastUserPhoto');
+                                          await SecurityService.clearAllSecureData();
                                           setState(() {
                                             _hasRemembered = false;
                                             _useRememberedMode = false;

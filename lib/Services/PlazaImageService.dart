@@ -32,6 +32,32 @@ class PlazaImageService {
     }
   }
 
+  /// Genera múltiples URLs de imágenes para un carrusel (4-6 imágenes diferentes)
+  static List<String> getCarouselUrls(int plazaId, {int width = 600, int height = 400, int count = 5}) {
+    final List<String> urls = [];
+    for (int i = 0; i < count; i++) {
+      final seed = plazaId + i; // Seed diferente para cada imagen
+      final providerIndex = seed % _imageProviders.length;
+      
+      String url;
+      switch (providerIndex) {
+        case 0:
+          url = 'https://loremflickr.com/$width/$height/parking,garage?lock=${seed * 12345}';
+          break;
+        case 1:
+          url = 'https://loremflickr.com/$width/$height/garage,parking?lock=${seed * 23456}';
+          break;
+        case 2:
+          url = 'https://loremflickr.com/$width/$height/parking,lot,space?lock=${seed * 34567}';
+          break;
+        default:
+          url = 'https://loremflickr.com/$width/$height/parking,garage?lock=${seed * 12345}';
+      }
+      urls.add(url);
+    }
+    return urls;
+  }
+
   /// Genera una URL pequeña (thumbnail) de imagen
   static String getThumbnailUrl(int plazaId) {
     return getImageUrl(plazaId, width: 120, height: 120);

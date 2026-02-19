@@ -38,6 +38,37 @@
   </script>
   <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer=""></script>
+  
+  <!-- 🔐 reCAPTCHA v3 Integration for bot protection -->
+  <!-- Replace YOUR_SITE_KEY with your actual reCAPTCHA v3 site key from Google Admin Console -->
+  <script src="https://www.google.com/recaptcha/api.js?render=6LecWLsqAAAAAKKvMqSmAWPfYf0Nn5TYSbIqvf8l"></script>
+  <script>
+    // Expose reCAPTCHA token getter to Dart via window object
+    window.getRecaptchaToken = async function(action) {
+      try {
+        if (typeof grecaptcha !== 'undefined') {
+          const token = await grecaptcha.execute('6LecWLsqAAAAAKKvMqSmAWPfYf0Nn5TYSbIqvf8l', {action: action});
+          console.log('✅ reCAPTCHA token obtained for action:', action);
+          return token;
+        } else {
+          console.error('❌ reCAPTCHA not loaded');
+          return '';
+        }
+      } catch (error) {
+        console.error('❌ Error getting reCAPTCHA token:', error);
+        return '';
+      }
+    };
+
+    // Mock score for testing (0.0-1.0, where 1.0 = human, 0.0 = bot)
+    window.getRecaptchaScore = function() {
+      // In production, this score would come from server verification
+      // For now, return random score for testing
+      const score = Math.random();
+      console.log('🎯 reCAPTCHA score (test):', score);
+      return score;
+    };
+  </script>
   <style id="splash-screen-style">
     html {
       height: 100%

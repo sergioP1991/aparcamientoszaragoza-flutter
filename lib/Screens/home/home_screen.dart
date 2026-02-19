@@ -47,6 +47,7 @@ class HomePageState extends ConsumerState<HomePage> {
   String? _statusFilter; // 'libre', 'ocupado', null
   bool _favoritesFilter = false;
   bool _onlyMineFilter = false;
+  bool _notMyGaragesFilter = true; // Filtro por defecto: mostrar solo plazas donde el usuario no es propietario
   String _searchQuery = "";
 
   @override
@@ -235,6 +236,7 @@ class HomePageState extends ConsumerState<HomePage> {
     final l10n = AppLocalizations.of(context)!;
     final filters = [
       l10n.filterAll,
+      'No mis plazas',
       l10n.filterMyGarages,
       l10n.filterPrice,
       l10n.filterVehicle,
@@ -255,10 +257,13 @@ class HomePageState extends ConsumerState<HomePage> {
 
           if (label == l10n.filterAll) {
             isActive = !_onlyMineFilter &&
+                !_notMyGaragesFilter &&
                 _priceSort == null &&
                 _vehicleFilter == null &&
                 _statusFilter == null &&
                 !_favoritesFilter;
+          } else if (label == 'No mis plazas') {
+            isActive = _notMyGaragesFilter;
           } else if (label == l10n.filterMyGarages) {
             isActive = _onlyMineFilter;
           } else if (label == l10n.filterPrice) {
@@ -362,12 +367,21 @@ class HomePageState extends ConsumerState<HomePage> {
               setState(() {
                 if (label == l10n.filterAll) {
                   _onlyMineFilter = false;
+                  _notMyGaragesFilter = false;
                   _priceSort = null;
                   _vehicleFilter = null;
                   _statusFilter = null;
                   _favoritesFilter = false;
+                } else if (label == 'No mis plazas') {
+                  _notMyGaragesFilter = !_notMyGaragesFilter;
+                  if (_notMyGaragesFilter) {
+                    _onlyMineFilter = false; // Desactiva "mis plazas" si activas "no mis plazas"
+                  }
                 } else if (label == l10n.filterMyGarages) {
                   _onlyMineFilter = !_onlyMineFilter;
+                  if (_onlyMineFilter) {
+                    _notMyGaragesFilter = false; // Desactiva "no mis plazas" si activas "mis plazas"
+                  }
                 } else if (label == l10n.filterPrice) {
                   if (_priceSort == null)
                     _priceSort = 'asc';
@@ -551,6 +565,11 @@ class HomePageState extends ConsumerState<HomePage> {
           filteredList = filteredList.where((g) => g.propietario == data.user?.uid).toList();
         }
 
+        // Not My Garages Filter (shows only plazas where user is NOT the owner)
+        if (_notMyGaragesFilter) {
+          filteredList = filteredList.where((g) => g.propietario != data.user?.uid).toList();
+        }
+
         // Price Sort
         if (_priceSort == 'asc') {
           filteredList.sort((Garaje a, Garaje b) => a.precio.compareTo(b.precio));
@@ -573,7 +592,7 @@ class HomePageState extends ConsumerState<HomePage> {
                 Text(
                   _onlyMineFilter 
                       ? l10n.noMyGarages 
-                      : (_favoritesFilter ? l10n.noFavorites : l10n.noGaragesFound),
+                      : (_notMyGaragesFilter ? 'No hay otras plazas disponibles' : (_favoritesFilter ? l10n.noFavorites : l10n.noGaragesFound)),
                   style: const TextStyle(color: Colors.white54, fontSize: 16),
                 ),
               ],
