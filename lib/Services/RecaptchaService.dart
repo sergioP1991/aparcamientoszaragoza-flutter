@@ -3,9 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:aparcamientoszaragoza/Services/SecurityService.dart';
 
-// Imports condicionados solo para web
-import 'dart:html' as html;
-import 'dart:js' as js;
+// Imports condicionados SOLO para web (dart:js no existe en Android/iOS)
+import 'dart:js' as js if (dart.library.html) 'dart:js_util' as js_util;
 
 /// ✅ Servicio centralizado de reCAPTCHA v3 para prevención de bots
 /// 
@@ -106,6 +105,11 @@ class RecaptchaService {
   /// ✅ Ejecutar JavaScript para obtener token de reCAPTCHA
   static Future<String?> _executeRecaptchaJavaScript(String action) async {
     try {
+      // Solo ejecutar en web
+      if (!kIsWeb) {
+        return null;
+      }
+
       // Verificar que grecaptcha esté disponible
       if (!_isRecaptchaLoaded()) {
         SecurityService.secureLog('reCAPTCHA script no cargado en HTML', level: 'WARNING');
@@ -113,8 +117,13 @@ class RecaptchaService {
       }
 
       // Llamar a window.getRecaptchaToken(action) expuesto en web/index.html
-      final token = await js.context.callMethod('getRecaptchaToken', [action]);
-      return token as String?;
+      // Este código solo se ejecuta en web donde dart:js está disponible
+      if (kIsWeb) {
+        // ignore: undefined_prefixed_name
+        final token = await js.context.callMethod('getRecaptchaToken', [action]);
+        return token as String?;
+      }
+      return null;
     } catch (e) {
       SecurityService.secureLog('Error ejecutando reCAPTCHA JS: ${e.runtimeType}', level: 'ERROR');
       return null;
@@ -124,6 +133,11 @@ class RecaptchaService {
   /// ✅ Verificar si el script de reCAPTCHA está cargado
   static bool _isRecaptchaLoaded() {
     try {
+      // Solo verificar en web
+      if (!kIsWeb) {
+        return false;
+      }
+      // ignore: undefined_prefixed_name
       return js.context.hasProperty('grecaptcha');
     } catch (e) {
       return false;
