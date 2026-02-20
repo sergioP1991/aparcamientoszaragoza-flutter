@@ -172,78 +172,74 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
           ),
         ),
 
-        // Botones laterales para navegación del carrusel
-        SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Top buttons: Back y Favorite
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildCircleButton(
-                      Icons.arrow_back,
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    _buildCircleButton(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      iconColor: isFavorite ? Colors.red : Colors.white,
-                      onPressed: () {
-                        if (user != null) {
-                          ref.read(homeProvider.notifier).stateFavorite(
-                            Favorite(user.email ?? "", plaza.idPlaza.toString()),
-                            !isFavorite,
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              // Middle section: Botones laterales para cambiar imagen (CARRUSEL)
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      _buildCarouselArrowButton(
-                        Icons.chevron_left,
-                        onPressed: () {
-                          if (_currentImageIndex > 0) {
-                            _pageController.previousPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          }
-                        },
-                        enabled: _currentImageIndex > 0,
-                      ),
-                      _buildCarouselArrowButton(
-                        Icons.chevron_right,
-                        onPressed: () {
-                          if (_currentImageIndex < imageUrls.length - 1) {
-                            _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          }
-                        },
-                        enabled: _currentImageIndex < imageUrls.length - 1,
-                      ),
-                    ],
+        // Botones superiores: Back y Favorite
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildCircleButton(
+                    Icons.arrow_back,
+                    onPressed: () => Navigator.pop(context),
                   ),
-                ),
+                  _buildCircleButton(
+                    isFavorite ? Icons.favorite : Icons.favorite_border,
+                    iconColor: isFavorite ? Colors.red : Colors.white,
+                    onPressed: () {
+                      if (user != null) {
+                        ref.read(homeProvider.notifier).stateFavorite(
+                          Favorite(user.email ?? "", plaza.idPlaza.toString()),
+                          !isFavorite,
+                        );
+                      }
+                    },
+                  ),
+                ],
               ),
-            ],
+            ),
+          ),
+        ),
+
+        // Botones laterales para navegación del carrusel (CARRUSEL)
+        Positioned.fill(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildCarouselArrowButton(
+                  Icons.chevron_left,
+                  onPressed: () {
+                    if (_currentImageIndex > 0) {
+                      _pageController.previousPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  },
+                  enabled: _currentImageIndex > 0,
+                ),
+                _buildCarouselArrowButton(
+                  Icons.chevron_right,
+                  onPressed: () {
+                    if (_currentImageIndex < imageUrls.length - 1) {
+                      _pageController.nextPage(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  },
+                  enabled: _currentImageIndex < imageUrls.length - 1,
+                ),
+              ],
+            ),
           ),
         ),
 

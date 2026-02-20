@@ -3,6 +3,7 @@ import 'package:aparcamientoszaragoza/Screens/home/providers/ConfigurationProvid
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/LocationProvider.dart';
 import 'package:aparcamientoszaragoza/Screens/login/login_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart';
 import 'package:aparcamientoszaragoza/Screens/userDetails/userDetails_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -170,18 +171,42 @@ class HomePageState extends ConsumerState<HomePage> {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () {
-              setState(() => stateHome = _ScafollState.localizacion);
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                shape: BoxShape.circle,
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() => stateHome = _ScafollState.localizacion);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.map_outlined, color: Colors.white),
+                ),
               ),
-              child: const Icon(Icons.map_outlined, color: Colors.white),
-            ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () async {
+                  await ref.read(loginUserProvider.notifier).signOut();
+                  if (mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/login-page',
+                      (route) => false,
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.logout, color: Colors.white),
+                ),
+              ),
+            ],
           ),
         ],
       ),

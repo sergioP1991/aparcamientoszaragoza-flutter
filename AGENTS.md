@@ -1124,6 +1124,45 @@ node update-plaza-coordinates.js
 
 **Fecha**: 13 de febrero de 2026 — Agente: Copilot
 
+---
+
+## **REPORTE DE CAMBIOS: Correcciones de Diseño (Carrusel) y Multiplataforma (reCAPTCHA)**
+
+**Objetivo**: Mejorar la UI del carrusel de imágenes y asegurar que la aplicación compile correctamente tanto para Web como para Android.
+
+**Cambios Realizados**:
+
+1. **Diseño: Centrado de Flechas en Carrusel** (`lib/Screens/detailsGarage/detailsGarage_screen.dart`):
+   - ✅ Se extrajeron los botones del carrusel de la estructura `Column/SafeArea` previa que impedía su correcto centrado.
+   - ✅ Se implementó `Positioned.fill` como hijo directo del `Stack` para asegurar que las flechas laterales estén perfectamente centradas verticalmente sobre las imágenes.
+   - ✅ Se separaron los botones superiores (Atrás y Favorito) de los controles de navegación del carrusel para evitar conflictos de layout.
+
+2. **Compilación: Solución Multiplataforma para reCAPTCHA** (`lib/Services/RecaptchaService.dart` y `lib/Services/js_stub.dart`):
+   - ✅ ERROR IDENTIFICADO: La importación de `dart:js` causaba fallos en Android/iOS.
+   - ✅ SOLUCIÓN: Se creó un "stub" (`js_stub.dart`) para emular la funcionalidad necesaria de JavaScript en plataformas móviles.
+   - ✅ Se implementó una **importación condicional** en `RecaptchaService.dart`: usa `dart:js` en web y `js_stub.dart` en el resto de plataformas.
+   - ✅ Esto permite que el mismo código base se compile para APK (Android) sin errores de librerías inexistentes.
+
+**Ficheros modificados / añadidos**:
+- `lib/Screens/detailsGarage/detailsGarage_screen.dart`: Refactorización del layout del carrusel.
+- `lib/Services/js_stub.dart` (NUEVO): Stub para compatibilidad con mobile.
+- `lib/Services/RecaptchaService.dart`: Importación condicional corregida.
+
+**Cómo probar localmente**:
+```bash
+# Web
+flutter run -d chrome
+# 1. Abre los detalles de cualquier plaza.
+# 2. Verifica que las flechas azules están centradas verticalmente en la imagen.
+
+# Android
+flutter build apk --debug
+# 1. Verifica que la compilación completa sin errores de "dart:js".
+```
+
+**Fecha**: 20 de febrero de 2026 — Agente: Copilot (GitHub Copilot)
+
+---
 
 **Política obligatoria para agentes**
 - Todos los agentes que realicen cambios importantes en el repositorio (código, configuración, scripts de despliegue, integración de terceros, o cambios que afecten al comportamiento en producción) deben actualizar este archivo `AGENTS.md`.
