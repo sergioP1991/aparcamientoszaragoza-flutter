@@ -1,0 +1,240 @@
+<!DOCTYPE html><html><head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/aparcamientoszaragoza-flutter/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Aparcamientos Zaragoza">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="aparcamientoszaragoza">
+  <meta name="google-signin-client_id" content="342617603309-126hj08escgutrlq6pvjeqtj1rsvm7md.apps.googleusercontent.com">
+
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <title>aparcamientoszaragoza</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    // The value below is injected by flutter build, do not touch.
+    const serviceWorkerVersion = "3230477140" /* Flutter's service worker is deprecated and will be removed in a future Flutter release. */;
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer=""></script>
+  
+  <!-- 🔐 reCAPTCHA v3 Integration for bot protection -->
+  <!-- Replace YOUR_SITE_KEY with your actual reCAPTCHA v3 site key from Google Admin Console -->
+  <script src="https://www.google.com/recaptcha/api.js?render=6LecWLsqAAAAAKKvMqSmAWPfYf0Nn5TYSbIqvf8l"></script>
+  <script>
+    // Expose reCAPTCHA token getter to Dart via window object
+    window.getRecaptchaToken = async function(action) {
+      try {
+        if (typeof grecaptcha !== 'undefined') {
+          const token = await grecaptcha.execute('6LecWLsqAAAAAKKvMqSmAWPfYf0Nn5TYSbIqvf8l', {action: action});
+          console.log('✅ reCAPTCHA token obtained for action:', action);
+          return token;
+        } else {
+          console.error('❌ reCAPTCHA not loaded');
+          return '';
+        }
+      } catch (error) {
+        console.error('❌ Error getting reCAPTCHA token:', error);
+        return '';
+      }
+    };
+
+    // Mock score for testing (0.0-1.0, where 1.0 = human, 0.0 = bot)
+    window.getRecaptchaScore = function() {
+      // In production, this score would come from server verification
+      // For now, return random score for testing
+      const score = Math.random();
+      console.log('🎯 reCAPTCHA score (test):', score);
+      return score;
+    };
+  </script>
+  <style id="splash-screen-style">
+    html {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      background-color: #42a5f5;
+          background-size: 100% 100%;
+    }
+
+    .center {
+      margin: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      -ms-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+    }
+
+    .contain {
+      display:block;
+      width:100%; height:100%;
+      object-fit: contain;
+    }
+
+    .stretch {
+      display:block;
+      width:100%; height:100%;
+    }
+
+    .cover {
+      display:block;
+      width:100%; height:100%;
+      object-fit: cover;
+    }
+
+    .bottom {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      -ms-transform: translate(-50%, 0);
+      transform: translate(-50%, 0);
+    }
+
+    .bottomLeft {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+    }
+
+    .bottomRight {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+    }
+  </style>
+  <script id="splash-screen-script">
+    function removeSplashFromWeb() {
+      document.getElementById("splash")?.remove();
+      document.getElementById("splash-branding")?.remove();
+      document.body.style.background = "transparent";
+    }
+  </script>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+
+    <!-- // Other stuff -->
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDSSp7Fn4_rqpqWdBuE3tkR5u75CXgkTmM"></script>
+
+    <!-- EmailJS v3 desde unpkg -->
+    <script type="text/javascript" src="https://unpkg.com/emailjs-com@3/dist/email.min.js"></script>
+
+</head>
+<body>
+  <!-- Inicializar EmailJS ANTES de que cargue Flutter -->
+  <script>
+    console.log('🔄 Inicializando EmailJS v3...');
+    
+    // Esperar a que EmailJS esté disponible
+    var emailjsReady = false;
+    var attempts = 0;
+    var maxAttempts = 50;
+    
+    function initEmailJS() {
+      if (typeof emailjs !== 'undefined') {
+        emailjs.init('-dh-mInaZZb1fVrkm');
+        console.log('✅ EmailJS inicializado correctamente');
+        emailjsReady = true;
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        setTimeout(initEmailJS, 100);
+      } else {
+        console.error('❌ No se pudo cargar EmailJS');
+      }
+    }
+    
+    initEmailJS();
+    
+    // Función global para enviar emails desde Dart
+    window.sendEmailViaEmailJS = function(serviceId, templateId, to, name, title) {
+      console.log('\n' + '='.repeat(60));
+      console.log('📤 ENVIANDO EMAIL CON EMAILJS');
+      console.log('='.repeat(60));
+      console.log('Service ID:', serviceId);
+      console.log('Template ID:', templateId);
+      console.log('Parámetros:');
+      console.log('  • to:', to);
+      console.log('  • name:', name);
+      console.log('  • title:', title);
+
+      if (!emailjsReady || typeof emailjs === 'undefined') {
+        return Promise.reject(new Error('EmailJS no está inicializado'));
+      }
+
+      console.log('\n📨 Llamando emailjs.send()...');
+      
+      // Enviar el email
+      return emailjs.send(serviceId, templateId, {
+        to: to,
+        name: name,
+        title: title
+      })
+        .then(function(response) {
+          console.log('\n' + '='.repeat(60));
+          console.log('✅ EMAIL ENVIADO EXITOSAMENTE');
+          console.log('='.repeat(60));
+          console.log('Status:', response.status);
+          console.log('Message ID:', response.text);
+          return { 
+            success: true, 
+            messageId: response.text,
+            status: response.status 
+          };
+        })
+        .catch(function(error) {
+          console.log('\n' + '='.repeat(60));
+          console.error('❌ ERROR AL ENVIAR EMAIL');
+          console.error('='.repeat(60));
+          console.error('Status:', error.status);
+          console.error('Text:', error.text);
+          console.error('Error:', error);
+          
+          throw new Error(`EmailJS Error ${error.status}: ${error.text || error.message}`);
+        });
+    };
+
+    console.log('✅ Función window.sendEmailViaEmailJS definida');
+  </script>
+
+  <script>
+    window.addEventListener('load', function(ev) {
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
+
+
+</body></html>

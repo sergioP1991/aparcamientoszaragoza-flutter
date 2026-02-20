@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba EmailJS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #5568d3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .console {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 30px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .console-error {
+            color: #ff6b6b;
+        }
+        
+        .console-success {
+            color: #51cf66;
+        }
+        
+        .console-info {
+            color: #74c0fc;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Prueba EmailJS</h1>
+        
+        <div class="form-group">
+            <label for="to">Destinatario:</label>
+            <input type="email" id="to" value="moisesvs@gmail.com" placeholder="moisesvs@gmail.com">
+        </div>
+        
+        <div class="form-group">
+            <label for="name">Nombre:</label>
+            <input type="text" id="name" value="Usuario Test" placeholder="Tu nombre">
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Tu Email:</label>
+            <input type="email" id="email" value="test@example.com" placeholder="tu@email.com">
+        </div>
+        
+        <div class="form-group">
+            <label for="subject">Asunto:</label>
+            <input type="text" id="subject" value="[Prueba] Mensaje de test" placeholder="Asunto">
+        </div>
+        
+        <div class="form-group">
+            <label for="message">Mensaje:</label>
+            <textarea id="message" placeholder="Tu mensaje aquí...">Este es un mensaje de prueba desde el test HTML.</textarea>
+        </div>
+        
+        <button onclick="sendTestEmail()">📤 Enviar Prueba</button>
+        
+        <div id="status"></div>
+        
+        <div class="console" id="console"></div>
+    </div>
+
+    <script type="text/javascript" src="https://unpkg.com/emailjs-com@3/dist/email.min.js"></script>
+    <script>
+        const consoleDiv = document.getElementById('console');
+        const statusDiv = document.getElementById('status');
+        
+        // Override console para capturar logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addConsoleMessage(args.join(' '), 'info');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addConsoleMessage(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalLog.apply(console, args);
+            addConsoleMessage(args.join(' '), 'warn');
+        };
+        
+        function addConsoleMessage(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'console-error' : type === 'success' ? 'console-success' : 'console-info';
+            consoleDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>\n`;
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        function showStatus(message, type) {
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        // Inicializar EmailJS
+        console.log('🔄 Inicializando EmailJS...');
+        emailjs.init('-dh-mInaZZb1fVrkm');
+        console.log('✅ EmailJS inicializado');
+        
+        async function sendTestEmail() {
+            const button = event.target;
+            button.disabled = true;
+            
+            const to = document.getElementById('to').value;
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const subject = document.getElementById('subject').value;
+            const message = document.getElementById('message').value;
+            
+            console.log('\n' + '='.repeat(60));
+            console.log('📤 INICIANDO ENVÍO DE TEST');
+            console.log('='.repeat(60));
+            console.log('Service ID: service_ikw78yb');
+            console.log('Template ID: template_nm4pn9b');
+            console.log('Public Key: -dh-mInaZZb1fVrkm');
+            console.log('\nParámetros:');
+            console.log('  • to_email:', to);
+            console.log('  • from_name:', name);
+            console.log('  • from_email:', email);
+            console.log('  • subject:', subject);
+            console.log('  • message:', message);
+            
+            try {
+                showStatus('⏳ Enviando email...', 'info');
+                
+                const response = await emailjs.send(
+                    'service_ikw78yb',
+                    'template_nm4pn9b',
+                    {
+                        name: name,
+                        title: subject,
+                        message: message,
+                        email: email
+                    }
+                );
+                
+                console.log('\n' + '='.repeat(60));
+                console.log('✅ EMAIL ENVIADO EXITOSAMENTE');
+                console.log('='.repeat(60));
+                console.log('Status:', response.status);
+                console.log('Message ID:', response.text);
+                console.log('Response:', response);
+                
+                showStatus('✅ ¡Email enviado correctamente!', 'success');
+            } catch (error) {
+                console.log('\n' + '='.repeat(60));
+                console.error('❌ ERROR AL ENVIAR EMAIL');
+                console.error('='.repeat(60));
+                console.error('Status:', error.status);
+                console.error('Text:', error.text);
+                console.error('Message:', error.message);
+                console.error('Error completo:', JSON.stringify(error, null, 2));
+                
+                let errorMsg = `Error ${error.status}: ${error.text}`;
+                if (error.status === 404) {
+                    errorMsg += '\n→ Template o Service no encontrado. Verifica los IDs.';
+                } else if (error.status === 400) {
+                    errorMsg += '\n→ Parámetros inválidos. Verifica que los nombres de variables coincidan con la plantilla.';
+                } else if (error.status === 403) {
+                    errorMsg += '\n→ Public Key inválido o revocado.';
+                }
+                
+                showStatus(`❌ ${errorMsg}`, 'error');
+            } finally {
+                button.disabled = false;
+            }
+        }
+        
+        // Log inicial
+        console.log('✅ Página cargada y lista para enviar pruebas');
+    </script>
+</body>
+</html>
