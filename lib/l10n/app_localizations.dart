@@ -353,7 +353,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchHint.
   ///
   /// In es, this message translates to:
-  /// **'Buscar en Zaragoza...'**
+  /// **'Buscar plazas (en Zaragoza)...'**
   String get searchHint;
 
   /// No description provided for @filterAll.

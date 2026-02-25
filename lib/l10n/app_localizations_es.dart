@@ -139,7 +139,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get homeHeaderLocation => 'Zaragoza, España';
 
   @override
-  String get searchHint => 'Buscar en Zaragoza...';
+  String get searchHint => 'Buscar plazas (en Zaragoza)...';
 
   @override
   String get filterAll => 'Todos';

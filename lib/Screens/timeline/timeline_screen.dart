@@ -87,27 +87,17 @@ class TimelinePage extends ConsumerWidget {
 
   PreferredSizeWidget _buildAppBar(BuildContext context, User? user) {
     return AppBar(
-      backgroundColor: AppColors.darkerBlue,
+      backgroundColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
         onPressed: () => Navigator.pop(context),
       ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppLocalizations.of(context)!.timelineTitle,
-            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            AppLocalizations.of(context)!.userNameLabel(user?.displayName ?? 'Moises', user?.email ?? 'moises@zara...'),
-            style: const TextStyle(color: Colors.white54, fontSize: 10),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+      title: Text(
+        AppLocalizations.of(context)!.timelineTitle,
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
-      actions: const [],
+      centerTitle: true,
     );
   }
 
