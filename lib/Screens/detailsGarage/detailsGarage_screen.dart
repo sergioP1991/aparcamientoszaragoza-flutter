@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DetailsGarajePage extends ConsumerStatefulWidget {
   static const routeName = '/details-garage';
@@ -498,7 +499,7 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
               style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () => _openMapInBrowser(plaza),
               child: Text(l10n.openInMapAction, style: const TextStyle(color: Colors.blue)),
             ),
           ],
@@ -526,6 +527,32 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
         ),
       ],
     );
+  }
+
+  Future<void> _openMapInBrowser(Garaje plaza) async {
+    final String googleMapsUrl =
+        'https://www.google.com/maps/search/?api=1&query=${plaza.latitud},${plaza.longitud}';
+    
+    try {
+      if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
+        await launchUrl(
+          Uri.parse(googleMapsUrl),
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        // Fallback a búsqueda por nombre si está disponible
+        final String fallbackUrl =
+            'https://www.google.com/maps/search/${Uri.encodeComponent(plaza.nombre)}';
+        if (await canLaunchUrl(Uri.parse(fallbackUrl))) {
+          await launchUrl(
+            Uri.parse(fallbackUrl),
+            mode: LaunchMode.externalApplication,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error abriendo mapa: $e');
+    }
   }
 
   Widget _buildCommentsButton(BuildContext context, int idPlaza, AppLocalizations l10n) {

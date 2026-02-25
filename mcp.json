@@ -6,6 +6,13 @@
         "@playwright/mcp@latest"
       ]
     }
-    
+    ,
+    "stripe": {
+      "command": "npx",
+      "args": [
+        "@stripe/mcp@latest"
+      ],
+      "description": "Stripe MCP server for local development and testing of Stripe Payments MCP"
+    }
   }
 }
