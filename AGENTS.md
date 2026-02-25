@@ -4,6 +4,79 @@ Este documento resume las acciones realizadas por el agente (Copilot) durante la
 
 ---
 
+## **CAMBIO: Solución de GitHub Action Firebase Hosting - Site Not Found**
+
+**Problema identificado**: El GitHub Action de Firebase Hosting fallaba con errores:
+- `Warning: Unexpected input(s) 'working-directory'`
+- `firebase.json` incompleto (faltaba sección `hosting`)
+- El dominio mostraba "Site Not Found" después del despliegue
+
+**Causas raíz**:
+1. `firebase.json` no tenía configuración de `hosting` (solo tenía `functions`)
+2. El GitHub Action usaba parámetro `working-directory` que no es válido en `FirebaseExtended/action-hosting-deploy@v0`
+3. El workflow no verificaba si la compilación había generado archivos en `build/web`
+
+**Solución implementada**:
+
+1. **firebase.json** - Agregada sección `hosting`:
+   - ✅ `public: "build/web"` → apunta al directorio de compilación de Flutter web
+   - ✅ `rewrites` → redirige todas las rutas a `index.html` (necesario para SPA Flutter)
+   - ✅ Se mantiene la configuración de `functions` existente
+
+2. **GitHub Action (.github/workflows/ci-firebase-hosting.yml)**:
+   - ✅ Removido parámetro inválido `working-directory`
+   - ✅ Agregado paso de verificación `Verify build output` que confirma `build/web` existe
+   - ✅ Agregada condición `if: github.event_name == 'push'` para desplegar solo en push (no en PR)
+   - ✅ Removido `channelId: live` y `expires: 30d` (parámetros no soportados)
+   - ✅ Agregado `FIREBASE_CLI_EXPERIMENTS: webframeworks` para optimización Flutter web
+
+3. **Script local de despliegue** (FIREBASE_DEPLOY.sh):
+   - ✅ Script bash para compilar y desplegar localmente
+   - ✅ Limpia builds anteriores
+   - ✅ Verifica que `build/web` existe antes de desplegar
+   - ✅ Facilita debugging local
+
+**Ficheros modificados**:
+- `firebase.json`: Agregada sección `hosting` completa
+- `.github/workflows/ci-firebase-hosting.yml`: Corregidos inputs y agregada verificación
+- `FIREBASE_DEPLOY.sh` (NUEVO): Script local para despliegue manual
+
+**Cómo probar**:
+```bash
+# Opción 1: Despliegue automático (GitHub Actions)
+# 1. Haz push a main/master
+# 2. Observa las acciones en GitHub Actions
+# 3. Verifica que dice "✅ Deployment successful"
+
+# Opción 2: Despliegue local
+chmod +x FIREBASE_DEPLOY.sh
+./FIREBASE_DEPLOY.sh
+
+# Opción 3: Despliegue manual con Firebase CLI
+flutter build web --release
+firebase deploy --only hosting --project aparcamientodisponible
+```
+
+**Validaciones incluidas**:
+- ✅ `firebase.json` contiene sección `hosting` válida
+- ✅ GitHub Action solo usa inputs válidos para `FirebaseExtended/action-hosting-deploy@v0`
+- ✅ El workflow verifica que `build/web` existe antes de desplegar
+- ✅ Deploy solo en push a main/master (no en PR)
+
+**Notas**:
+- El dominio `aparcamientodisponible.web.app` debe mostrar la app después del despliegue
+- Si ves "Site Not Found", ejecuta localmente `./FIREBASE_DEPLOY.sh` para verificar
+- La sección `rewrites` en `firebase.json` es CRÍTICA para que Flutter SPA funcione correctamente
+
+**Próximos pasos**:
+1. Haz push del código para que GitHub Actions despliegue
+2. Espera a que el workflow `Flutter Firebase Hosting` complete
+3. Abre `https://aparcamientodisponible.web.app` para verificar que funciona
+
+**Fecha**: 25 de febrero de 2026 — Agente: Copilot
+
+---
+
 ## **CAMBIO CRÍTICO: Solución de compilación multiplataforma - reCAPTCHA v3 en Android/iOS**
 
 **Problema identificado**: La compilación de APK para Android fallaba con errores de librerías web-only:

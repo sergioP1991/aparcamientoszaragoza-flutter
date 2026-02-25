@@ -103,13 +103,24 @@ jobs:
         run: flutter build web --release
         working-directory: ${{ env.PROJECT_DIR }}
 
+      # Verify build output
+      - name: Verify build output
+        run: |
+          if [ -d "${{ env.PROJECT_DIR }}/build/web" ]; then
+            echo "✅ Build directory exists"
+            ls -la "${{ env.PROJECT_DIR }}/build/web" | head -20
+          else
+            echo "❌ Build directory not found at ${{ env.PROJECT_DIR }}/build/web"
+            exit 1
+          fi
+
+      # Only deploy on push to main/master, not on PR
       - name: Deploy Web to Firebase Hosting
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: "${{ secrets.GITHUB_TOKEN }}"
           firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
-          channelId: live
-          expires: 30d
           projectId: aparcamientodisponible
         env:
           FIREBASE_CLI_EXPERIMENTS: webframeworks
