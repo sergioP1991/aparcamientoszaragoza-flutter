@@ -1509,6 +1509,12 @@ abstract class AppLocalizations {
   /// **'Confirmar Pago • {total} €'**
   String confirmPaymentAction(Object total);
 
+  /// No description provided for @processingPayment.
+  ///
+  /// In es, this message translates to:
+  /// **'Procesando pago...'**
+  String get processingPayment;
+
   /// No description provided for @rentSuccess.
   ///
   /// In es, this message translates to:

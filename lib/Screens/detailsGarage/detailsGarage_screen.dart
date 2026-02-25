@@ -463,9 +463,13 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
   Widget _buildActionButtons(BuildContext context, AppLocalizations l10n) {
     return Row(
       children: [
-        _buildInfoBtn(l10n.schedulesAction),
+        Expanded(
+          child: _buildInfoBtn(l10n.schedulesAction),
+        ),
         const SizedBox(width: 12),
-        _buildInfoBtn(l10n.rulesAction),
+        Expanded(
+          child: _buildInfoBtn(l10n.rulesAction),
+        ),
       ],
     );
   }
@@ -540,9 +544,9 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
           mode: LaunchMode.externalApplication,
         );
       } else {
-        // Fallback a búsqueda por nombre si está disponible
+        // Fallback a búsqueda por dirección si está disponible
         final String fallbackUrl =
-            'https://www.google.com/maps/search/${Uri.encodeComponent(plaza.nombre)}';
+            'https://www.google.com/maps/search/${Uri.encodeComponent(plaza.direccion)}';
         if (await canLaunchUrl(Uri.parse(fallbackUrl))) {
           await launchUrl(
             Uri.parse(fallbackUrl),

@@ -1,3 +1,5 @@
+import 'package:aparcamientoszaragoza/Screens/payment/payment_screen.dart';
+import 'package:aparcamientoszaragoza/Services/StripeService.dart';
 import 'package:aparcamientoszaragoza/Screens/timeline/timeline_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/detailsGarage/detailsGarage_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/home_screen.dart';
@@ -37,6 +39,9 @@ import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar Stripe
+  StripeService.initialize();
 
   FirebaseOptions options = const FirebaseOptions(
       apiKey: "AIzaSyB-SUptPv8-RdATIDVKyOhSdH1XI1E2Vfk",
@@ -126,6 +131,11 @@ class MyApp extends ConsumerWidget {
           HelpSupportScreen.routeName: (context) => const HelpSupportScreen(),
           ContactScreen.routeName: (context) => const ContactScreen(),
           ComposeEmailScreen.routeName: (context) => ComposeEmailScreen(),
+          PaymentPage.routeName: (context) => PaymentPage(
+            plaza: ModalRoute.of(context)?.settings.arguments as dynamic ?? null,
+            rentalDays: 1,
+            totalAmount: 0,
+          ),
         },
       ),
     );

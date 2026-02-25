@@ -764,6 +764,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get processingPayment => 'Procesando pago...';
+
+  @override
   String get rentSuccess => '¡Alquiler realizado con éxito!';
 
   @override

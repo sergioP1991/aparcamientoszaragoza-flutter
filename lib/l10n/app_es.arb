@@ -238,6 +238,7 @@
   "legalPrefix": "Al confirmar el pago, aceptas nuestros ",
   "cancellationPolicy": "Política de Cancelación",
   "confirmPaymentAction": "Confirmar Pago • {total} €",
+  "processingPayment": "Procesando pago...",
   "rentSuccess": "¡Alquiler realizado con éxito!",
   "noRecentActivity": "No hay actividad reciente",
   "todayGroup": "Hoy",
