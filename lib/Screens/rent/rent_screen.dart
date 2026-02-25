@@ -26,6 +26,7 @@ class RentPage extends ConsumerStatefulWidget {
 class _RentPageState extends ConsumerState<RentPage> {
   List<DateTime?> _selectedDates = [DateTime.now()];
   bool _isProcessingPayment = false;
+  String _selectedPaymentMethod = 'card'; // Track selected payment method
   
   // Pricing Constants
   static const double managementFee = 0.45;
@@ -271,35 +272,193 @@ class _RentPageState extends ConsumerState<RentPage> {
   }
 
   Widget _buildPaymentMethod(AppLocalizations l10n) {
+    final paymentMethods = [
+      {
+        'id': 'card',
+        'icon': '💳',
+        'name': 'Tarjeta',
+        'description': 'Visa, Mastercard, Amex',
+        'iconWidget': Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.deepOrange.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.credit_card, color: Colors.deepOrange, size: 22),
+        ),
+      },
+      {
+        'id': 'apple_pay',
+        'icon': '🍎',
+        'name': 'Apple Pay',
+        'description': 'Pago rápido y seguro',
+        'iconWidget': Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.black87.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.apple, color: Colors.black87, size: 24),
+        ),
+      },
+      {
+        'id': 'google_pay',
+        'icon': '🔵',
+        'name': 'Google Pay',
+        'description': 'Pago rápido y seguro',
+        'iconWidget': Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F2937).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Padding(
+            padding: EdgeInsets.all(4),
+            child: Text('G', style: TextStyle(
+              color: Color(0xFF1F2937),
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            )),
+          ),
+        ),
+      },
+      {
+        'id': 'paypal',
+        'icon': '📱',
+        'name': 'PayPal',
+        'description': 'Cuenta de PayPal',
+        'iconWidget': Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0070BA).withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Padding(
+            padding: EdgeInsets.all(2),
+            child: Text('P', style: TextStyle(
+              color: Color(0xFF0070BA),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            )),
+          ),
+        ),
+      },
+    ];
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.credit_card, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(l10n.visaLabel("1234"), style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                Text(l10n.expiresLabel("12/26"), style: const TextStyle(color: Colors.white38, fontSize: 12)),
-              ],
+          Text(
+            'Selecciona método de pago',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          TextButton(
-            onPressed: () {},
-            child: Text(l10n.changeAction, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Column(
+            children: paymentMethods.map((method) {
+              final isSelected = _selectedPaymentMethod == method['id'];
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedPaymentMethod = method['id'] as String;
+                  });
+                  debugPrint('✅ Método seleccionado: ${method['name']}');
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.blue.withOpacity(0.1)
+                        : Colors.white.withOpacity(0.02),
+                    border: Border.all(
+                      color: isSelected ? Colors.blue : Colors.white12,
+                      width: isSelected ? 2 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      // Icono oficial
+                      method['iconWidget'] ?? Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          method['icon'] as String,
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Nombre y descripción
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              method['name'] as String,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              method['description'] as String,
+                              style: const TextStyle(
+                                color: Colors.white38,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Radio button
+                      Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: isSelected ? Colors.blue : Colors.white30,
+                            width: isSelected ? 2 : 1.5,
+                          ),
+                          borderRadius: BorderRadius.circular(50),
+                        ),
+                        child: isSelected
+                            ? Center(
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue,
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                ),
+                              )
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -385,12 +544,40 @@ class _RentPageState extends ConsumerState<RentPage> {
       double iva = basePrice * ivaRate;
       double total = basePrice + managementFee + iva;
 
-      // En web, mostrar mensaje informativo
+      // Mostrar método seleccionado
+      debugPrint('💳 Método de pago seleccionado: $_selectedPaymentMethod');
       debugPrint('💰 Procesando pago: ${total.toStringAsFixed(2)}€ para plaza ${plaza.idPlaza}');
 
-      // Crear pago con Stripe (en web mostrará error pero continuará)
+      // Crear pago con Stripe
       final amountInCents = (total * 100).toInt();
       
+      // Mostrar diálogo de procesamiento
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppColors.darkestBlue,
+            title: const Text(
+              'Procesando pago...',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.blue)),
+                const SizedBox(height: 16),
+                Text(
+                  'Conectando con Stripe...\nMétodo: $_selectedPaymentMethod',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
       try {
         final response = await StripeService.createPaymentIntent(
           amountInCents: amountInCents,
@@ -401,26 +588,94 @@ class _RentPageState extends ConsumerState<RentPage> {
 
         if (response['success']) {
           final clientSecret = response['clientSecret'] as String;
+          debugPrint('🔐 ClientSecret obtenido: ${clientSecret.substring(0, 20)}...');
           
-          // Procesar pago con tarjeta
-          final result = await StripeService.processCardPayment(
-            clientSecret: clientSecret,
-            amount: total,
-            currency: 'eur',
-          );
+          // Procesar pago con el método seleccionado
+          debugPrint('💳 Método seleccionado: $_selectedPaymentMethod');
+          
+          late StripePaymentResult result;
+          
+          switch (_selectedPaymentMethod) {
+            case 'apple_pay':
+              result = await StripeService.processApplePayment(
+                clientSecret: clientSecret,
+                amount: total,
+                currency: 'eur',
+                label: 'Alquiler Plaza: ${plaza.direccion}',
+              );
+              break;
+            case 'google_pay':
+              result = await StripeService.processGooglePayment(
+                clientSecret: clientSecret,
+                amount: total,
+                currency: 'eur',
+                label: 'Alquiler Plaza: ${plaza.direccion}',
+              );
+              break;
+            case 'paypal':
+              // PayPal usa el mismo flujo que tarjeta por ahora
+              result = await StripeService.processCardPayment(
+                clientSecret: clientSecret,
+                amount: total,
+                currency: 'eur',
+              );
+              break;
+            default: // 'card'
+              result = await StripeService.processCardPayment(
+                clientSecret: clientSecret,
+                amount: total,
+                currency: 'eur',
+              );
+          }
+
+          debugPrint('💳 Resultado de pago: ${result.status}');
 
           if (!result.isSuccessful) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error de pago: ${result.errorMessage}')),
-            );
+            if (mounted) Navigator.pop(context); // Cerrar diálogo
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('❌ Error de pago: ${result.errorMessage}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+            setState(() => _isProcessingPayment = false);
             return;
           }
+          
           debugPrint('✅ Pago exitoso: ${result.paymentIntentId}');
+          debugPrint('📊 Estado: ${result.status}, Método: ${result.paymentMethod}');
+        } else {
+          if (mounted) Navigator.pop(context);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error: ${response['error'] ?? 'Error desconocido'}'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          setState(() => _isProcessingPayment = false);
+          return;
         }
       } catch (e) {
         debugPrint('⚠️ Error procesando pago: $e');
-        // Continuar sin pago en caso de error (en web)
+        if (mounted) Navigator.pop(context);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al procesar: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() => _isProcessingPayment = false);
+        return;
       }
+
+      // Cerrar diálogo de procesamiento
+      if (mounted) Navigator.pop(context);
 
       // Crear la reserva
       if (plaza.rentIsNormal) {
@@ -446,7 +701,10 @@ class _RentPageState extends ConsumerState<RentPage> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.rentSuccess)),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.rentSuccess),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.of(context).pop();
       }

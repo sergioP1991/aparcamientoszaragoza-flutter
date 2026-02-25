@@ -762,7 +762,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get processingPayment => 'Procesando pago...';
+  String get processingPayment => 'Processing Payment...';
 
   @override
   String get rentSuccess => 'Rent successful!';
