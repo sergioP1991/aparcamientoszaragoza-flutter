@@ -275,77 +275,35 @@ class _RentPageState extends ConsumerState<RentPage> {
     final paymentMethods = [
       {
         'id': 'card',
-        'icon': '💳',
         'name': 'Tarjeta',
         'description': 'Visa, Mastercard, Amex',
-        'iconWidget': Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.deepOrange.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.credit_card, color: Colors.deepOrange, size: 22),
-        ),
+        'color': Colors.deepOrange,
+        'icon': Icons.payment, // mejor icono de tarjeta
+        'bgIcon': null,
       },
       {
         'id': 'apple_pay',
-        'icon': '🍎',
         'name': 'Apple Pay',
         'description': 'Pago rápido y seguro',
-        'iconWidget': Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: Colors.black87.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.apple, color: Colors.black87, size: 24),
-        ),
+        'color': Colors.black87,
+        'icon': Icons.apple,
+        'bgIcon': null,
       },
       {
         'id': 'google_pay',
-        'icon': '🔵',
         'name': 'Google Pay',
         'description': 'Pago rápido y seguro',
-        'iconWidget': Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1F2937).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Padding(
-            padding: EdgeInsets.all(4),
-            child: Text('G', style: TextStyle(
-              color: Color(0xFF1F2937),
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            )),
-          ),
-        ),
+        'color': const Color(0xFF1F2937),
+        'icon': null,
+        'bgIcon': 'G',
       },
       {
         'id': 'paypal',
-        'icon': '📱',
         'name': 'PayPal',
         'description': 'Cuenta de PayPal',
-        'iconWidget': Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: const Color(0xFF0070BA).withOpacity(0.15),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Padding(
-            padding: EdgeInsets.all(2),
-            child: Text('P', style: TextStyle(
-              color: Color(0xFF0070BA),
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            )),
-          ),
-        ),
+        'color': const Color(0xFF0070BA),
+        'icon': null,
+        'bgIcon': 'P',
       },
     ];
 
@@ -370,6 +328,10 @@ class _RentPageState extends ConsumerState<RentPage> {
           Column(
             children: paymentMethods.map((method) {
               final isSelected = _selectedPaymentMethod == method['id'];
+              final color = method['color'] as Color;
+              final icon = method['icon'] as IconData?;
+              final bgIcon = method['bgIcon'] as String?;
+              
               return GestureDetector(
                 onTap: () {
                   setState(() {
@@ -392,19 +354,30 @@ class _RentPageState extends ConsumerState<RentPage> {
                   ),
                   child: Row(
                     children: [
-                      // Icono oficial
-                      method['iconWidget'] ?? Container(
-                        width: 40,
-                        height: 40,
+                      // Icono oficial con mejor diseño
+                      Container(
+                        width: 50,
+                        height: 50,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(8),
+                          color: color.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: color.withOpacity(0.3),
+                            width: 1,
+                          ),
                         ),
                         alignment: Alignment.center,
-                        child: Text(
-                          method['icon'] as String,
-                          style: const TextStyle(fontSize: 20),
-                        ),
+                        child: icon != null
+                            ? Icon(icon, color: color, size: 28)
+                            : Text(
+                                bgIcon ?? 'P',
+                                style: TextStyle(
+                                  color: color,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
                       ),
                       const SizedBox(width: 12),
                       // Nombre y descripción
@@ -430,22 +403,22 @@ class _RentPageState extends ConsumerState<RentPage> {
                           ],
                         ),
                       ),
-                      // Radio button
+                      // Radio button mejorado
                       Container(
-                        width: 20,
-                        height: 20,
+                        width: 22,
+                        height: 22,
                         decoration: BoxDecoration(
                           border: Border.all(
                             color: isSelected ? Colors.blue : Colors.white30,
-                            width: isSelected ? 2 : 1.5,
+                            width: isSelected ? 2.5 : 1.5,
                           ),
                           borderRadius: BorderRadius.circular(50),
                         ),
                         child: isSelected
                             ? Center(
                                 child: Container(
-                                  width: 8,
-                                  height: 8,
+                                  width: 10,
+                                  height: 10,
                                   decoration: BoxDecoration(
                                     color: Colors.blue,
                                     borderRadius: BorderRadius.circular(50),

@@ -28,6 +28,18 @@ class Stripe {
   Future<void> presentPaymentSheet() async {
     throw UnsupportedError('Stripe no está soportado en web');
   }
+  
+  Future<PaymentSheetPaymentOption> googlePaySheet({
+    required GooglePaySheetOptions options,
+  }) async {
+    throw UnsupportedError('Google Pay no está soportado en web');
+  }
+  
+  Future<PaymentSheetPaymentOption> applePaySheet({
+    required ApplePaySheetOptions options,
+  }) async {
+    throw UnsupportedError('Apple Pay no está soportado en web');
+  }
 }
 
 class StripeException implements Exception {
@@ -133,6 +145,34 @@ class BillingDetailsCollectionConfiguration {
     this.email = true,
     this.phone = true,
     this.address = true,
+  });
+}
+
+class GooglePaySheetOptions {
+  final String currencyCode;
+  final String merchantCountryCode;
+  final int amount;
+  final String label;
+  
+  GooglePaySheetOptions({
+    required this.currencyCode,
+    required this.merchantCountryCode,
+    required this.amount,
+    required this.label,
+  });
+}
+
+class ApplePaySheetOptions {
+  final String currencyCode;
+  final String merchantCountryCode;
+  final int amount;
+  final String label;
+  
+  ApplePaySheetOptions({
+    required this.currencyCode,
+    required this.merchantCountryCode,
+    required this.amount,
+    required this.label,
   });
 }
 

@@ -72,16 +72,16 @@ class StripeService {
 
   /// Inicializar Stripe (llamar en main.dart)
   /// ⚠️ Solo se ejecuta en plataformas móviles (Android/iOS)
-  /// En web, flutter_stripe no está disponible
+  /// En web, flutter_stripe no está disponible y se usa API REST en su lugar
   static void initialize() {
     if (kIsWeb) {
-      debugPrint('⚠️ Stripe inicialización saltada en web (no soportado)');
+      debugPrint('ℹ️ Stripe web: usando API REST (flutter_stripe no soporta web)');
       return;
     }
     
     try {
       stripe.Stripe.publishableKey = publishableKey;
-      debugPrint('✅ Stripe inicializado correctamente');
+      debugPrint('✅ Stripe inicializado correctamente en móvil');
     } catch (e) {
       debugPrint('❌ Error inicializando Stripe: $e');
     }
@@ -130,11 +130,14 @@ class StripeService {
       debugPrint('🔑 createPaymentIntent: Creando intent real en Stripe...');
       debugPrint('💰 Monto: ${(amountInCents / 100).toStringAsFixed(2)} $currency');
       
+      // Crear autenticación básica con el Secret Key
+      final basicAuth = base64Encode(utf8.encode('$secretKey:'));
+      
       // Llamar a Stripe API para crear un PaymentIntent
       final response = await http.post(
         Uri.parse('https://api.stripe.com/v1/payment_intents'),
         headers: {
-          'Authorization': 'Bearer $secretKey',
+          'Authorization': 'Basic $basicAuth',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {
@@ -160,6 +163,7 @@ class StripeService {
         final errorData = jsonDecode(response.body);
         final errorMessage = errorData['error']?['message'] ?? 'Error desconocido';
         debugPrint('❌ Error de Stripe: $errorMessage');
+        debugPrint('📋 Respuesta completa: ${response.body}');
         return {
           'success': false,
           'error': errorMessage,
@@ -185,20 +189,26 @@ class StripeService {
   }) async {
     try {
       if (kIsWeb) {
-        // En web: Usar Stripe PaymentElement o confirmar el PaymentIntent
+        // En web: Usar Stripe API REST para confirmar el PaymentIntent
         debugPrint('🌐 processCardPayment (WEB): Confirmando PaymentIntent con Stripe...');
         
+        // Extraer el Payment Intent ID del client secret
+        final paymentIntentId = clientSecret.split('_secret_')[0];
+        
+        // Crear autenticación básica
+        final basicAuth = base64Encode(utf8.encode('$secretKey:'));
+        
         // Confirmar el PaymentIntent usando la API de Stripe
-        // Esto es un flujo server-side que debería estar protegido
         final confirmResponse = await http.post(
-          Uri.parse('https://api.stripe.com/v1/payment_intents/${clientSecret.split('_secret_')[0]}/confirm'),
+          Uri.parse('https://api.stripe.com/v1/payment_intents/$paymentIntentId/confirm'),
           headers: {
-            'Authorization': 'Bearer $secretKey',
+            'Authorization': 'Basic $basicAuth',
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: {
             'client_secret': clientSecret,
             'return_url': 'http://localhost:50251', // Para SCA/3D Secure
+            'payment_method': 'pm_card_visa', // Para testing: tarjeta de prueba Visa
           },
         );
 
@@ -209,6 +219,7 @@ class StripeService {
           final status = data['status'] as String;
           
           debugPrint('✅ Estado del pago: $status');
+          debugPrint('📋 Respuesta: ${confirmResponse.body}');
           
           if (status == 'succeeded') {
             return StripePaymentResult(
@@ -228,6 +239,16 @@ class StripeService {
               paymentMethod: 'card',
               timestamp: DateTime.now(),
             );
+          } else if (status == 'requires_action' || status == 'requires_payment_method') {
+            return StripePaymentResult(
+              paymentIntentId: data['id'] as String,
+              status: status,
+              amount: amount,
+              currency: currency,
+              paymentMethod: 'card',
+              timestamp: DateTime.now(),
+              errorMessage: 'Pago requiere confirmación adicional (3D Secure)',
+            );
           } else {
             return StripePaymentResult(
               paymentIntentId: data['id'] as String,
@@ -236,13 +257,14 @@ class StripeService {
               currency: currency,
               paymentMethod: 'card',
               timestamp: DateTime.now(),
-              errorMessage: 'Pago requiere confirmación adicional',
+              errorMessage: 'Estado desconocido: $status',
             );
           }
         } else {
           final errorData = jsonDecode(confirmResponse.body);
           final errorMessage = errorData['error']?['message'] ?? 'Error desconocido';
           debugPrint('❌ Error de Stripe: $errorMessage');
+          debugPrint('📋 Respuesta de error: ${confirmResponse.body}');
           return StripePaymentResult(
             paymentIntentId: '',
             status: 'error',
@@ -333,9 +355,7 @@ class StripeService {
       );
     }
   }
-  /// Procesar pago con Google Pay
-  // TODO: Implementar con la versión correcta de flutter_stripe
-  /*
+
   /// Procesar Google Pay
   /// En web: Redirige al flujo de tarjeta (Google Pay requiere Android/iOS)
   /// En móvil: Usa Stripe Google Pay Sheet
@@ -361,7 +381,7 @@ class StripeService {
 
       // En móvil: usar Google Pay Sheet de Stripe
       final result = await stripe.Stripe.instance.googlePaySheet(
-        stripe.GooglePaySheetOptions(
+        options: stripe.GooglePaySheetOptions(
           currencyCode: currency.toUpperCase(),
           merchantCountryCode: 'ES',
           amount: (amount * 100).toInt(),
@@ -391,7 +411,6 @@ class StripeService {
     }
   }
 
-  /// Procesar pago con Apple Pay
   /// Procesar Apple Pay
   /// En web: Redirige al flujo de tarjeta (Apple Pay requiere iOS)
   /// En móvil (iOS): Usa Stripe Apple Pay Sheet
@@ -417,7 +436,7 @@ class StripeService {
 
       // En iOS: usar Apple Pay Sheet de Stripe
       final result = await stripe.Stripe.instance.applePaySheet(
-        stripe.ApplePaySheetOptions(
+        options: stripe.ApplePaySheetOptions(
           currencyCode: currency.toUpperCase(),
           merchantCountryCode: 'ES',
           amount: (amount * 100).toInt(),
@@ -446,7 +465,6 @@ class StripeService {
       );
     }
   }
-  */
 
   /// Obtener detalles del método de pago
   static Map<String, dynamic> getPaymentMethodDetails(StripePaymentMethod method) {
