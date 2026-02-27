@@ -145,7 +145,7 @@ class StripeService {
           'currency': currency,
           'description': description,
           'metadata[plaza_id]': plazaId.toString(),
-          'automatic_payment_methods[enabled]': 'true',
+          'payment_method_types[]': 'card',
         },
       );
 
@@ -178,14 +178,62 @@ class StripeService {
     }
   }
 
+  /// Crear un PaymentMethod con datos de tarjeta (para pagos en web)
+  ///
+  /// En web no disponemos de Stripe Elements, así que creamos el
+  /// PaymentMethod directamente con la API REST de Stripe.
+  static Future<Map<String, dynamic>> createPaymentMethodFromCard({
+    required String cardNumber,
+    required String expMonth,
+    required String expYear,
+    required String cvc,
+  }) async {
+    try {
+      debugPrint('💳 Creando PaymentMethod con datos de tarjeta...');
+      final basicAuth = base64Encode(utf8.encode('$secretKey:'));
+
+      final response = await http.post(
+        Uri.parse('https://api.stripe.com/v1/payment_methods'),
+        headers: {
+          'Authorization': 'Basic $basicAuth',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'type': 'card',
+          'card[number]': cardNumber,
+          'card[exp_month]': expMonth,
+          'card[exp_year]': expYear,
+          'card[cvc]': cvc,
+        },
+      );
+
+      debugPrint('📡 Respuesta PaymentMethod: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        debugPrint('✅ PaymentMethod creado: ${data['id']}');
+        return {'success': true, 'paymentMethodId': data['id'] as String};
+      } else {
+        final errorData = jsonDecode(response.body);
+        final errorMsg = errorData['error']?['message'] ?? 'Error desconocido';
+        debugPrint('❌ Error PaymentMethod: $errorMsg');
+        return {'success': false, 'error': errorMsg};
+      }
+    } catch (e) {
+      debugPrint('❌ Error en createPaymentMethodFromCard: $e');
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
   /// Procesar pago - Conecta realmente con Stripe
   /// 
-  /// En web: Usa Stripe PaymentElement (JavaScript/Dart interop)
+  /// En web: Usa API REST para confirmar el PaymentIntent
   /// En Android/iOS: Usa flutter_stripe SDK completo
   static Future<StripePaymentResult> processCardPayment({
     required String clientSecret,
     required double amount,
     required String currency,
+    String? paymentMethodId,
   }) async {
     try {
       if (kIsWeb) {
@@ -207,8 +255,8 @@ class StripeService {
           },
           body: {
             'client_secret': clientSecret,
-            'return_url': 'http://localhost:50251', // Para SCA/3D Secure
-            'payment_method': 'pm_card_visa', // Para testing: tarjeta de prueba Visa
+            'return_url': kIsWeb ? Uri.base.toString() : 'http://localhost',
+            'payment_method': paymentMethodId ?? 'pm_card_visa',
           },
         );
 

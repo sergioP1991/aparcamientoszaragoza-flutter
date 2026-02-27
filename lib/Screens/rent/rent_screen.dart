@@ -273,38 +273,10 @@ class _RentPageState extends ConsumerState<RentPage> {
 
   Widget _buildPaymentMethod(AppLocalizations l10n) {
     final paymentMethods = [
-      {
-        'id': 'card',
-        'name': 'Tarjeta',
-        'description': 'Visa, Mastercard, Amex',
-        'color': Colors.deepOrange,
-        'icon': Icons.payment, // mejor icono de tarjeta
-        'bgIcon': null,
-      },
-      {
-        'id': 'apple_pay',
-        'name': 'Apple Pay',
-        'description': 'Pago rápido y seguro',
-        'color': Colors.black87,
-        'icon': Icons.apple,
-        'bgIcon': null,
-      },
-      {
-        'id': 'google_pay',
-        'name': 'Google Pay',
-        'description': 'Pago rápido y seguro',
-        'color': const Color(0xFF1F2937),
-        'icon': null,
-        'bgIcon': 'G',
-      },
-      {
-        'id': 'paypal',
-        'name': 'PayPal',
-        'description': 'Cuenta de PayPal',
-        'color': const Color(0xFF0070BA),
-        'icon': null,
-        'bgIcon': 'P',
-      },
+      {'id': 'card', 'name': 'Tarjeta', 'description': 'Visa, Mastercard, Amex'},
+      {'id': 'apple_pay', 'name': 'Apple Pay', 'description': 'Pago rápido y seguro'},
+      {'id': 'google_pay', 'name': 'Google Pay', 'description': 'Pago con tu cuenta Google'},
+      {'id': 'paypal', 'name': 'PayPal', 'description': 'Cuenta de PayPal'},
     ];
 
     return Container(
@@ -328,9 +300,6 @@ class _RentPageState extends ConsumerState<RentPage> {
           Column(
             children: paymentMethods.map((method) {
               final isSelected = _selectedPaymentMethod == method['id'];
-              final color = method['color'] as Color;
-              final icon = method['icon'] as IconData?;
-              final bgIcon = method['bgIcon'] as String?;
               
               return GestureDetector(
                 onTap: () {
@@ -354,31 +323,7 @@ class _RentPageState extends ConsumerState<RentPage> {
                   ),
                   child: Row(
                     children: [
-                      // Icono oficial con mejor diseño
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: color.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: icon != null
-                            ? Icon(icon, color: color, size: 28)
-                            : Text(
-                                bgIcon ?? 'P',
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                      ),
+                      _buildPaymentIcon(method['id'] as String),
                       const SizedBox(width: 12),
                       // Nombre y descripción
                       Expanded(
@@ -434,6 +379,229 @@ class _RentPageState extends ConsumerState<RentPage> {
             }).toList(),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentIcon(String methodId) {
+    switch (methodId) {
+      case 'card':
+        return Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF8A00), Color(0xFFE52E71)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.credit_card_rounded, color: Colors.white, size: 26),
+        );
+      case 'apple_pay':
+        return Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white24),
+          ),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.apple, color: Colors.white, size: 22),
+              Text('Pay', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600, height: 1.0)),
+            ],
+          ),
+        );
+      case 'google_pay':
+        return Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFDADCE0)),
+          ),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('G', style: TextStyle(
+                color: Color(0xFF4285F4),
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              )),
+              Text('Pay', style: TextStyle(color: Color(0xFF5F6368), fontSize: 9, fontWeight: FontWeight.w500, height: 1.0)),
+            ],
+          ),
+        );
+      case 'paypal':
+        return Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF003087), Color(0xFF009CDE)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Center(
+            child: Text('PP', style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              fontStyle: FontStyle.italic,
+              letterSpacing: -1,
+            )),
+          ),
+        );
+      default:
+        return Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: Colors.grey.shade800,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.payment, color: Colors.white, size: 26),
+        );
+    }
+  }
+
+  Future<Map<String, String>?> _showCardInputDialog() async {
+    final cardCtrl = TextEditingController();
+    final expiryCtrl = TextEditingController();
+    final cvcCtrl = TextEditingController();
+
+    return showDialog<Map<String, String>>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1F36),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_outline, color: Colors.blue, size: 20),
+            SizedBox(width: 10),
+            Text('Datos de tarjeta',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SizedBox(
+          width: 360,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: cardCtrl,
+                decoration: _cardInputDecoration('Número de tarjeta', '4242 4242 4242 4242', Icons.credit_card),
+                style: const TextStyle(color: Colors.white, fontSize: 15, letterSpacing: 1.5),
+                keyboardType: TextInputType.number,
+                maxLength: 19,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: expiryCtrl,
+                      decoration: _cardInputDecoration('MM/AA', '12/28', Icons.calendar_today),
+                      style: const TextStyle(color: Colors.white, fontSize: 15),
+                      keyboardType: TextInputType.datetime,
+                      maxLength: 5,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: cvcCtrl,
+                      decoration: _cardInputDecoration('CVC', '123', Icons.lock_outline),
+                      style: const TextStyle(color: Colors.white, fontSize: 15),
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      maxLength: 4,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.shield_outlined, color: Colors.green.shade400, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Pago seguro procesado por Stripe',
+                        style: TextStyle(color: Colors.green.shade300, fontSize: 11),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white38)),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.lock, size: 14),
+            label: const Text('Pagar', style: TextStyle(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            onPressed: () {
+              final num = cardCtrl.text.replaceAll(RegExp(r'\s'), '');
+              final exp = expiryCtrl.text.trim();
+              final cvc = cvcCtrl.text.trim();
+              if (num.length < 13 || !exp.contains('/') || exp.length < 4 || cvc.length < 3) return;
+              final parts = exp.split('/');
+              final yr = parts[1].length == 2 ? '20${parts[1]}' : parts[1];
+              Navigator.pop(ctx, {
+                'number': num,
+                'exp_month': parts[0],
+                'exp_year': yr,
+                'cvc': cvc,
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _cardInputDecoration(String label, String hint, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+      hintStyle: TextStyle(color: Colors.white.withOpacity(0.2)),
+      prefixIcon: Icon(icon, color: Colors.white30, size: 18),
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.05),
+      counterText: '',
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Colors.blue),
       ),
     );
   }
@@ -508,6 +676,13 @@ class _RentPageState extends ConsumerState<RentPage> {
   Future<void> _processPaymentAndRent(Garaje plaza, User? user) async {
     if (_isProcessingPayment) return;
 
+    // En web: mostrar formulario de tarjeta antes de procesar
+    Map<String, String>? cardData;
+    if (kIsWeb) {
+      cardData = await _showCardInputDialog();
+      if (cardData == null) return; // Usuario canceló
+    }
+
     setState(() => _isProcessingPayment = true);
 
     try {
@@ -562,43 +737,72 @@ class _RentPageState extends ConsumerState<RentPage> {
         if (response['success']) {
           final clientSecret = response['clientSecret'] as String;
           debugPrint('🔐 ClientSecret obtenido: ${clientSecret.substring(0, 20)}...');
-          
-          // Procesar pago con el método seleccionado
-          debugPrint('💳 Método seleccionado: $_selectedPaymentMethod');
-          
+
           late StripePaymentResult result;
-          
-          switch (_selectedPaymentMethod) {
-            case 'apple_pay':
-              result = await StripeService.processApplePayment(
-                clientSecret: clientSecret,
-                amount: total,
-                currency: 'eur',
-                label: 'Alquiler Plaza: ${plaza.direccion}',
+
+          if (kIsWeb) {
+            // En web: crear PaymentMethod con datos de tarjeta del formulario
+            String? paymentMethodId;
+            if (cardData != null) {
+              debugPrint('💳 Creando PaymentMethod con datos de tarjeta...');
+              final pmResult = await StripeService.createPaymentMethodFromCard(
+                cardNumber: cardData['number']!,
+                expMonth: cardData['exp_month']!,
+                expYear: cardData['exp_year']!,
+                cvc: cardData['cvc']!,
               );
-              break;
-            case 'google_pay':
-              result = await StripeService.processGooglePayment(
-                clientSecret: clientSecret,
-                amount: total,
-                currency: 'eur',
-                label: 'Alquiler Plaza: ${plaza.direccion}',
-              );
-              break;
-            case 'paypal':
-              // PayPal usa el mismo flujo que tarjeta por ahora
-              result = await StripeService.processCardPayment(
-                clientSecret: clientSecret,
-                amount: total,
-                currency: 'eur',
-              );
-              break;
-            default: // 'card'
-              result = await StripeService.processCardPayment(
-                clientSecret: clientSecret,
-                amount: total,
-                currency: 'eur',
-              );
+              if (pmResult['success'] == true) {
+                paymentMethodId = pmResult['paymentMethodId'] as String;
+                debugPrint('✅ PaymentMethod creado: $paymentMethodId');
+              } else {
+                if (mounted) Navigator.pop(context);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('❌ Tarjeta inválida: ${pmResult['error']}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+                setState(() => _isProcessingPayment = false);
+                return;
+              }
+            }
+
+            // En web todos los métodos se procesan con tarjeta
+            result = await StripeService.processCardPayment(
+              clientSecret: clientSecret,
+              amount: total,
+              currency: 'eur',
+              paymentMethodId: paymentMethodId,
+            );
+          } else {
+            // En móvil: usar SDKs nativos según método seleccionado
+            debugPrint('💳 Método móvil: $_selectedPaymentMethod');
+            switch (_selectedPaymentMethod) {
+              case 'apple_pay':
+                result = await StripeService.processApplePayment(
+                  clientSecret: clientSecret,
+                  amount: total,
+                  currency: 'eur',
+                  label: 'Alquiler Plaza: ${plaza.direccion}',
+                );
+                break;
+              case 'google_pay':
+                result = await StripeService.processGooglePayment(
+                  clientSecret: clientSecret,
+                  amount: total,
+                  currency: 'eur',
+                  label: 'Alquiler Plaza: ${plaza.direccion}',
+                );
+                break;
+              default:
+                result = await StripeService.processCardPayment(
+                  clientSecret: clientSecret,
+                  amount: total,
+                  currency: 'eur',
+                );
+            }
           }
 
           debugPrint('💳 Resultado de pago: ${result.status}');
