@@ -11,6 +11,7 @@ import 'package:aparcamientoszaragoza/Screens/registerGarage/providers/RegisterG
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:aparcamientoszaragoza/widgets/network_image_loader.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
+import 'package:aparcamientoszaragoza/Screens/rent/rent_screen.dart';
 
 class GarageCard extends StatelessWidget {
   final Garaje item;

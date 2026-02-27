@@ -407,8 +407,6 @@ class StripeService {
   /// Procesar Google Pay
   /// En web: Redirige al flujo de tarjeta (Google Pay requiere Android/iOS)
   /// En móvil: Usa Stripe Google Pay Sheet
-  // TODO: Google Pay no disponible en flutter_stripe 10.2.0
-  /*
   static Future<StripePaymentResult> processGooglePayment({
     required String clientSecret,
     required double amount,
@@ -460,11 +458,8 @@ class StripeService {
       );
     }
   }
-  */
   /// En web: Redirige al flujo de tarjeta (Apple Pay requiere iOS)
   /// En móvil (iOS): Usa Stripe Apple Pay Sheet
-  // TODO: Apple Pay no disponible en flutter_stripe 10.2.0
-  /*
   static Future<StripePaymentResult> processApplePayment({
     required String clientSecret,
     required double amount,
@@ -516,7 +511,6 @@ class StripeService {
       );
     }
   }
-  */
   static Map<String, dynamic> getPaymentMethodDetails(StripePaymentMethod method) {
     const details = {
       'card': {
