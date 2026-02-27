@@ -6,7 +6,6 @@ import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart'
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/Screens/detailsGarage/detailsGarage_screen.dart';
-import 'package:aparcamientoszaragoza/Screens/rent/rent_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart';
 import 'package:aparcamientoszaragoza/Screens/registerGarage/providers/RegisterGarageProviders.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';

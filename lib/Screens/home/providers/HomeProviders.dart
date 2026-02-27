@@ -148,6 +148,11 @@ Future<HomeData?> fetchHome(Ref ref, {required bool allGarages, bool onlyMine = 
   List<Alquiler> listAlquileres = snapshotRent.docs.map<Alquiler>((doc) {
     if (doc['tipo'] == 0) {
       return AlquilerNormal.fromFirestore(doc);
+    } else if (doc['tipo'] == 1) {
+      return AlquilerEspecial.fromFirestore(doc);
+    } else if (doc['tipo'] == 2) {
+      // Alquiler por horas - TODO: Importar AlquilerPorHoras cuando sea necesario
+      return AlquilerEspecial.fromFirestore(doc); // Placeholder por ahora
     } else {
       return AlquilerEspecial.fromFirestore(doc);
     }

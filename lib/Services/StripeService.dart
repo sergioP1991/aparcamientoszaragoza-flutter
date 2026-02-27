@@ -246,7 +246,8 @@ class StripeService {
         // Crear autenticación básica
         final basicAuth = base64Encode(utf8.encode('$secretKey:'));
         
-        // Confirmar el PaymentIntent usando la API de Stripe
+        // Confirmar el PaymentIntent usando la API de Stripe (server-side con Secret Key)
+        // NOTA: No se pasa client_secret en el body al usar Basic Auth con Secret Key
         final confirmResponse = await http.post(
           Uri.parse('https://api.stripe.com/v1/payment_intents/$paymentIntentId/confirm'),
           headers: {
@@ -254,9 +255,8 @@ class StripeService {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: {
-            'client_secret': clientSecret,
-            'return_url': kIsWeb ? Uri.base.toString() : 'http://localhost',
             'payment_method': paymentMethodId ?? 'pm_card_visa',
+            'return_url': kIsWeb ? Uri.base.toString() : 'http://localhost',
           },
         );
 
@@ -407,6 +407,8 @@ class StripeService {
   /// Procesar Google Pay
   /// En web: Redirige al flujo de tarjeta (Google Pay requiere Android/iOS)
   /// En móvil: Usa Stripe Google Pay Sheet
+  // TODO: Google Pay no disponible en flutter_stripe 10.2.0
+  /*
   static Future<StripePaymentResult> processGooglePayment({
     required String clientSecret,
     required double amount,
@@ -458,10 +460,11 @@ class StripeService {
       );
     }
   }
-
-  /// Procesar Apple Pay
+  */
   /// En web: Redirige al flujo de tarjeta (Apple Pay requiere iOS)
   /// En móvil (iOS): Usa Stripe Apple Pay Sheet
+  // TODO: Apple Pay no disponible en flutter_stripe 10.2.0
+  /*
   static Future<StripePaymentResult> processApplePayment({
     required String clientSecret,
     required double amount,
@@ -513,8 +516,7 @@ class StripeService {
       );
     }
   }
-
-  /// Obtener detalles del método de pago
+  */
   static Map<String, dynamic> getPaymentMethodDetails(StripePaymentMethod method) {
     const details = {
       'card': {

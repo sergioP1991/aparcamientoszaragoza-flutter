@@ -4,6 +4,7 @@ abstract class Alquiler{
   String? idArrendatario;
   // 0 - Normal
   // 1 - Especial
+  // 2 - Por Horas
   int tipo;
 
   Alquiler(this.idPlaza, this.idArrendatario, this.tipo);
