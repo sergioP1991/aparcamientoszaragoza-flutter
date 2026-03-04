@@ -66,11 +66,14 @@ class StripePaymentResult {
 /// 2. Inicializa Stripe en main.dart: Stripe.publishableKey = publishableKey;
 class StripeService {
   // Configuración - Claves de prueba (test mode)
+  // ⚠️ IMPORTANTE: Reemplaza estas claves con tus propias claves de Stripe
+  // Las claves están configuradas en Firebase Remote Config o variables de entorno
   static const String publishableKey = 'pk_test_51SuUod2KaK54WVOoow3ceAdHyLefry0S7wHHA5R0SfjFyB9mVyfwpocCmt0adzDFDiwsaM4diLCht1E98oJV8UWU00H20ta2MQ';
   
-  // ⚠️ NUNCA usar Secret Key en cliente. Solo en Cloud Functions.
-  // Esta es solo para referencia. En producción, guardar en Environment Variables.
-  static const String secretKey = 'sk_test_51SuUod2KaK54WVOoDRRDNKAb4BoDBWT6pycLg45iSQIMDIrR1kfWd3GP9K1pDdAubZqChuHIA24o7MsmukcTFC53009adHE2Hl';
+  // ⚠️ NUNCA usar Secret Key en cliente. Solo en Cloud Functions/Backend.
+  // IMPORTANTE: Esta clave debe estar en variables de entorno o Firebase Remote Config.
+  // NUNCA commitear secretos en el repositorio.
+  static const String secretKey = 'REMOVE_ME_USE_ENVIRONMENT_VARIABLES'; // Ver instrucciones en README.md
 
   /// Inicializar Stripe (llamar en main.dart)
   /// ⚠️ Solo se ejecuta en plataformas móviles (Android/iOS)
