@@ -7,6 +7,7 @@ import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart
 import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart';
 import 'package:aparcamientoszaragoza/Screens/userDetails/userDetails_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/active_rentals/active_rentals_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/admin/admin_rentals_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:aparcamientoszaragoza/Screens/ad/ad_screen.dart';

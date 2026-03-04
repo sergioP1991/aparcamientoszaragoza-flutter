@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "code-refactoring": {
+      "source": "supercent-io/skills-template",
+      "sourceType": "github",
+      "computedHash": "3aeb03df66d302060e25155a7dde3f5927a83c8055d90456447233fba70e890b"
+    },
+    "flutter-expert": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "computedHash": "df37f35010c3a373afb7b5dcd0d650d1c2dd69b06dc484b3414935408000054f"
+    }
+  }
+}

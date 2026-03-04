@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,8 +13,10 @@ import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:aparcamientoszaragoza/widgets/network_image_loader.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/rent_screen.dart';
+import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
+import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
 
-class GarageCard extends StatelessWidget {
+class GarageCard extends ConsumerStatefulWidget {
   final Garaje item;
   final User? user;
   final Function(int)? onTap;
@@ -26,14 +29,57 @@ class GarageCard extends StatelessWidget {
   });
 
   @override
+  ConsumerState<GarageCard> createState() => _GarageCardState();
+}
+
+class _GarageCardState extends ConsumerState<GarageCard> {
+  late Timer _updateTimer;
+  AlquilerPorHoras? _activeRental;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadActiveRental();
+    // Actualizar cada segundo para mostrar tiempo restante
+    _updateTimer = Timer.periodic(Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _updateTimer.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadActiveRental() async {
+    try {
+      final rental = await RentalByHoursService.getActiveRentalForPlaza(widget.item.idPlaza ?? 0);
+      if (mounted) {
+        setState(() {
+          _activeRental = rental;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading active rental: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final isOwner = widget.item.propietario == widget.user?.uid;
+    final hasActiveRental = _activeRental != null && _activeRental!.estado.name == 'activo';
+    final tiempoRestante = hasActiveRental ? _activeRental!.tiempoRestante() : 0;
+    
     return GestureDetector(
       onTap: () {
-        if (onTap != null) {
-          onTap!(item.idPlaza!);
+        if (widget.onTap != null) {
+          widget.onTap!(widget.item.idPlaza!);
         } else {
-          Navigator.of(context).pushNamed(DetailsGarajePage.routeName, arguments: item.idPlaza);
+          Navigator.of(context).pushNamed(DetailsGarajePage.routeName, arguments: widget.item.idPlaza);
         }
       },
       child: Container(
@@ -66,11 +112,11 @@ class GarageCard extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(15),
                     child: NetworkImageLoader(
-                      imageUrl: item.imagen ?? PlazaImageService.getThumbnailUrl(item.idPlaza ?? 0),
+                      imageUrl: widget.item.imagen ?? PlazaImageService.getThumbnailUrl(widget.item.idPlaza ?? 0),
                       width: 120,
                       height: 120,
                       fit: BoxFit.cover,
-                      fallbackAsset: PlazaImageService.getFallbackAsset(item.idPlaza ?? 0),
+                      fallbackAsset: PlazaImageService.getFallbackAsset(widget.item.idPlaza ?? 0),
                     ),
                   ),
                   Positioned(
@@ -79,17 +125,17 @@ class GarageCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: item.propietario == user?.uid 
+                        color: widget.item.propietario == widget.user?.uid 
                             ? AppColors.primaryColor 
                             : Colors.black.withOpacity(0.6),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        item.propietario == user?.uid 
+                        widget.item.propietario == widget.user?.uid 
                             ? l10n.ownerLabel 
-                            : (item.rentIsNormal ? l10n.privateLabel : l10n.normalLabel),
+                            : (widget.item.rentIsNormal ? l10n.privateLabel : l10n.normalLabel),
                         style: TextStyle(
-                          color: item.propietario == user?.uid ? Colors.black : Colors.white,
+                          color: widget.item.propietario == widget.user?.uid ? Colors.black : Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -101,12 +147,12 @@ class GarageCard extends StatelessWidget {
                     right: 8,
                     child: Consumer(
                       builder: (context, ref, child) {
-                        final isFavorite = item.isFavorite(user?.email);
+                        final isFavorite = widget.item.isFavorite(widget.user?.email);
                         return GestureDetector(
                           onTap: () {
-                            if (user != null) {
+                            if (widget.user != null) {
                               ref.read(homeProvider.notifier).stateFavorite(
-                                    Favorite(user?.email ?? "", item.idPlaza.toString()),
+                                    Favorite(widget.user?.email ?? "", widget.item.idPlaza.toString()),
                                     !isFavorite,
                                   );
                             }
@@ -138,7 +184,7 @@ class GarageCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    item.direccion,
+                    widget.item.direccion,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -153,35 +199,62 @@ class GarageCard extends StatelessWidget {
                     runSpacing: 4,
                     children: [
                       _buildChip(
-                        item.vehicleType == VehicleType.moto ? Icons.motorcycle : Icons.directions_car, 
-                        item.vehicleType == VehicleType.moto ? l10n.motoLabel : l10n.carLabel
+                        widget.item.vehicleType == VehicleType.moto ? Icons.motorcycle : Icons.directions_car, 
+                        widget.item.vehicleType == VehicleType.moto ? l10n.motoLabel : l10n.carLabel
                       ),
-                      if (item.esCubierto)
+                      if (widget.item.esCubierto)
                         _buildChip(Icons.roofing, l10n.coveredChip),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: item.alquiler != null ? AppColors.accentRed : AppColors.accentGreen,
-                          shape: BoxShape.circle,
-                        ),
+                  // Status indicator with time if rental is active
+                  if (hasActiveRental && tiempoRestante > 0)
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryColor.withOpacity(0.2),
+                        border: Border.all(color: AppColors.primaryColor, width: 1.5),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        item.alquiler != null ? l10n.occupiedLabel : l10n.availableLabel,
-                        style: TextStyle(
-                          color: item.alquiler != null ? AppColors.accentRed : AppColors.accentGreen,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.schedule, color: AppColors.primaryColor, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '⏱️ ${_formatRentalTime(tiempoRestante)}',
+                              style: const TextStyle(
+                                color: AppColors.primaryColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    )
+                  else
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: widget.item.alquiler != null ? AppColors.accentRed : AppColors.accentGreen,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.item.alquiler != null ? l10n.occupiedLabel : l10n.availableLabel,
+                          style: TextStyle(
+                            color: widget.item.alquiler != null ? AppColors.accentRed : AppColors.accentGreen,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -192,7 +265,7 @@ class GarageCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                              Text(
-                              "${item.precio.toStringAsFixed(2)} €",
+                              "${widget.item.precio.toStringAsFixed(2)} €",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -209,7 +282,7 @@ class GarageCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      if (item.propietario == user?.uid)
+                      if (widget.item.propietario == widget.user?.uid)
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -220,7 +293,7 @@ class GarageCard extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => RegisterGarage(garageToEdit: item),
+                                    builder: (context) => RegisterGarage(garageToEdit: widget.item),
                                   ),
                                 );
                               },
@@ -237,10 +310,10 @@ class GarageCard extends StatelessWidget {
                             ),
                           ],
                         )
-                      else if (item.alquiler == null)
+                      else if (widget.item.alquiler == null)
                         ElevatedButton(
                           onPressed: () {
-                            Navigator.of(context).pushNamed(RentPage.routeName, arguments: item.idPlaza);
+                            Navigator.of(context).pushNamed(RentPage.routeName, arguments: widget.item.idPlaza);
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primaryColor,
@@ -266,6 +339,15 @@ class GarageCard extends StatelessWidget {
     );
   }
 
+  String _formatRentalTime(int minutes) {
+    if (minutes <= 0) return '0m';
+    if (minutes < 60) return '${minutes}m';
+    final hours = minutes ~/ 60;
+    final mins = minutes % 60;
+    if (mins == 0) return '${hours}h';
+    return '${hours}h ${mins}m';
+  }
+
   void _confirmDelete(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     showDialog(
@@ -282,8 +364,8 @@ class GarageCard extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              if (item.docId != null) {
-                await GarajeProvider().deleteGaraje(item.docId!);
+              if (widget.item.docId != null) {
+                await GarajeProvider().deleteGaraje(widget.item.docId!);
                 ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
                 ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
                 ScaffoldMessenger.of(context).showSnackBar(
