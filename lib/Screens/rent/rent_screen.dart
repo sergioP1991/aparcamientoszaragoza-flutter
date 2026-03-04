@@ -676,11 +676,24 @@ class _RentPageState extends ConsumerState<RentPage> {
   Future<void> _processPaymentAndRent(Garaje plaza, User? user) async {
     if (_isProcessingPayment) return;
 
-    // En web: mostrar formulario de tarjeta antes de procesar
+    debugPrint('═══════════════════════════════════════════════════════════════════');
+    debugPrint('🟦 INICIANDO PROCESAMIENTO DE PAGO');
+    debugPrint('═══════════════════════════════════════════════════════════════════');
+    debugPrint('💳 Método seleccionado: $_selectedPaymentMethod');
+    debugPrint('🌐 plataforma: ${kIsWeb ? "WEB" : "MÓVIL"}');
+
+    // En web: mostrar formulario de tarjeta SOLO si el usuario seleccionó tarjeta
     Map<String, String>? cardData;
-    if (kIsWeb) {
+    if (kIsWeb && _selectedPaymentMethod == 'card') {
+      debugPrint('▶️ Mostrando formulario de tarjeta...');
       cardData = await _showCardInputDialog();
-      if (cardData == null) return; // Usuario canceló
+      if (cardData == null) {
+        debugPrint('❌ Usuario canceló el formulario de tarjeta');
+        return; // Usuario canceló
+      }
+      debugPrint('✅ Tarjeta ingresada correctamente');
+    } else if (kIsWeb) {
+      debugPrint('▶️ Método es ${_selectedPaymentMethod.toUpperCase()} - NO mostrar formulario de tarjeta');
     }
 
     setState(() => _isProcessingPayment = true);
@@ -693,8 +706,10 @@ class _RentPageState extends ConsumerState<RentPage> {
       double total = basePrice + managementFee + iva;
 
       // Mostrar método seleccionado
-      debugPrint('💳 Método de pago seleccionado: $_selectedPaymentMethod');
-      debugPrint('💰 Procesando pago: ${total.toStringAsFixed(2)}€ para plaza ${plaza.idPlaza}');
+      debugPrint('═══════════════════════════════════════════════════════════════════');
+      debugPrint('🟦 PROCESANDO CON MÉTODO: $_selectedPaymentMethod');
+      debugPrint('💰 Monto: ${total.toStringAsFixed(2)}€ para plaza ${plaza.idPlaza}');
+      debugPrint('═══════════════════════════════════════════════════════════════════');
 
       // Crear pago con Stripe
       final amountInCents = (total * 100).toInt();

@@ -73,7 +73,7 @@ class StripeService {
   // ⚠️ NUNCA usar Secret Key en cliente. Solo en Cloud Functions/Backend.
   // IMPORTANTE: Esta clave debe estar en variables de entorno o Firebase Remote Config.
   // NUNCA commitear secretos en el repositorio.
-  static const String secretKey = 'REMOVE_ME_USE_ENVIRONMENT_VARIABLES'; // Ver instrucciones en README.md
+  static const String secretKey = 'sk_test_51SuUod2KaK54WVOoDRRDNKAb4BoDBWT6pycLg45iSQIMDIrR1kfWd3GP9K1pDdAubZqChuHIA24o7MsmukcTFC53009adHE2Hl';
 
   /// Inicializar Stripe (llamar en main.dart)
   /// ⚠️ Solo se ejecuta en plataformas móviles (Android/iOS)

@@ -193,17 +193,25 @@
             type: 'CARD',
             parameters: {
               allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
-              allowedCardNetworks: ['AMEX', 'MASTERCARD', 'VISA'],
+              allowedCardNetworks: ['AMEX', 'MASTERCARD', 'VISA', 'DISCOVER'],
             },
             tokenizationSpecification: {
               type: 'PAYMENT_GATEWAY',
               parameters: {
                 gateway: 'stripe',
-                'stripe:version': '2018-10-31',
+                'stripe:version': '2023-10-16',
                 'stripe:publishableKey': PUBLISHABLE_KEY,
+                'stripe:accountId': 'acct_1SuUod2KaK54WVOo',
               },
             },
           };
+
+          console.log('🔍 Configuración completa de Google Pay:');
+          console.log('  • Método de pago:', paymentMethod);
+          console.log('  • Gateway: stripe');
+          console.log('  • Stripe Account ID: acct_1SuUod2KaK54WVOo');
+          console.log('  • Stripe Version: 2023-10-16');
+          console.log('  • Publishable Key: ' + PUBLISHABLE_KEY.substring(0, 20) + '...');
 
           var client = new google.payments.api.PaymentsClient({ environment: 'TEST' });
           console.log('✓ PaymentsClient creado');
