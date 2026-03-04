@@ -6,6 +6,7 @@
 /// Este archivo SOLO se compila en web (importación condicional en StripeService).
 library stripe_payment_web;
 
+import 'dart:async'; // Para Completer
 import 'dart:js' as js;
 import 'dart:js_util' as js_util;
 
@@ -26,7 +27,7 @@ Future<Map<String, dynamic>> showGooglePayWeb({
 }) async {
   try {
     print('═══════════════════════════════════════════════════════════');
-    print('📡 LLAMADA DESDE DART A JAVASCRIPT');
+    print('📡 GOOGLE PAY WEB: Iniciando flujo (ENVIRONMENT: TEST, PAN_ONLY)');
     print('═══════════════════════════════════════════════════════════');
     
     final options = js.JsObject.jsify({
@@ -36,46 +37,97 @@ Future<Map<String, dynamic>> showGooglePayWeb({
     });
 
     print('  ✓ Opciones creadas:');
-    print('    • amountInCents: $amountInCents');
-    print('    • currency: $currency');
-    print('    • label: $label');
-    print('  ✓ Verificando window.showGooglePayDirect...');
+    print('    • Monto: €${(amountInCents / 100).toStringAsFixed(2)}');
+    print('    • Moneda: ${currency.toUpperCase()}');
+    print('    • Etiqueta: $label');
 
-    final dynamic promise =
-        js.context.callMethod('showGooglePayDirect', [options]);
+    // Usar Completer para convertir callback de JS en Future de Dart
+    final completer = Completer<Map<String, dynamic>>();
+    var timeoutTriggered = false;
     
-    print('  ✓ callMethod retornó: ${promise.runtimeType}');
-    
-    if (promise == null) {
-      print('  ❌ ERROR: showGooglePayDirect no está definida en window');
-      return {
-        'success': false,
-        'error': 'showGooglePayDirect no está definida en window',
-      };
-    }
-    print('  ✓ Promise recibida, esperando resolución...');
+    // Crear callback que Dart recibirá desde JavaScript
+    final dartCallback = (dynamic result) {
+      print('  📢 Callback JS → Dart recibido');
+      
+      if (timeoutTriggered) {
+        print('  ⚠️ (ignorando porque ya hubo timeout)');
+        return;
+      }
+      
+      if (result == null) {
+        print('  ❌ result es null');
+        completer.complete({'success': false, 'error': 'null_result'});
+        return;
+      }
 
-    final dynamic result = await js_util.promiseToFuture<dynamic>(promise);
-    print('  ✓ Promise resuelta');
-    print('  ✓ Resultado: $result');
+      try {
+        final bool success = js_util.getProperty<dynamic>(result, 'success') == true;
+        final dynamic errorProp = js_util.getProperty<dynamic>(result, 'error');
+        final dynamic pmId = js_util.getProperty<dynamic>(result, 'paymentMethodId');
+        
+        print('  ✓ Propiedades extraídas:');
+        print('    • success: $success');
+        print('    • error: $errorProp');
+        print('    • paymentMethodId: $pmId');
+        
+        if (success) {
+          print('  ✅ ÉXITO: Google Pay completed');
+          completer.complete({'success': true, 'paymentMethodId': (pmId as String?) ?? ''});
+        } else {
+          final errMsg = (errorProp as String?) ?? 'unknown';
+          print('  ❌ FALLO: $errMsg');
+          
+          // Analizar el error específico
+          if (errMsg == 'cancelled') {
+            print('     → Usuario CANCELÓ');
+          } else if (errMsg.contains('OR_BIBED')) {
+            print('     → ERROR OR_BIBED detectado (Google Pay / issuer declined)');
+            print('     → Checklist:');
+            print('        1) ¿Ves la "Test Card Suite" en el popup?');
+            print('        2) Si NO: cambiar a "tarjeta real" puede ayudar');
+            print('        3) Si SÍ: el problema es en el flujo de tokenización/3DS');
+          }
+          
+          completer.complete({'success': false, 'error': errMsg});
+        }
+      } catch (e) {
+        print('  ❌ Error extrayendo propiedades: $e');
+        completer.complete({'success': false, 'error': e.toString()});
+      }
+    };
+
+    // Convertir callback de Dart a JsFunction compatible con JavaScript
+    final jsCallback = js.allowInterop(dartCallback);
+
+    print('  ✓ Callback creado, llamando window.showGooglePayDirect...');
     
-    final bool success =
-        js_util.getProperty<dynamic>(result, 'success') == true;
+    // Llamar JavaScript con callback
+    js.context.callMethod('showGooglePayDirect', [options, jsCallback]);
     
-    if (success) {
-      final dynamic pmId = js_util.getProperty<dynamic>(result, 'paymentMethodId');
-      print('  ✅ ÉXITO: paymentMethodId = $pmId');
-      return {'success': true, 'paymentMethodId': (pmId as String?) ?? ''};
-    } else {
-      final dynamic error = js_util.getProperty<dynamic>(result, 'error');
-      print('  ❌ ERROR RETORNADO: $error');
-      return {'success': false, 'error': (error as String?) ?? 'unknown'};
-    }
+    print('  ✓ callMethod completó, esperando respuesta de Google Pay (120s)...');
+
+    // Esperar a que JavaScript llame al callback
+    final result = await completer.future.timeout(
+      const Duration(seconds: 135),
+      onTimeout: () {
+        timeoutTriggered = true;
+        print('  ⏱️ TIMEOUT: Google Pay no respondió en 135 segundos');
+        print('     → Probable causa: Google Pay popup cerrado / error sin callback');
+        return {'success': false, 'error': 'timeout'};
+      },
+    );
+    
+    print('═══════════════════════════════════════════════════════════');
+    print('✅ GOOGLE PAY WEB: Finalizado, retornando a StripeService');
+    print('═══════════════════════════════════════════════════════════');
+    
+    return result;
   } catch (e) {
     print('═══════════════════════════════════════════════════════════');
-    print('❌ EXCEPCIÓN EN DART showGooglePayWeb');
+    print('❌ EXCEPCIÓN EN showGooglePayWeb');
     print('═══════════════════════════════════════════════════════════');
     print('  • Error: $e');
+    print('  • Type: ${e.runtimeType}');
     return {'success': false, 'error': e.toString()};
   }
 }
@@ -101,7 +153,6 @@ Future<Map<String, dynamic>> showNativePaymentSheet({
   required String label,
 }) async {
   try {
-    // Construir el objeto de opciones como JsObject para pasarlo a JS
     final options = js.JsObject.jsify({
       'amountInCents': amountInCents,
       'currency': currency.toLowerCase(),
@@ -109,34 +160,36 @@ Future<Map<String, dynamic>> showNativePaymentSheet({
       'country': 'ES',
     });
 
-    // Llamar a window.showStripePaymentRequest() definida en index.html.
-    // Esta llamada es SÍNCRONA con respecto al contexto de activación del usuario,
-    // de modo que pr.show() (dentro del JS) hereda la activación del tap.
-    final dynamic promise =
-        js.context.callMethod('showStripePaymentRequest', [options]);
+    // Usar Completer para callback
+    final completer = Completer<Map<String, dynamic>>();
+    
+    final dartCallback = (dynamic result) {
+      if (result == null) {
+        completer.complete({'success': false, 'error': 'null_result'});
+        return;
+      }
 
-    if (promise == null) {
-      return {
-        'success': false,
-        'error': 'showStripePaymentRequest no está definida en window',
-      };
-    }
+      try {
+        final bool success = js_util.getProperty<dynamic>(result, 'success') == true;
+        if (success) {
+          final dynamic pmId = js_util.getProperty<dynamic>(result, 'paymentMethodId');
+          completer.complete({'success': true, 'paymentMethodId': (pmId as String?) ?? ''});
+        } else {
+          final dynamic error = js_util.getProperty<dynamic>(result, 'error');
+          completer.complete({'success': false, 'error': (error as String?) ?? 'unknown'});
+        }
+      } catch (e) {
+        completer.complete({'success': false, 'error': e.toString()});
+      }
+    };
 
-    // Convertir la Promise de JS en un Future de Dart
-    final dynamic result = await js_util.promiseToFuture<dynamic>(promise);
+    final jsCallback = js.allowInterop(dartCallback);
+    js.context.callMethod('showStripePaymentRequest', [options, jsCallback]);
 
-    final dynamic successRaw = js_util.getProperty<dynamic>(result, 'success');
-    final bool success = successRaw == true;
-
-    if (success) {
-      final dynamic pmId =
-          js_util.getProperty<dynamic>(result, 'paymentMethodId');
-      return {'success': true, 'paymentMethodId': (pmId as String?) ?? ''};
-    } else {
-      final dynamic error =
-          js_util.getProperty<dynamic>(result, 'error');
-      return {'success': false, 'error': (error as String?) ?? 'unknown'};
-    }
+    return completer.future.timeout(
+      const Duration(seconds: 30),
+      onTimeout: () => {'success': false, 'error': 'timeout'},
+    );
   } catch (e) {
     return {'success': false, 'error': e.toString()};
   }

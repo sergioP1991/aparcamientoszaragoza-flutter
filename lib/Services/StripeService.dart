@@ -402,7 +402,10 @@ class StripeService {
   }
 
   // ─── Helper: confirmar PaymentIntent con un paymentMethodId específico ──────
-  // Utilizado por Google Pay y Apple Pay tras obtener el pm_ del sheet nativo.
+  // Utilizado por Google Pay y Apple Pay tras obtener el token/pm_ del sheet nativo.
+  // 
+  // IMPORTANTE: Google Pay devuelve tok_xxx (token), pero Stripe espera pm_xxx (PaymentMethod).
+  // Si recibimos tok_xxx, lo convertimos a PaymentMethod primero.
   static Future<StripePaymentResult> _confirmWithPaymentMethod({
     required String clientSecret,
     required double amount,
@@ -412,6 +415,47 @@ class StripeService {
   }) async {
     final paymentIntentId = clientSecret.split('_secret_')[0];
     try {
+      debugPrint('═══════════════════════════════════════════════════════════');
+      debugPrint('💳 _confirmWithPaymentMethod: Comenzando confirmación');
+      debugPrint('═══════════════════════════════════════════════════════════');
+      debugPrint('  • PaymentIntentId: $paymentIntentId');
+      debugPrint('  • Monto: €${(amount).toStringAsFixed(2)} $currency');
+      debugPrint('  • paymentMethodId: $paymentMethodId');
+      debugPrint('  • tipo: ${paymentMethodId.startsWith('tok_') ? 'TOKEN (tok_xxx)' : paymentMethodId.startsWith('pm_') ? 'PAYMENT_METHOD (pm_xxx)' : 'DESCONOCIDO'}');
+
+      // Si es token (tok_xxx), convertir a PaymentMethod (pm_xxx)
+      String finalPaymentMethodId = paymentMethodId;
+      
+      if (paymentMethodId.startsWith('tok_')) {
+        debugPrint('  ⚠️ Detectado TOKEN (tok_xxx). Convirtiendo a PaymentMethod...');
+        
+        final pmResponse = await http.post(
+          Uri.parse('https://api.stripe.com/v1/payment_methods'),
+          headers: {
+            'Authorization': 'Bearer $secretKey',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: {
+            'type': 'card',
+            'card': 'stripeToken=$paymentMethodId',
+          },
+        );
+        
+        if (pmResponse.statusCode == 200 || pmResponse.statusCode == 201) {
+          final pmData = jsonDecode(pmResponse.body);
+          finalPaymentMethodId = pmData['id'] as String;
+          debugPrint('  ✅ Token convertido a PaymentMethod: $finalPaymentMethodId');
+        } else {
+          final errData = jsonDecode(pmResponse.body);
+          final errMsg = errData['error']?['message'] ?? 'Error desconocido';
+          debugPrint('  ❌ Error convirtiendo token: $errMsg');
+          debugPrint('     → Continuando con token original como fallback');
+          // Continuamos con el token original y vemos qué pasa
+        }
+      }
+
+      debugPrint('  ✓ Confirmando PaymentIntent con: $finalPaymentMethodId');
+      
       final response = await http.post(
         Uri.parse(
             'https://api.stripe.com/v1/payment_intents/$paymentIntentId/confirm'),
@@ -420,17 +464,27 @@ class StripeService {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {
-          'payment_method': paymentMethodId,
+          'payment_method': finalPaymentMethodId,
           'return_url': kIsWeb
               ? Uri.base.toString()
               : 'https://aparcamientodisponible.web.app',
         },
       );
-      debugPrint('📡 Confirm con pm $paymentMethodId: ${response.statusCode}');
+      
+      debugPrint('  📡 Respuesta HTTP: ${response.statusCode}');
+      
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         final status = data['status'] as String;
-        debugPrint('✅ Estado tras confirmar: $status');
+        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint('✅ PAGO CONFIRMADO');
+        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint('  • PaymentIntentId: ${data['id']}');
+        debugPrint('  • Status: $status');
+        debugPrint('  • Charges: ${data['charges']?['data']?.length ?? 0}');
+        if (status != 'succeeded') {
+          debugPrint('  ⚠️ Nota: no es "succeeded", es "$status"');
+        }
         return StripePaymentResult(
           paymentIntentId: data['id'] as String,
           status: status,
@@ -444,7 +498,15 @@ class StripeService {
         final errorData = jsonDecode(response.body);
         final errorMessage =
             errorData['error']?['message'] ?? 'Error desconocido';
-        debugPrint('❌ Error al confirmar: $errorMessage');
+        final errorCode = errorData['error']?['code'] ?? 'unknown_code';
+        
+        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint('❌ ERROR AL CONFIRMAR PAGO');
+        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint('  • Código: $errorCode');
+        debugPrint('  • Mensaje: $errorMessage');
+        debugPrint('  • Detalles: ${errorData['error']}');
+        
         return StripePaymentResult(
           paymentIntentId: '',
           status: 'error',
@@ -456,6 +518,12 @@ class StripeService {
         );
       }
     } catch (e) {
+      debugPrint('═══════════════════════════════════════════════════════════');
+      debugPrint('❌ EXCEPCIÓN EN _confirmWithPaymentMethod');
+      debugPrint('═══════════════════════════════════════════════════════════');
+      debugPrint('  • Error: $e');
+      debugPrint('  • StackTrace: ${StackTrace.current}');
+      
       return StripePaymentResult(
         paymentIntentId: '',
         status: 'error',
@@ -495,12 +563,32 @@ class StripeService {
           currency: currency,
           label: label,
         );
-        debugPrint('📍 Retorno de showGooglePayWeb: $result');
+        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint('📋 RESULTADO DE GOOGLE PAY WEB SDK');
+        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint('  • success: ${result['success']}');
+        debugPrint('  • paymentMethodId: ${result['paymentMethodId']}');
+        debugPrint('  • error: ${result['error']}');
 
         if (result['success'] == true) {
           final pmId = result['paymentMethodId'] as String;
-          debugPrint('✅✅✅ ÉXITO: Google Pay nativo completado');
-          debugPrint('  • paymentMethodId=$pmId');
+          debugPrint('✅ Google Pay completado. Token recibido:');
+          
+          // Identificar el tipo de token/payment method
+          if (pmId.startsWith('tok_')) {
+            debugPrint('   • Tipo: TOKEN (tok_xxx) ');
+            debugPrint('   • Nota: Se convertirá a PaymentMethod en _confirmWithPaymentMethod');
+          } else if (pmId.startsWith('pm_')) {
+            debugPrint('   • Tipo: PAYMENT_METHOD (pm_xxx) — listo para confirmar');
+          } else {
+            debugPrint('   • Tipo: DESCONOCIDO (ni tok_ ni pm_)');
+          }
+          
+          debugPrint('   • Valor: $pmId');
+          debugPrint('═══════════════════════════════════════════════════════════');
+          debugPrint('🔄 Procediendo a confirmar PaymentIntent con este token...');
+          debugPrint('═══════════════════════════════════════════════════════════');
+          
           return _confirmWithPaymentMethod(
             clientSecret: clientSecret,
             amount: amount,
@@ -511,22 +599,28 @@ class StripeService {
         }
 
         final error = result['error'] as String? ?? 'unknown';
-        debugPrint('❌❌❌ ERROR EN GOOGLE PAY');
-        debugPrint('  • error = $error');
+        debugPrint('═══════════════════════════════════════════════════════════');
+        debugPrint('❌ GOOGLE PAY FALLÓ');
+        debugPrint('═══════════════════════════════════════════════════════════');
+        
         if (error == 'cancelled') {
-          debugPrint('  → Usuario CANCELÓ la operación');
-          return StripePaymentResult(
-            paymentIntentId: '',
-            status: 'canceled',
-            amount: amount,
-            currency: currency,
-            paymentMethod: 'google_pay',
-            timestamp: DateTime.now(),
-            errorMessage: 'Pago cancelado por el usuario',
-          );
+          debugPrint('  → Usuario canceló manualmente');
+        } else if (error.contains('OR_BIBED')) {
+          debugPrint('  → ERROR OR_BIBED detectado (Google Pay / issuer problem)');
+          debugPrint('  → Checklist:');
+          debugPrint('     1) ¿Viste "Test Card Suite" en el popup?');
+          debugPrint('     2) Si NO: estás usando tarjetas "reales", no test cards');
+          debugPrint('     3) Si SÍ: el problema está en 3DS/tokenización/test setup');
+        } else if (error == 'google_pay_not_ready') {
+          debugPrint('  → Google Pay no está listo (wallet no configurado, navegador no supportado, etc)');
+        } else if (error == 'google_pay_timeout') {
+          debugPrint('  → TIMEOUT: Google Pay no respondió en 120s (probablemente cerró el popup)');
+        } else {
+          debugPrint('  → Error: $error');
         }
-        // Google Pay no disponible o error del SDK — NO hacer fallback silencioso
-        debugPrint('  → Google Pay no disponible o error SDK');
+        
+        debugPrint('═══════════════════════════════════════════════════════════');
+        
         return StripePaymentResult(
           paymentIntentId: '',
           status: 'google_pay_not_available',

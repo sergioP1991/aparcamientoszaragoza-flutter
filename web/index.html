@@ -161,157 +161,210 @@
 
       /**
        * Google Pay Web SDK — ventana nativa de Google Pay.
-       * Tokenización via Stripe PAYMENT_GATEWAY.
+       * Usa CALLBACK para compatibilidad con Dart.
        *
-       * Devuelve { success, paymentMethodId } o { success, error }.
-       * Llamar DENTRO de un handler de click/tap para preservar la activación de usuario.
+       * NOTAS IMPORTANTES:
+       * - environment: 'TEST' FUERZA la Test Card Suite (no tarjetas "reales")
+       * - stripe:version: '2020-08-27' es moderno y soportado por la mayoría de integraciones
+       * - allowedAuthMethods: ['PAN_ONLY'] para aislar; CRYPTOGRAM_3DS puede causar OR_BIBED_08 en test
+       * - Si aparece OR_BIBED_08, checkea:
+       *   a) ¿Aparece la Test Card Suite en el popup? (si no, no estás en TEST)
+       *   b) ¿Estás usando solo PAN_ONLY? (si no, prueba sin CRYPTOGRAM_3DS)
        */
-      window.showGooglePayDirect = function(options) {
-        return new Promise(function(resolve) {
-          console.log('═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════');
-          console.log('📞 GOOGLE PAY JAVASCRIPT: showGooglePayDirect LLAMADO');
-          console.log('═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════');
-          console.log('🔍 Opciones recibidas:', options);
-          console.log('  • amountInCents:', options.amountInCents);
-          console.log('  • currency:', options.currency);
-          console.log('  • label:', options.label);
-
-          // Si el SDK no está listo (raro con carga síncrona, pero defensivo)
-          if (typeof google === 'undefined' || !google.payments || !google.payments.api) {
-            console.error('❌ ERROR: Google Pay SDK no cargado');
-            console.log('  • typeof google:', typeof google);
-            console.log('  • google.payments:', typeof google?.payments);
-            console.log('  • google.payments.api:', typeof google?.payments?.api);
-            resolve({ success: false, error: 'google_pay_sdk_not_loaded' });
-            return;
+      window.showGooglePayDirect = function(options, onComplete) {
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('📞 Google Pay Web SDK: iniciando (environment: TEST)...');
+        console.log('═══════════════════════════════════════════════════════════');
+        
+        var called = false; // Prevenir doble-llamada al callback
+        function safeComplete(result) {
+          if (!called) {
+            called = true;
+            console.log('  → safeComplete llamado con:', result);
+            onComplete(result);
           }
-          console.log('✓ Google Pay SDK detectado');
+        }
 
-          var PUBLISHABLE_KEY = 'pk_test_51SuUod2KaK54WVOoow3ceAdHyLefry0S7wHHA5R0SfjFyB9mVyfwpocCmt0adzDFDiwsaM4diLCht1E98oJV8UWU00H20ta2MQ';
+        // Si el SDK no está listo
+        if (typeof google === 'undefined' || !google.payments || !google.payments.api) {
+          console.error('❌ Google Pay SDK no cargado');
+          safeComplete({ success: false, error: 'google_pay_sdk_not_loaded' });
+          return;
+        }
 
-          var paymentMethod = {
-            type: 'CARD',
+        var PUBLISHABLE_KEY = 'pk_test_51SuUod2KaK54WVOoow3ceAdHyLefry0S7wHHA5R0SfjFyB9mVyfwpocCmt0adzDFDiwsaM4diLCht1E98oJV8UWU00H20ta2MQ';
+
+        console.log('  ✓ SDK disponible, creando paymentMethod...');
+
+        var paymentMethod = {
+          type: 'CARD',
+          parameters: {
+            // PAN_ONLY: happy path, evita OR_BIBED_08 en TEST
+            // Para producción o si necesitas 3DS, agrega 'CRYPTOGRAM_3DS'
+            allowedAuthMethods: ['PAN_ONLY'],
+            allowedCardNetworks: ['VISA', 'MASTERCARD'],
+          },
+          tokenizationSpecification: {
+            type: 'PAYMENT_GATEWAY',
             parameters: {
-              allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
-              allowedCardNetworks: ['AMEX', 'MASTERCARD', 'VISA', 'DISCOVER'],
+              gateway: 'stripe',
+              'stripe:version': '2020-08-27',      // Moderno, not legacy (deprecated 2018-10-31)
+              'stripe:publishableKey': PUBLISHABLE_KEY,
             },
-            tokenizationSpecification: {
-              type: 'PAYMENT_GATEWAY',
-              parameters: {
-                gateway: 'stripe',
-                'stripe:version': '2023-10-16',
-                'stripe:publishableKey': PUBLISHABLE_KEY,
-                'stripe:accountId': 'acct_1SuUod2KaK54WVOo',
+          },
+        };
+
+        console.log('  ✓ Creando PaymentsClient (environment TEST)...');
+        var client = new google.payments.api.PaymentsClient({ environment: 'TEST' });
+
+        console.log('  ✓ Verificando isReadyToPay...');
+        client.isReadyToPay({ 
+          apiVersion: 2, apiVersionMinor: 0, 
+          allowedPaymentMethods: [paymentMethod] 
+        })
+          .then(function(ready) {
+            console.log('  ✓ isReadyToPay resultado:', ready.result);
+            if (!ready.result) {
+              console.warn('  ⚠️ Google Pay no está listo en este navegador');
+              safeComplete({ success: false, error: 'google_pay_not_ready' });
+              return null;
+            }
+
+            console.log('  ✓ Google Pay LISTO. Abriendo loadPaymentData...');
+            console.log('  ℹ️ En TEST, deberías ver la "Test Card Suite" de Google Pay');
+            
+            return client.loadPaymentData({
+              apiVersion: 2,
+              apiVersionMinor: 0,
+              allowedPaymentMethods: [paymentMethod],
+              merchantInfo: { merchantName: 'Aparcamientos Zaragoza' },
+              transactionInfo: {
+                totalPriceStatus: 'FINAL',
+                totalPrice: (options.amountInCents / 100).toFixed(2),
+                currencyCode: (options.currency || 'eur').toUpperCase(),
+                countryCode: 'ES',
               },
-            },
-          };
-
-          console.log('🔍 Configuración completa de Google Pay:');
-          console.log('  • Método de pago:', paymentMethod);
-          console.log('  • Gateway: stripe');
-          console.log('  • Stripe Account ID: acct_1SuUod2KaK54WVOo');
-          console.log('  • Stripe Version: 2023-10-16');
-          console.log('  • Publishable Key: ' + PUBLISHABLE_KEY.substring(0, 20) + '...');
-
-          var client = new google.payments.api.PaymentsClient({ environment: 'TEST' });
-          console.log('✓ PaymentsClient creado');
-
-          console.log('🔍 Verificando isReadyToPay()...');
-          client.isReadyToPay({ apiVersion: 2, apiVersionMinor: 0, allowedPaymentMethods: [paymentMethod] })
-            .then(function(ready) {
-              console.log('✓ isReadyToPay retornó:', ready);
-              if (!ready.result) {
-                console.warn('⚠️ Google Pay NO disponible en este navegador/cuenta');
-                resolve({ success: false, error: 'google_pay_not_available' });
-                return null; // short-circuit the chain
-              }
-
-              console.log('✓ Google Pay IS disponible, abriendo loadPaymentData()...');
-              return client.loadPaymentData({
-                apiVersion: 2,
-                apiVersionMinor: 0,
-                allowedPaymentMethods: [paymentMethod],
-                merchantInfo: { merchantName: 'Aparcamientos Zaragoza' },
-                transactionInfo: {
-                  totalPriceStatus: 'FINAL',
-                  totalPrice: (options.amountInCents / 100).toFixed(2),
-                  currencyCode: (options.currency || 'eur').toUpperCase(),
-                  countryCode: 'ES',
-                },
-              });
-            })
-            .then(function(paymentData) {
-              if (!paymentData) {
-                console.log('📝 paymentData es null (ya resuelto por not_available)');
-                return; // ya resuelto por not_available
-              }
-              console.log('✓✓✓ loadPaymentData retornó datos');
-              var token = JSON.parse(paymentData.paymentMethodData.tokenizationData.token);
-              console.log('✓ Stripe token parseado:', token);
-              console.log('  • token.id (paymentMethodId):', token.id);
-              resolve({ success: true, paymentMethodId: token.id });
-            })
-            .catch(function(err) {
-              console.log('═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════');
-              console.error('❌ ERROR EN GOOGLE PAY');
-              console.log('═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════');
-              console.error('  • err:', err);
-              console.error('  • err.statusCode:', err?.statusCode);
-              console.error('  • err.statusMessage:', err?.statusMessage);
-              console.error('  • err.message:', err?.message);
-              if (err && (err.statusCode === 'CANCELED' || err.statusCode === 'canceled')) {
-                console.log('▶ Usuario CANCELÓ Google Pay');
-                resolve({ success: false, error: 'cancelled' });
-              } else {
-                var msg = (err && (err.statusMessage || err.message)) || JSON.stringify(err);
-                console.error('▶ Error desconocido:', msg);
-                resolve({ success: false, error: msg || 'google_pay_error' });
-              }
             });
-        });
+          })
+          .then(function(paymentData) {
+            if (!paymentData) {
+              console.warn('  ⚠️ paymentData es null (usuario probablemente canceló)');
+              return;
+            }
+            console.log('  ✅ Google Pay retornó paymentData');
+            console.log('  ✓ Parseando tokenizationData.token...');
+            try {
+              var token = JSON.parse(paymentData.paymentMethodData.tokenizationData.token);
+              console.log('  ✅ Token parseado, type:', token.type, 'id:', token.id);
+              safeComplete({ success: true, paymentMethodId: token.id });
+            } catch (parseErr) {
+              console.error('  ❌ Error al parsear token:', parseErr);
+              safeComplete({ success: false, error: 'token_parse_error' });
+            }
+          })
+          .catch(function(err) {
+            console.error('  ❌ Excepción en loadPaymentData:', err);
+            if (err && (err.statusCode === 'CANCELED' || err.statusCode === 'canceled')) {
+              console.log('  → Usuario CANCELÓ Google Pay');
+              safeComplete({ success: false, error: 'cancelled' });
+            } else {
+              var errMsg = '';
+              if (err && err.statusMessage) errMsg = err.statusMessage;
+              else if (err && err.message) errMsg = err.message;
+              else if (err && typeof err === 'string') errMsg = err;
+              else errMsg = 'google_pay_error (unknown)';
+              
+              console.error('  → Error específico:', errMsg);
+              // Si ves "OR_BIBED_08" aquí, checkea:
+              // 1) ¿Aparece Test Card Suite en el popup?
+              // 2) ¿Estás usando PAN_ONLY o CRYPTOGRAM_3DS + 3DS?
+              safeComplete({ success: false, error: errMsg });
+            }
+          });
+
+        // Fallback: si Google Pay no responde en 120s (cubre escenarios de cuelgue)
+        setTimeout(function() { 
+          console.warn('  ⏱️ TIMEOUT: Google Pay no respondió en 120 segundos');
+          safeComplete({ success: false, error: 'google_pay_timeout' }); 
+        }, 120000);
       };
 
-      console.log('✅ window.showGooglePayDirect definida (Google Pay Web SDK)');
-      console.log('═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════');
+      console.log('✅ window.showGooglePayDirect definida (TEST, PAN_ONLY, stripe:2020-08-27)');
     </script>
 
     <script>
       /**
-       * Apple Pay / Google Pay via Stripe.js Payment Request API.
-       * Funciona en Safari (Apple Pay) y Chrome con Google Pay configurado.
-       * SOLO usar para Apple Pay; para Google Pay preferir showGooglePayDirect.
+       * Payment Request API via Stripe.js (para Apple Pay en Safari).
+       * Usa CALLBACK para compatibilidad con Dart.
+       * 
+       * ORDEN CRÍTICO:
+       * 1. Crear PaymentRequest
+       * 2. Registrar handlers INMEDIATAMENTE
+       * 3. Verificar canMakePayment()
+       * 4. Solo si está disponible, llamar show()
        */
-      window.showStripePaymentRequest = function(options) {
+      window.showStripePaymentRequest = function(options, onComplete) {
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('🍎 Stripe Payment Request API: iniciando...');
+        console.log('═══════════════════════════════════════════════════════════');
+        
         var stripe = _getStripeJs();
         if (!stripe) {
-          console.error('❌ Stripe.js no está cargado');
-          return Promise.resolve({ success: false, error: 'stripe_not_loaded' });
+          console.error('❌ Stripe.js no cargado');
+          onComplete({ success: false, error: 'stripe_not_loaded' });
+          return;
         }
 
+        console.log('  ✓ Creando PaymentRequest...');
         var pr = stripe.paymentRequest({
-          country:  options.country  || 'ES',
+          country: 'ES',
           currency: (options.currency || 'eur').toLowerCase(),
           total: { label: options.label || 'Alquiler plaza', amount: options.amountInCents || 0 },
-          requestPayerName:  false,
+          requestPayerName: false,
           requestPayerEmail: false,
         });
 
-        return new Promise(function(resolve) {
-          pr.on('paymentmethod', function(evt) {
-            evt.complete('success');
-            resolve({ success: true, paymentMethodId: evt.paymentMethod.id });
-          });
-          pr.on('cancel', function() {
-            resolve({ success: false, error: 'cancelled' });
-          });
+        console.log('  ✓ Registrando listeners...');
+        // IMPORTANTE: Registrar handlers ANTES de cualquier otra operación
+        pr.on('paymentmethod', function(evt) {
+          console.log('  ✅ paymentmethod event recibido');
+          evt.complete('success');
+          var pmId = evt.paymentMethod.id;
+          console.log('  ✓ Retornando payment method:', pmId);
+          onComplete({ success: true, paymentMethodId: pmId });
+        });
+        
+        pr.on('cancel', function() {
+          console.log('  ⚠️ Usuario canceló Payment Request');
+          onComplete({ success: false, error: 'cancelled' });
+        });
+
+        console.log('  ✓ Verificando canMakePayment()...');
+        // Ahora sí, verificar disponibilidad
+        pr.canMakePayment().then(function(result) {
+          if (!result) {
+            console.warn('  ⚠️ Payment Request API no disponible en este navegador');
+            console.log('     (Normal en Chrome/desktop sin Apple Pay, Edge, Firefox, etc.)');
+            onComplete({ success: false, error: 'payment_request_not_available' });
+            return;
+          }
+          
+          console.log('  ✓ Payment Request disponible. Llamando show()...');
+          if (result.applePay) console.log('     → Apple Pay detectado (Safari)');
+          if (result.googlePay) console.log('     → Google Pay detectado (Chrome)');
+          
+          // Solo llamar show() DESPUÉS de verificar canMakePayment()
           pr.show().catch(function(err) {
-            var msg = (err && err.message) ? err.message : 'payment_request_not_available';
-            resolve({ success: false, error: msg });
+            console.error('  ❌ Error en pr.show():', err?.message || err);
+            onComplete({ success: false, error: err?.message || 'show_error' });
           });
+        }).catch(function(err) {
+          console.error('  ❌ Error en canMakePayment():', err?.message || err);
+          onComplete({ success: false, error: err?.message || 'canMakePayment_error' });
         });
       };
 
-      console.log('✅ window.showStripePaymentRequest definida (Stripe.js — Apple Pay)');
+      console.log('✅ window.showStripePaymentRequest definida (con canMakePayment() check)');
     </script>
     <!-- ─────────────────────────────────────────────────────────────────── -->
 

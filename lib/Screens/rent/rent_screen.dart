@@ -676,24 +676,11 @@ class _RentPageState extends ConsumerState<RentPage> {
   Future<void> _processPaymentAndRent(Garaje plaza, User? user) async {
     if (_isProcessingPayment) return;
 
-    debugPrint('═══════════════════════════════════════════════════════════════════');
-    debugPrint('🟦 INICIANDO PROCESAMIENTO DE PAGO');
-    debugPrint('═══════════════════════════════════════════════════════════════════');
-    debugPrint('💳 Método seleccionado: $_selectedPaymentMethod');
-    debugPrint('🌐 plataforma: ${kIsWeb ? "WEB" : "MÓVIL"}');
-
     // En web: mostrar formulario de tarjeta SOLO si el usuario seleccionó tarjeta
     Map<String, String>? cardData;
     if (kIsWeb && _selectedPaymentMethod == 'card') {
-      debugPrint('▶️ Mostrando formulario de tarjeta...');
       cardData = await _showCardInputDialog();
-      if (cardData == null) {
-        debugPrint('❌ Usuario canceló el formulario de tarjeta');
-        return; // Usuario canceló
-      }
-      debugPrint('✅ Tarjeta ingresada correctamente');
-    } else if (kIsWeb) {
-      debugPrint('▶️ Método es ${_selectedPaymentMethod.toUpperCase()} - NO mostrar formulario de tarjeta');
+      if (cardData == null) return; // Usuario canceló
     }
 
     setState(() => _isProcessingPayment = true);
@@ -706,10 +693,8 @@ class _RentPageState extends ConsumerState<RentPage> {
       double total = basePrice + managementFee + iva;
 
       // Mostrar método seleccionado
-      debugPrint('═══════════════════════════════════════════════════════════════════');
-      debugPrint('🟦 PROCESANDO CON MÉTODO: $_selectedPaymentMethod');
-      debugPrint('💰 Monto: ${total.toStringAsFixed(2)}€ para plaza ${plaza.idPlaza}');
-      debugPrint('═══════════════════════════════════════════════════════════════════');
+      debugPrint('💳 Método de pago seleccionado: $_selectedPaymentMethod');
+      debugPrint('💰 Procesando pago: ${total.toStringAsFixed(2)}€ para plaza ${plaza.idPlaza}');
 
       // Crear pago con Stripe
       final amountInCents = (total * 100).toInt();
@@ -867,45 +852,16 @@ class _RentPageState extends ConsumerState<RentPage> {
           }
 
           if (result.status == 'google_pay_not_available') {
-            // Google Pay no está configurado en este navegador
+            // Google Pay falló - mostrar error sin forzar tarjeta
             if (mounted) Navigator.pop(context);
             if (mounted) {
-              await showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: AppColors.darkestBlue,
-                  title: const Row(
-                    children: [
-                      Icon(Icons.g_mobiledata_rounded,
-                          color: Color(0xFF4285F4), size: 28),
-                      SizedBox(width: 8),
-                      Text('Google Pay no disponible',
-                          style: TextStyle(color: Colors.white, fontSize: 16)),
-                    ],
-                  ),
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
                   content: const Text(
-                    'Google Pay no está disponible en este navegador o en tu cuenta.\n\n'
-                    '• Asegúrate de estar en Chrome y tener una tarjeta guardada.\n'
-                    '• Puedes usar Tarjeta como método alternativo.',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                    '⚠️ Google Pay: hubo un error al procesar el pago. Intenta de nuevo.',
                   ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Cancelar',
-                          style: TextStyle(color: Colors.grey)),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orangeAccent),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        setState(() => _selectedPaymentMethod = 'card');
-                      },
-                      child: const Text('Usar Tarjeta',
-                          style: TextStyle(color: Colors.black)),
-                    ),
-                  ],
+                  backgroundColor: Colors.orange,
+                  duration: const Duration(seconds: 4),
                 ),
               );
             }
@@ -929,7 +885,119 @@ class _RentPageState extends ConsumerState<RentPage> {
           
           debugPrint('✅ Pago exitoso: ${result.paymentIntentId}');
           debugPrint('📊 Estado: ${result.status}, Método: ${result.paymentMethod}');
+          
+          // Cerrar diálogo de procesamiento
+          if (mounted) Navigator.pop(context);
+          
+          // Mostrar pantalla/diálogo de pago exitoso
+          if (mounted) {
+            await showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: AppColors.darkestBlue,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                contentPadding: const EdgeInsets.all(24),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Icono de éxito animado
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.green,
+                        size: 50,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '¡Pago Exitoso!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Tu alquiler ha sido confirmado.\nPuedes ver los detalles en "Mis Alquileres".',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    // Botón para continuar
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx); // Cerrar diálogo
+                        // Se creará el alquiler y se navegará a home después
+                      },
+                      child: const Text(
+                        'Continuar',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          
+          // Crear el alquiler en Firestore
+          try {
+            debugPrint('📝 Creando alquiler en Firestore...');
+            if (plaza.rentIsNormal) {
+              ref.read(rentProvider.notifier).newRentProvider(
+                AlquilerNormal(
+                  mesInicio: DateFormat('MMMM').format(DateTime.now()),
+                  mesFin: DateFormat('MMMM').format(DateTime.now().add(const Duration(days: 30))),
+                  anyoInicio: DateTime.now().year,
+                  anyoFinal: DateTime.now().year,
+                  idPlaza: plaza.idPlaza,
+                  idArrendatario: user?.uid.toString(),
+                ),
+              );
+            } else {
+              ref.read(rentProvider.notifier).newRentProvider(
+                AlquilerEspecial(
+                  dias: _selectedDates,
+                  idPlaza: plaza.idPlaza.toString(),
+                  idArrendatario: user?.uid.toString(),
+                ),
+              );
+            }
+            debugPrint('✅ Alquiler creado exitosamente');
+          } catch (e) {
+            debugPrint('❌ Error creando alquiler: $e');
+          }
+          
+          // Navegar a Home después de un pequeño delay
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) {
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              '/',
+              (route) => false,
+            );
+          }
+          return;
         } else {
+          // Error al crear PaymentIntent
           if (mounted) Navigator.pop(context);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -955,41 +1023,6 @@ class _RentPageState extends ConsumerState<RentPage> {
         }
         setState(() => _isProcessingPayment = false);
         return;
-      }
-
-      // Cerrar diálogo de procesamiento
-      if (mounted) Navigator.pop(context);
-
-      // Crear la reserva
-      if (plaza.rentIsNormal) {
-        ref.read(rentProvider.notifier).newRentProvider(
-          AlquilerNormal(
-            mesInicio: DateFormat('MMMM').format(DateTime.now()),
-            mesFin: DateFormat('MMMM').format(DateTime.now().add(const Duration(days: 30))),
-            anyoInicio: DateTime.now().year,
-            anyoFinal: DateTime.now().year,
-            idPlaza: plaza.idPlaza,
-            idArrendatario: user?.uid.toString()
-          )
-        );
-      } else {
-        ref.read(rentProvider.notifier).newRentProvider(
-          AlquilerEspecial(
-            dias: _selectedDates,
-            idPlaza: plaza.idPlaza.toString(),
-            idArrendatario: user?.uid.toString()
-          )
-        );
-      }
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)!.rentSuccess),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
