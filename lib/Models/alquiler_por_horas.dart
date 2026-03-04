@@ -119,7 +119,7 @@ class AlquilerPorHoras extends Alquiler {
 
   @override
   Map<String, dynamic> objectToMap() {
-    return {
+    final map = {
       'fechaInicio': Timestamp.fromDate(fechaInicio),
       'fechaVencimiento': Timestamp.fromDate(fechaVencimiento),
       'fechaLiberacion': fechaLiberacion != null ? Timestamp.fromDate(fechaLiberacion!) : null,
@@ -134,11 +134,16 @@ class AlquilerPorHoras extends Alquiler {
       'notificacionVencimientoEnviada': notificacionVencimientoEnviada,
       'notificacionMultaEnviada': notificacionMultaEnviada,
     };
+    print('🗂️ AlquilerPorHoras.objectToMap() generando: idPlaza=$idPlaza, tipo=${tipo}, estado=${estado.toString()}');
+    return map;
   }
 
   @override
   factory AlquilerPorHoras.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot) {
-    final data = snapshot.data()!;
+    final data = snapshot.data();
+    if (data == null) {
+      throw Exception('Documento de alquiler está vacío');
+    }
     
     // Parsear el estado del string
     EstadoAlquilerPorHoras estado = EstadoAlquilerPorHoras.activo;
@@ -155,20 +160,20 @@ class AlquilerPorHoras extends Alquiler {
     }
 
     return AlquilerPorHoras(
-      idPlaza: data['idPlaza'],
-      idArrendatario: data['idArrendatario'],
+      idPlaza: data['idPlaza'] as int? ?? 0,
+      idArrendatario: data['idArrendatario'] as String? ?? 'unknown',
       fechaInicio: (data['fechaInicio'] as Timestamp).toDate(),
       fechaVencimiento: (data['fechaVencimiento'] as Timestamp).toDate(),
       fechaLiberacion: data['fechaLiberacion'] != null 
         ? (data['fechaLiberacion'] as Timestamp).toDate() 
         : null,
-      duracionContratada: data['duracionContratada'] ?? 0,
-      tiempoUsado: data['tiempoUsado'],
-      precioMinuto: (data['precioMinuto'] ?? 0.0).toDouble(),
-      precioCalculado: data['precioCalculado'] != null ? (data['precioCalculado'] as num).toDouble() : null,
+      duracionContratada: (data['duracionContratada'] as int?) ?? 0,
+      tiempoUsado: data['tiempoUsado'] as int?,
+      precioMinuto: ((data['precioMinuto'] ?? 0.0) as num).toDouble(),
+      precioCalculado: (data['precioCalculado'] as num?)?.toDouble(),
       estado: estado,
-      notificacionVencimientoEnviada: data['notificacionVencimientoEnviada'] ?? false,
-      notificacionMultaEnviada: data['notificacionMultaEnviada'] ?? false,
+      notificacionVencimientoEnviada: (data['notificacionVencimientoEnviada'] as bool?) ?? false,
+      notificacionMultaEnviada: (data['notificacionMultaEnviada'] as bool?) ?? false,
     );
   }
 

@@ -11,6 +11,7 @@ import 'package:aparcamientoszaragoza/Models/history.dart';
 import 'package:aparcamientoszaragoza/Services/activity_service.dart';
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Models/normal.dart';
+import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
 import 'package:aparcamientoszaragoza/ModelsUI/homeData.dart';
 import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart';
 
@@ -146,15 +147,25 @@ Future<HomeData?> fetchHome(Ref ref, {required bool allGarages, bool onlyMine = 
 
   final QuerySnapshot<Map<String, dynamic>> snapshotRent = await FirebaseFirestore.instance.collection('alquileres').get();
   List<Alquiler> listAlquileres = snapshotRent.docs.map<Alquiler>((doc) {
-    if (doc['tipo'] == 0) {
-      return AlquilerNormal.fromFirestore(doc);
-    } else if (doc['tipo'] == 1) {
-      return AlquilerEspecial.fromFirestore(doc);
-    } else if (doc['tipo'] == 2) {
-      // Alquiler por horas - TODO: Importar AlquilerPorHoras cuando sea necesario
-      return AlquilerEspecial.fromFirestore(doc); // Placeholder por ahora
-    } else {
-      return AlquilerEspecial.fromFirestore(doc);
+    try {
+      if (doc['tipo'] == 0) {
+        return AlquilerNormal.fromFirestore(doc);
+      } else if (doc['tipo'] == 1) {
+        return AlquilerEspecial.fromFirestore(doc);
+      } else if (doc['tipo'] == 2) {
+        // Alquiler por horas
+        return AlquilerPorHoras.fromFirestore(doc);
+      } else {
+        return AlquilerEspecial.fromFirestore(doc);
+      }
+    } catch (e) {
+      print('Error parsing alquiler: $e');
+      // Retornar null para filtrar después
+      return AlquilerEspecial(
+        dias: [],
+        idArrendatario: 'error',
+        idPlaza: -1,
+      );
     }
   }).toList();
 

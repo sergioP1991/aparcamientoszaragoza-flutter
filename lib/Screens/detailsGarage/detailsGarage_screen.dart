@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:aparcamientoszaragoza/Models/favorite.dart';
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
+import 'package:aparcamientoszaragoza/Services/PlazaDescriptionService.dart';
 import 'package:aparcamientoszaragoza/Screens/timeline/timeline_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
@@ -31,16 +34,22 @@ class DetailsGarajePage extends ConsumerStatefulWidget {
 class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
   late PageController _pageController;
   int _currentImageIndex = 0;
+  late Timer _updateTimer;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    // Timer que actualiza el widget cada segundo para refrescar el tiempo restante
+    _updateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _updateTimer.cancel();
     super.dispose();
   }
 
@@ -110,7 +119,7 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
                         ),
                       ],
                       const SizedBox(height: 25),
-                      _buildAvailabilityBanner(plaza, user, l10n),
+                      _buildAvailabilityBanner(plaza, idPlaza, user, l10n),
                       const SizedBox(height: 25),
                       _buildDescription(plaza, l10n),
                       const SizedBox(height: 25),
@@ -399,10 +408,11 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
     );
   }
 
-  Widget _buildAvailabilityBanner(Garaje plaza, User? user, AppLocalizations l10n) {
+  Widget _buildAvailabilityBanner(Garaje plaza, int plazaId, User? user, AppLocalizations l10n) {
     bool isAvailable = plaza.alquiler == null;
+    print('🔍 _buildAvailabilityBanner: plazaId=$plazaId, plaza.idPlaza=${plaza.idPlaza}');
     return StreamBuilder<AlquilerPorHoras?>(
-      stream: RentalByHoursService.watchPlazaRental(plaza.idPlaza ?? 0),
+      stream: RentalByHoursService.watchPlazaRental(plazaId),
       builder: (context, snapshot) {
         final activeRental = snapshot.data;
         final isUserRental = activeRental != null && activeRental.idArrendatario == user?.uid;
@@ -412,31 +422,40 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
           final timeRemaining = activeRental.tiempoRestante();
           final isExpired = activeRental.estaVencido();
           final minutesUsed = activeRental.calcularTiempoUsado();
+          final precioFinal = activeRental.calcularPrecioFinal();
           
           return Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: (isExpired ? Colors.red : Colors.blue).withOpacity(0.05),
+              color: (isExpired ? Colors.red : Colors.blue).withOpacity(0.08),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: (isExpired ? Colors.red : Colors.blue).withOpacity(0.3)),
+              border: Border.all(color: (isExpired ? Colors.red : Colors.blue).withOpacity(0.4), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: (isExpired ? Colors.red : Colors.blue).withOpacity(0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                )
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Encabezado con estado del alquiler
                 Row(
                   children: [
                     Container(
-                      width: 10,
-                      height: 10,
+                      width: 12,
+                      height: 12,
                       decoration: BoxDecoration(
                         color: isExpired ? Colors.red : Colors.blue,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: (isExpired ? Colors.red : Colors.blue).withOpacity(0.5),
-                            blurRadius: 4,
-                            spreadRadius: 1,
+                            color: (isExpired ? Colors.red : Colors.blue).withOpacity(0.6),
+                            blurRadius: 6,
+                            spreadRadius: 2,
                           )
                         ],
                       ),
@@ -451,39 +470,43 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
                             style: TextStyle(
                               color: isExpired ? Colors.red : Colors.blue,
                               fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              fontSize: 15,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            isExpired 
-                              ? l10n.rentalExpired
-                              : l10n.timeRemaining('$timeRemaining ' + (timeRemaining == 1 ? l10n.minute : l10n.minutes)),
-                            style: const TextStyle(color: Colors.white70, fontSize: 12),
-                          ),
+                          const SizedBox(height: 6),
+                          // Tiempo restante - formato mejorado
+                          if (!isExpired)
+                            Text(
+                              '⏱️ Tiempo restante: ${timeRemaining}m',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.8),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            )
+                          else
+                            Text(
+                              l10n.rentalExpired,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                         ],
                       ),
                     ),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).pushNamed(ActiveRentalsScreen.routeName);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        backgroundColor: Colors.blue.withOpacity(0.3),
-                        foregroundColor: Colors.blue,
-                      ),
-                      icon: const Icon(Icons.directions_run, size: 16),
-                      label: Text(l10n.manageRental),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
+                
+                // Información detallada del alquiler
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white.withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -503,10 +526,48 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
                       _buildRentalInfoCell(
                         icon: Icons.euro,
                         label: l10n.estimatedPrice,
-                        value: '€${activeRental.calcularPrecioFinal().toStringAsFixed(2)}',
+                        value: '€${precioFinal.toStringAsFixed(2)}',
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 14),
+                
+                // Botones de acción
+                Row(
+                  children: [
+                    // Botón para liberar el alquiler
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _releaseRentalDialog(context, activeRental, l10n),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red.withOpacity(0.2),
+                          foregroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.check_circle_outline, size: 18),
+                        label: const Text('Liberar Ahora'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Botón para ir a gestionar alquileres
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pushNamed(ActiveRentalsScreen.routeName);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.withOpacity(0.2),
+                          foregroundColor: Colors.blue,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.details, size: 18),
+                        label: const Text('Detalles'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -579,23 +640,70 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
   }
 
   Widget _buildDescription(Garaje plaza, AppLocalizations l10n) {
+    final realDescription = PlazaDescriptionService.generateDescription(plaza.direccion);
+    final tarifInfo = PlazaDescriptionService.getTarifInfo(plaza.direccion);
+    final recommendation = PlazaDescriptionService.getRecommendation(plaza.direccion);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Descripción principal realista
         Text(
           l10n.descriptionTitle,
           style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Text(
-          l10n.garageDescription(
-            plaza.direccion,
-            plaza.largo.toString(),
-            plaza.ancho.toString(),
-            plaza.planta.toString(),
-            plaza.vehicleType == VehicleType.moto ? l10n.suitableForMotos : l10n.suitableForCars,
-          ),
+          realDescription,
           style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.6),
+        ),
+        const SizedBox(height: 16),
+        
+        // Tarifa y especificaciones técnicas
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '💰 ' + tarifInfo,
+                style: const TextStyle(color: Colors.amber, fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                plaza.largo.toString() + 'm × ' + plaza.ancho.toString() + 'm • Planta ' + plaza.planta.toString() + ' • ' +
+                (plaza.vehicleType == VehicleType.moto ? l10n.suitableForMotos : l10n.suitableForCars),
+                style: const TextStyle(color: Colors.white60, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        // Recomendación
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.green.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              const Text('💡 ', style: TextStyle(fontSize: 16)),
+              Expanded(
+                child: Text(
+                  recommendation,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -741,6 +849,94 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
         ),
       ),
     );
+  }
+
+  /// Diálogo para confirmar la liberación del alquiler
+  Future<void> _releaseRentalDialog(BuildContext context, AlquilerPorHoras rental, AppLocalizations l10n) async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.darkestBlue,
+        title: const Text(
+          'Liberar alquiler',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Confirma liberar la plaza. Se cobrará según el tiempo usado.',
+          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _performReleaseRental(rental, l10n);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Liberar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Ejecuta la liberación del alquiler
+  Future<void> _performReleaseRental(AlquilerPorHoras rental, AppLocalizations l10n) async {
+    try {
+      // Mostrar loading
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppColors.darkestBlue,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Liberando alquiler...', style: TextStyle(color: Colors.white)),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Liberar el alquiler
+      final rentalId = '${rental.idPlaza}_${rental.idArrendatario}';
+      await RentalByHoursService.releaseRental(rentalId);
+
+      if (mounted) {
+        Navigator.pop(context); // Cerrar loading
+        
+        // Mostrar éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Alquiler liberado exitosamente'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        
+        // Refrescar la vista
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Cerrar loading
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
 }

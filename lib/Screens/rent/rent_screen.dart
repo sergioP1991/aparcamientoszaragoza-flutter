@@ -1,8 +1,10 @@
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Models/normal.dart';
 import 'package:aparcamientoszaragoza/Models/especial.dart';
+import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Services/StripeService.dart';
+import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/providers/RentProvider.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -43,9 +45,11 @@ class _RentPageState extends ConsumerState<RentPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Calculations
-    int hours = plaza.rentIsNormal ? 720 : (_selectedDates.length * 9); // Dummy 9h/day if special
-    double basePrice = (hours * plaza.precio).toDouble();
+    // Validaciones defensivas
+    int durationDays = _selectedDates.isNotEmpty ? _selectedDates.length : 1;
+    int hours = plaza.rentIsNormal ? 720 : (durationDays * 9);
+    double precioBase = (plaza.precio ?? 0).toDouble();
+    double basePrice = (hours * precioBase);
     double iva = basePrice * ivaRate;
     double total = basePrice + managementFee + iva;
 
@@ -959,32 +963,41 @@ class _RentPageState extends ConsumerState<RentPage> {
             );
           }
           
-          // Crear el alquiler en Firestore
+          // Crear el alquiler en Firestore como AlquilerPorHoras
           try {
-            debugPrint('📝 Creando alquiler en Firestore...');
-            if (plaza.rentIsNormal) {
-              ref.read(rentProvider.notifier).newRentProvider(
-                AlquilerNormal(
-                  mesInicio: DateFormat('MMMM').format(DateTime.now()),
-                  mesFin: DateFormat('MMMM').format(DateTime.now().add(const Duration(days: 30))),
-                  anyoInicio: DateTime.now().year,
-                  anyoFinal: DateTime.now().year,
-                  idPlaza: plaza.idPlaza,
-                  idArrendatario: user?.uid.toString(),
-                ),
-              );
-            } else {
-              ref.read(rentProvider.notifier).newRentProvider(
-                AlquilerEspecial(
-                  dias: _selectedDates,
-                  idPlaza: plaza.idPlaza.toString(),
-                  idArrendatario: user?.uid.toString(),
-                ),
+            debugPrint('📝 Creando alquiler por horas en Firestore...');
+            int durationMinutes = hours * 60; // Convertir horas a minutos
+            double precioPlaza = (plaza?.precio ?? 0).toDouble();
+            double pricePerMinute = precioPlaza > 0 ? (precioPlaza / 60.0) : 0.0;
+            
+            // Usar docId si está disponible, si no usar idPlaza
+            int plazaIdentifier = plaza?.idPlaza ?? 0;
+            if (plazaIdentifier == 0 && plaza?.docId != null) {
+              // Si idPlaza es 0 e inválido pero tenemos docId, intentar parsear docId como int
+              try {
+                plazaIdentifier = int.parse(plaza!.docId!);
+              } catch (e) {
+                debugPrint('📌 No se pudo parsear docId como int: ${plaza?.docId}');
+                plazaIdentifier = plaza?.idPlaza?.hashCode ?? 0;
+              }
+            }
+            
+            debugPrint('🔍 Duración: $durationMinutes min, Precio/min: $pricePerMinute, PlazaID: $plazaIdentifier');
+            debugPrint('📍 Plaza: idPlaza=${plaza?.idPlaza}, docId=${plaza?.docId}');
+            
+            await RentalByHoursService.createRental(
+              plazaId: plazaIdentifier,
+              durationMinutes: durationMinutes,
+              pricePerMinute: pricePerMinute,
+            );
+            debugPrint('✅ Alquiler por horas creado exitosamente');
+          } catch (e) {
+            debugPrint('❌ Error creando alquiler por horas: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
               );
             }
-            debugPrint('✅ Alquiler creado exitosamente');
-          } catch (e) {
-            debugPrint('❌ Error creando alquiler: $e');
           }
           
           // Navegar a Home después de un pequeño delay

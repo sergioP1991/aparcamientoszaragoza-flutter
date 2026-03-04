@@ -42,16 +42,28 @@ class AlquilerEspecial extends Alquiler {
 
   @override
   factory AlquilerEspecial.fromFirestore(DocumentSnapshot<Map<String, dynamic>> snapshot) {
+    final data = snapshot.data();
+    if (data == null) {
+      throw Exception('Documento de alquiler especial está vacío');
+    }
 
-    dynamic jsArray = snapshot.data()!['dias'];
-    List <DateTime> lista = List<Timestamp>.from(jsArray)
-          .map((e) => e.toDate())
-          .toList();
+    List<DateTime> lista = [];
+    final jsArray = data['dias'];
+    if (jsArray != null && jsArray is Iterable) {
+      try {
+        lista = List<Timestamp>.from(jsArray)
+              .map((e) => e.toDate())
+              .toList();
+      } catch (e) {
+        print('Error parsing dias: $e');
+        lista = [];
+      }
+    }
 
     return AlquilerEspecial(
       dias: lista,
-      idArrendatario: snapshot.data()!['idArrendatario'],
-      idPlaza: snapshot.data()!['idPlaza'],
+      idArrendatario: data['idArrendatario'] as String? ?? 'unknown',
+      idPlaza: data['idPlaza'] as int? ?? 0,
     );
   }
 

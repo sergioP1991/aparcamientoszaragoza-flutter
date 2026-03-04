@@ -18,6 +18,10 @@ class RentalByHoursService {
         throw Exception('Usuario no autenticado');
       }
 
+      if (durationMinutes <= 0) {
+        throw Exception('Duración debe ser mayor a 0');
+      }
+
       final fechaInicio = DateTime.now();
       final fechaVencimiento = fechaInicio.add(Duration(minutes: durationMinutes));
 
@@ -27,14 +31,19 @@ class RentalByHoursService {
         fechaInicio: fechaInicio,
         fechaVencimiento: fechaVencimiento,
         duracionContratada: durationMinutes,
-        precioMinuto: pricePerMinute,
+        precioMinuto: pricePerMinute.clamp(0.0, double.infinity),
         estado: EstadoAlquilerPorHoras.activo,
       );
 
-      final docRef = await _firestore.collection('alquileres').add(alquiler.objectToMap());
+      final data = alquiler.objectToMap();
+      print('💾 Guardando alquiler: $data');
+      
+      final docRef = await _firestore.collection('alquileres').add(data);
+      print('✅ Alquiler creado con ID: ${docRef.id}');
+      print('📍 PlazaId: $plazaId, Tipo: 2, Estado: ${alquiler.estado}');
       return docRef.id;
     } catch (e) {
-      print('Error al crear alquiler por horas: $e');
+      print('❌ Error al crear alquiler por horas: $e');
       rethrow;
     }
   }
@@ -46,11 +55,19 @@ class RentalByHoursService {
           .collection('alquileres')
           .where('idPlaza', isEqualTo: plazaId)
           .where('tipo', isEqualTo: 2) // tipo 2 es alquiler por horas
-          .where('estado', isNotEqualTo: 'EstadoAlquilerPorHoras.liberado')
           .get();
 
-      if (snapshot.docs.isEmpty) return null;
-      return AlquilerPorHoras.fromFirestore(snapshot.docs.first);
+      // Filtrar localmente los alquileres activos (no liberados ni vencidos)
+      final activeDocs = snapshot.docs
+          .where((doc) {
+            final estado = doc['estado'] as String?;
+            if (estado == null) return true; // Incluir si no hay estado definido
+            return !estado.contains('liberado') && !estado.contains('vencido');
+          })
+          .toList();
+
+      if (activeDocs.isEmpty) return null;
+      return AlquilerPorHoras.fromFirestore(activeDocs.first);
     } catch (e) {
       print('Error al obtener alquiler activo: $e');
       return null;
@@ -67,10 +84,19 @@ class RentalByHoursService {
           .collection('alquileres')
           .where('idArrendatario', isEqualTo: user.uid)
           .where('tipo', isEqualTo: 2) // tipo 2 es alquiler por horas
-          .where('estado', isNotEqualTo: 'EstadoAlquilerPorHoras.liberado')
           .get();
 
-      return snapshot.docs.map((doc) => AlquilerPorHoras.fromFirestore(doc)).toList();
+      // Filtrar localmente los alquileres activos (no liberados)
+      final activeRentals = snapshot.docs
+          .where((doc) {
+            final estado = doc['estado'] as String?;
+            if (estado == null) return true;
+            return !estado.contains('liberado');
+          })
+          .map((doc) => AlquilerPorHoras.fromFirestore(doc))
+          .toList();
+
+      return activeRentals;
     } catch (e) {
       print('Error al obtener alquileres del usuario: $e');
       return [];
@@ -154,15 +180,48 @@ class RentalByHoursService {
   /// Stream para monitorear el alquiler activo de una plaza en tiempo real
   /// Útil para mostrar a todos los usuarios el estado del alquiler de una plaza
   static Stream<AlquilerPorHoras?> watchPlazaRental(int plazaId) {
+    print('🔍 watchPlazaRental iniciado para plaza: $plazaId');
     return _firestore
         .collection('alquileres')
         .where('idPlaza', isEqualTo: plazaId)
         .where('tipo', isEqualTo: 2)
-        .where('estado', isNotEqualTo: EstadoAlquilerPorHoras.liberado.toString())
         .snapshots()
         .map((snapshot) {
-          if (snapshot.docs.isEmpty) return null;
-          return AlquilerPorHoras.fromFirestore(snapshot.docs.first);
+          print('📊 Snapshot para plaza $plazaId: ${snapshot.docs.length} documentos');
+          
+          if (snapshot.docs.isEmpty) {
+            print('❌ No hay alquileres para plaza $plazaId');
+            return null;
+          }
+          
+          // Mostrar cada documento para debugging
+          for (var doc in snapshot.docs) {
+            print('📄 Doc: tipo=${doc['tipo']}, estado=${doc['estado']}, idPlaza=${doc['idPlaza']}');
+          }
+          
+          // Filtrar documentos activos (no liberados)
+          final activeDocs = snapshot.docs.where((doc) {
+            final estado = doc['estado'] as String?;
+            final isActive = estado != null && 
+                   !estado.contains('liberado') &&
+                   !estado.contains('vencido');
+            print('🔎 Filtrando: estado=$estado, isActive=$isActive');
+            return isActive;
+          }).toList();
+          
+          if (activeDocs.isEmpty) {
+            print('❌ No hay alquileres activos para plaza $plazaId');
+            return null;
+          }
+          
+          try {
+            final rental = AlquilerPorHoras.fromFirestore(activeDocs.first);
+            print('✅ Alquiler activo encontrado para plaza $plazaId: ${rental.toString()}');
+            return rental;
+          } catch (e) {
+            print('❌ Error al parsear alquiler: $e');
+            return null;
+          }
         });
   }
 
@@ -177,10 +236,23 @@ class RentalByHoursService {
         .collection('alquileres')
         .where('idArrendatario', isEqualTo: user.uid)
         .where('tipo', isEqualTo: 2)
-        .where('estado', isNotEqualTo: 'EstadoAlquilerPorHoras.liberado')
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) => AlquilerPorHoras.fromFirestore(doc)).toList();
+          return snapshot.docs
+              .map((doc) {
+                try {
+                  final rental = AlquilerPorHoras.fromFirestore(doc);
+                  // Solo incluir alquileres que no estén liberados
+                  if (!rental.estado.toString().contains('liberado')) {
+                    return rental;
+                  }
+                } catch (e) {
+                  print('Error al parsear alquiler del usuario: $e');
+                }
+                return null;
+              })
+              .whereType<AlquilerPorHoras>()
+              .toList();
         });
   }
 }
