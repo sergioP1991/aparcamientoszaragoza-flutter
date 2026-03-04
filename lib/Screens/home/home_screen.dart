@@ -6,6 +6,7 @@ import 'package:aparcamientoszaragoza/Screens/login/login_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart';
 import 'package:aparcamientoszaragoza/Screens/userDetails/userDetails_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/active_rentals/active_rentals_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:aparcamientoszaragoza/Screens/ad/ad_screen.dart';
@@ -173,6 +174,20 @@ class HomePageState extends ConsumerState<HomePage> {
           ),
           Row(
             children: [
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).pushNamed(ActiveRentalsScreen.routeName);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.directions_car, color: Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
               GestureDetector(
                 onTap: () {
                   setState(() => stateHome = _ScafollState.localizacion);

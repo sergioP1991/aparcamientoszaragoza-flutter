@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 // Importación condicional: usa flutter_stripe en móvil, stub en web
 import 'package:flutter_stripe/flutter_stripe.dart' if (dart.library.html) 'stripe_stub.dart' as stripe;
+// Importación condicional: JS interop para Google/Apple Pay nativos en web
+import 'stripe_payment_stub.dart' if (dart.library.html) 'stripe_payment_web.dart' as webPay;
 
 /// Enum para los métodos de pago soportados por Stripe
 enum StripePaymentMethod {
@@ -130,14 +132,12 @@ class StripeService {
       debugPrint('🔑 createPaymentIntent: Creando intent real en Stripe...');
       debugPrint('💰 Monto: ${(amountInCents / 100).toStringAsFixed(2)} $currency');
       
-      // Crear autenticación básica con el Secret Key
-      final basicAuth = base64Encode(utf8.encode('$secretKey:'));
-      
+      // Crear autenticación Bearer con el Secret Key
       // Llamar a Stripe API para crear un PaymentIntent
       final response = await http.post(
         Uri.parse('https://api.stripe.com/v1/payment_intents'),
         headers: {
-          'Authorization': 'Basic $basicAuth',
+          'Authorization': 'Bearer $secretKey',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {
@@ -190,12 +190,10 @@ class StripeService {
   }) async {
     try {
       debugPrint('💳 Creando PaymentMethod con datos de tarjeta...');
-      final basicAuth = base64Encode(utf8.encode('$secretKey:'));
-
       final response = await http.post(
         Uri.parse('https://api.stripe.com/v1/payment_methods'),
         headers: {
-          'Authorization': 'Basic $basicAuth',
+          'Authorization': 'Bearer $secretKey',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {
@@ -243,15 +241,11 @@ class StripeService {
         // Extraer el Payment Intent ID del client secret
         final paymentIntentId = clientSecret.split('_secret_')[0];
         
-        // Crear autenticación básica
-        final basicAuth = base64Encode(utf8.encode('$secretKey:'));
-        
         // Confirmar el PaymentIntent usando la API de Stripe (server-side con Secret Key)
-        // NOTA: No se pasa client_secret en el body al usar Basic Auth con Secret Key
         final confirmResponse = await http.post(
           Uri.parse('https://api.stripe.com/v1/payment_intents/$paymentIntentId/confirm'),
           headers: {
-            'Authorization': 'Basic $basicAuth',
+            'Authorization': 'Bearer $secretKey',
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: {
@@ -404,9 +398,75 @@ class StripeService {
     }
   }
 
-  /// Procesar Google Pay
-  /// En web: Redirige al flujo de tarjeta (Google Pay requiere Android/iOS)
-  /// En móvil: Usa Stripe Google Pay Sheet
+  // ─── Helper: confirmar PaymentIntent con un paymentMethodId específico ──────
+  // Utilizado por Google Pay y Apple Pay tras obtener el pm_ del sheet nativo.
+  static Future<StripePaymentResult> _confirmWithPaymentMethod({
+    required String clientSecret,
+    required double amount,
+    required String currency,
+    required String paymentMethod,
+    required String paymentMethodId,
+  }) async {
+    final paymentIntentId = clientSecret.split('_secret_')[0];
+    try {
+      final response = await http.post(
+        Uri.parse(
+            'https://api.stripe.com/v1/payment_intents/$paymentIntentId/confirm'),
+        headers: {
+          'Authorization': 'Bearer $secretKey',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'payment_method': paymentMethodId,
+          'return_url': kIsWeb
+              ? Uri.base.toString()
+              : 'https://aparcamientodisponible.web.app',
+        },
+      );
+      debugPrint('📡 Confirm con pm $paymentMethodId: ${response.statusCode}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        final status = data['status'] as String;
+        debugPrint('✅ Estado tras confirmar: $status');
+        return StripePaymentResult(
+          paymentIntentId: data['id'] as String,
+          status: status,
+          amount: amount,
+          currency: currency,
+          paymentMethod: paymentMethod,
+          timestamp: DateTime.now(),
+          errorMessage: status == 'succeeded' ? null : 'Estado: $status',
+        );
+      } else {
+        final errorData = jsonDecode(response.body);
+        final errorMessage =
+            errorData['error']?['message'] ?? 'Error desconocido';
+        debugPrint('❌ Error al confirmar: $errorMessage');
+        return StripePaymentResult(
+          paymentIntentId: '',
+          status: 'error',
+          amount: amount,
+          currency: currency,
+          paymentMethod: paymentMethod,
+          timestamp: DateTime.now(),
+          errorMessage: errorMessage,
+        );
+      }
+    } catch (e) {
+      return StripePaymentResult(
+        paymentIntentId: '',
+        status: 'error',
+        amount: amount,
+        currency: currency,
+        paymentMethod: paymentMethod,
+        timestamp: DateTime.now(),
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  /// En web: Google Pay Web SDK (ventana nativa de Google Pay).
+  /// En móvil: Stripe Google Pay Sheet.
   static Future<StripePaymentResult> processGooglePayment({
     required String clientSecret,
     required double amount,
@@ -414,20 +474,70 @@ class StripeService {
     required String label,
   }) async {
     try {
-      debugPrint('🔵 Procesando Google Pay...');
-      
-      // En web, Google Pay no está disponible via flutter_stripe
-      // Redirigir al flujo de tarjeta como fallback
+      debugPrint('■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■');
+      debugPrint('🔵 INICIANDO GOOGLE PAY');
+      debugPrint('■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■');
+
       if (kIsWeb) {
-        debugPrint('⚠️ Google Pay no disponible en web, usando flujo de tarjeta');
-        return processCardPayment(
-          clientSecret: clientSecret,
+        debugPrint('✓ Detectado: PLATAFORMA WEB');
+        debugPrint('  • kIsWeb = $kIsWeb');
+        // Ir directo al Google Pay Web SDK — NO hay fallback a tarjeta.
+        // Si Google Pay no está disponible el usuario verá un error claro.
+        debugPrint('🌐 Google Pay web: abriendo ventana nativa via Google Pay Web SDK');
+        debugPrint('  • Monto: ${(amount * 100).round()} centimos');
+        debugPrint('  • Moneda: $currency');
+        debugPrint('  • Label: $label');
+        final result = await webPay.showGooglePayWeb(
+          amountInCents: (amount * 100).round(),
+          currency: currency,
+          label: label,
+        );
+        debugPrint('📍 Retorno de showGooglePayWeb: $result');
+
+        if (result['success'] == true) {
+          final pmId = result['paymentMethodId'] as String;
+          debugPrint('✅✅✅ ÉXITO: Google Pay nativo completado');
+          debugPrint('  • paymentMethodId=$pmId');
+          return _confirmWithPaymentMethod(
+            clientSecret: clientSecret,
+            amount: amount,
+            currency: currency,
+            paymentMethod: 'google_pay',
+            paymentMethodId: pmId,
+          );
+        }
+
+        final error = result['error'] as String? ?? 'unknown';
+        debugPrint('❌❌❌ ERROR EN GOOGLE PAY');
+        debugPrint('  • error = $error');
+        if (error == 'cancelled') {
+          debugPrint('  → Usuario CANCELÓ la operación');
+          return StripePaymentResult(
+            paymentIntentId: '',
+            status: 'canceled',
+            amount: amount,
+            currency: currency,
+            paymentMethod: 'google_pay',
+            timestamp: DateTime.now(),
+            errorMessage: 'Pago cancelado por el usuario',
+          );
+        }
+        // Google Pay no disponible o error del SDK — NO hacer fallback silencioso
+        debugPrint('  → Google Pay no disponible o error SDK');
+        return StripePaymentResult(
+          paymentIntentId: '',
+          status: 'google_pay_not_available',
           amount: amount,
           currency: currency,
+          paymentMethod: 'google_pay',
+          timestamp: DateTime.now(),
+          errorMessage: error,
         );
       }
 
       // En móvil: usar Google Pay Sheet de Stripe
+      debugPrint('✓ Detectado: PLATAFORMA MÓVIL');
+      debugPrint('  • Abriendo Google Pay Sheet de Stripe');
       final result = await stripe.Stripe.instance.googlePaySheet(
         options: stripe.GooglePaySheetOptions(
           currencyCode: currency.toUpperCase(),
@@ -436,6 +546,7 @@ class StripeService {
           label: label,
         ),
       );
+      debugPrint('✅ Google Pay móvil completado');
 
       return StripePaymentResult(
         paymentIntentId: clientSecret.split('_secret_')[0],
@@ -446,7 +557,11 @@ class StripeService {
         timestamp: DateTime.now(),
       );
     } catch (e) {
-      debugPrint('❌ Error en processGooglePayment: $e');
+      debugPrint('■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■');
+      debugPrint('❌ EXCEPCIÓN EN PROCESAMIENTO DE GOOGLE PAY');
+      debugPrint('■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■');
+      debugPrint('  • Error: $e');
+      debugPrint('  • StackTrace: ${StackTrace.current}');
       return StripePaymentResult(
         paymentIntentId: '',
         status: 'error',
@@ -458,7 +573,7 @@ class StripeService {
       );
     }
   }
-  /// En web: Redirige al flujo de tarjeta (Apple Pay requiere iOS)
+  /// En web: Usa Stripe.js Payment Request API (sheet nativo del navegador/Safari)
   /// En móvil (iOS): Usa Stripe Apple Pay Sheet
   static Future<StripePaymentResult> processApplePayment({
     required String clientSecret,
@@ -468,11 +583,44 @@ class StripeService {
   }) async {
     try {
       debugPrint('🍎 Procesando Apple Pay...');
-      
-      // En web, Apple Pay no está disponible via flutter_stripe
-      // Redirigir al flujo de tarjeta como fallback
+
       if (kIsWeb) {
-        debugPrint('⚠️ Apple Pay no disponible en web, usando flujo de tarjeta');
+        // En Safari (iOS/macOS) la Payment Request API activa Apple Pay.
+        // En otros navegadores hace fallback a tarjeta.
+        debugPrint('🌐 Apple Pay web: usando Stripe.js Payment Request API');
+        final nativeResult = await webPay.showNativePaymentSheet(
+          amountInCents: (amount * 100).round(),
+          currency: currency,
+          label: label,
+        );
+
+        if (nativeResult['success'] == true) {
+          final pmId = nativeResult['paymentMethodId'] as String;
+          debugPrint('✅ Apple Pay nativo: paymentMethodId=$pmId');
+          return _confirmWithPaymentMethod(
+            clientSecret: clientSecret,
+            amount: amount,
+            currency: currency,
+            paymentMethod: 'apple_pay',
+            paymentMethodId: pmId,
+          );
+        }
+
+        final error = nativeResult['error'] as String? ?? 'unknown';
+        if (error == 'cancelled') {
+          debugPrint('🚫 Apple Pay cancelado por el usuario');
+          return StripePaymentResult(
+            paymentIntentId: '',
+            status: 'canceled',
+            amount: amount,
+            currency: currency,
+            paymentMethod: 'apple_pay',
+            timestamp: DateTime.now(),
+            errorMessage: 'Pago cancelado',
+          );
+        }
+        // Apple Pay no disponible en este navegador → fallback a tarjeta
+        debugPrint('⚠️ Apple Pay no disponible ($error), usando tarjeta como fallback');
         return processCardPayment(
           clientSecret: clientSecret,
           amount: amount,
@@ -511,6 +659,40 @@ class StripeService {
       );
     }
   }
+
+  /// Procesar PayPal
+  /// En web / móvil: Usa el flujo de tarjeta como fallback (requiere PayPal activado en Stripe Dashboard)
+  static Future<StripePaymentResult> processPaypalPayment({
+    required String clientSecret,
+    required double amount,
+    required String currency,
+    required String label,
+  }) async {
+    try {
+      debugPrint('🅿️ Procesando PayPal...');
+
+      // PayPal requiere configuración adicional en Stripe Dashboard.
+      // Por ahora usamos el flujo de tarjeta como fallback seguro.
+      debugPrint('⚠️ PayPal aún no configurado en Stripe, usando flujo de tarjeta como fallback');
+      return processCardPayment(
+        clientSecret: clientSecret,
+        amount: amount,
+        currency: currency,
+      );
+    } catch (e) {
+      debugPrint('❌ Error en processPaypalPayment: $e');
+      return StripePaymentResult(
+        paymentIntentId: '',
+        status: 'error',
+        amount: amount,
+        currency: currency,
+        paymentMethod: 'paypal',
+        timestamp: DateTime.now(),
+        errorMessage: 'PayPal no disponible: ${e.toString()}',
+      );
+    }
+  }
+
   static Map<String, dynamic> getPaymentMethodDetails(StripePaymentMethod method) {
     const details = {
       'card': {

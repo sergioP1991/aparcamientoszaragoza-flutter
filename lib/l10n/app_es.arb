@@ -356,5 +356,15 @@
   "fullLabel": "Completo",
   "okAction": "OK",
   "requiredField": "Campo Requerido",
-  "configurationSaved": "Configuración guardada"
+  "configurationSaved": "Configuración guardada",
+  "activeRental": "Alquiler Activo",
+  "rentalExpired": "Alquiler vencido",
+  "timeRemaining": "Tiempo restante: {time}",
+  "manageRental": "Gestionar",
+  "timeUsed": "Tiempo usado",
+  "duration": "Duración",
+  "estimatedPrice": "Precio estimado",
+  "min": "min",
+  "minute": "minuto",
+  "minutes": "minutos"
 }

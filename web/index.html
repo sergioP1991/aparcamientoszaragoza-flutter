@@ -143,6 +143,170 @@
     <!-- EmailJS v3 desde unpkg -->
     <script type="text/javascript" src="https://unpkg.com/emailjs-com@3/dist/email.min.js"></script>
 
+    <!-- ─── Google Pay Web SDK (síncrono) ────────────────────────────────────── -->
+    <!-- Sin 'async': garantiza que el SDK esté disponible cuando Flutter lo llame -->
+    <script src="https://pay.google.com/gp/p/js/pay.js"></script>
+
+    <!-- ─── Stripe.js v3 ─ Apple Pay nativo en Safari ──────────────────── -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+      var _stripeJs = null;
+
+      function _getStripeJs() {
+        if (!_stripeJs && typeof Stripe !== 'undefined') {
+          _stripeJs = Stripe('pk_test_51SuUod2KaK54WVOoow3ceAdHyLefry0S7wHHA5R0SfjFyB9mVyfwpocCmt0adzDFDiwsaM4diLCht1E98oJV8UWU00H20ta2MQ');
+        }
+        return _stripeJs;
+      }
+
+      /**
+       * Google Pay Web SDK — ventana nativa de Google Pay.
+       * Tokenización via Stripe PAYMENT_GATEWAY.
+       *
+       * Devuelve { success, paymentMethodId } o { success, error }.
+       * Llamar DENTRO de un handler de click/tap para preservar la activación de usuario.
+       */
+      window.showGooglePayDirect = function(options) {
+        return new Promise(function(resolve) {
+          console.log('═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════');
+          console.log('📞 GOOGLE PAY JAVASCRIPT: showGooglePayDirect LLAMADO');
+          console.log('═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════');
+          console.log('🔍 Opciones recibidas:', options);
+          console.log('  • amountInCents:', options.amountInCents);
+          console.log('  • currency:', options.currency);
+          console.log('  • label:', options.label);
+
+          // Si el SDK no está listo (raro con carga síncrona, pero defensivo)
+          if (typeof google === 'undefined' || !google.payments || !google.payments.api) {
+            console.error('❌ ERROR: Google Pay SDK no cargado');
+            console.log('  • typeof google:', typeof google);
+            console.log('  • google.payments:', typeof google?.payments);
+            console.log('  • google.payments.api:', typeof google?.payments?.api);
+            resolve({ success: false, error: 'google_pay_sdk_not_loaded' });
+            return;
+          }
+          console.log('✓ Google Pay SDK detectado');
+
+          var PUBLISHABLE_KEY = 'pk_test_51SuUod2KaK54WVOoow3ceAdHyLefry0S7wHHA5R0SfjFyB9mVyfwpocCmt0adzDFDiwsaM4diLCht1E98oJV8UWU00H20ta2MQ';
+
+          var paymentMethod = {
+            type: 'CARD',
+            parameters: {
+              allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
+              allowedCardNetworks: ['AMEX', 'MASTERCARD', 'VISA'],
+            },
+            tokenizationSpecification: {
+              type: 'PAYMENT_GATEWAY',
+              parameters: {
+                gateway: 'stripe',
+                'stripe:version': '2018-10-31',
+                'stripe:publishableKey': PUBLISHABLE_KEY,
+              },
+            },
+          };
+
+          var client = new google.payments.api.PaymentsClient({ environment: 'TEST' });
+          console.log('✓ PaymentsClient creado');
+
+          console.log('🔍 Verificando isReadyToPay()...');
+          client.isReadyToPay({ apiVersion: 2, apiVersionMinor: 0, allowedPaymentMethods: [paymentMethod] })
+            .then(function(ready) {
+              console.log('✓ isReadyToPay retornó:', ready);
+              if (!ready.result) {
+                console.warn('⚠️ Google Pay NO disponible en este navegador/cuenta');
+                resolve({ success: false, error: 'google_pay_not_available' });
+                return null; // short-circuit the chain
+              }
+
+              console.log('✓ Google Pay IS disponible, abriendo loadPaymentData()...');
+              return client.loadPaymentData({
+                apiVersion: 2,
+                apiVersionMinor: 0,
+                allowedPaymentMethods: [paymentMethod],
+                merchantInfo: { merchantName: 'Aparcamientos Zaragoza' },
+                transactionInfo: {
+                  totalPriceStatus: 'FINAL',
+                  totalPrice: (options.amountInCents / 100).toFixed(2),
+                  currencyCode: (options.currency || 'eur').toUpperCase(),
+                  countryCode: 'ES',
+                },
+              });
+            })
+            .then(function(paymentData) {
+              if (!paymentData) {
+                console.log('📝 paymentData es null (ya resuelto por not_available)');
+                return; // ya resuelto por not_available
+              }
+              console.log('✓✓✓ loadPaymentData retornó datos');
+              var token = JSON.parse(paymentData.paymentMethodData.tokenizationData.token);
+              console.log('✓ Stripe token parseado:', token);
+              console.log('  • token.id (paymentMethodId):', token.id);
+              resolve({ success: true, paymentMethodId: token.id });
+            })
+            .catch(function(err) {
+              console.log('═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════');
+              console.error('❌ ERROR EN GOOGLE PAY');
+              console.log('═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════');
+              console.error('  • err:', err);
+              console.error('  • err.statusCode:', err?.statusCode);
+              console.error('  • err.statusMessage:', err?.statusMessage);
+              console.error('  • err.message:', err?.message);
+              if (err && (err.statusCode === 'CANCELED' || err.statusCode === 'canceled')) {
+                console.log('▶ Usuario CANCELÓ Google Pay');
+                resolve({ success: false, error: 'cancelled' });
+              } else {
+                var msg = (err && (err.statusMessage || err.message)) || JSON.stringify(err);
+                console.error('▶ Error desconocido:', msg);
+                resolve({ success: false, error: msg || 'google_pay_error' });
+              }
+            });
+        });
+      };
+
+      console.log('✅ window.showGooglePayDirect definida (Google Pay Web SDK)');
+      console.log('═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════');
+    </script>
+
+    <script>
+      /**
+       * Apple Pay / Google Pay via Stripe.js Payment Request API.
+       * Funciona en Safari (Apple Pay) y Chrome con Google Pay configurado.
+       * SOLO usar para Apple Pay; para Google Pay preferir showGooglePayDirect.
+       */
+      window.showStripePaymentRequest = function(options) {
+        var stripe = _getStripeJs();
+        if (!stripe) {
+          console.error('❌ Stripe.js no está cargado');
+          return Promise.resolve({ success: false, error: 'stripe_not_loaded' });
+        }
+
+        var pr = stripe.paymentRequest({
+          country:  options.country  || 'ES',
+          currency: (options.currency || 'eur').toLowerCase(),
+          total: { label: options.label || 'Alquiler plaza', amount: options.amountInCents || 0 },
+          requestPayerName:  false,
+          requestPayerEmail: false,
+        });
+
+        return new Promise(function(resolve) {
+          pr.on('paymentmethod', function(evt) {
+            evt.complete('success');
+            resolve({ success: true, paymentMethodId: evt.paymentMethod.id });
+          });
+          pr.on('cancel', function() {
+            resolve({ success: false, error: 'cancelled' });
+          });
+          pr.show().catch(function(err) {
+            var msg = (err && err.message) ? err.message : 'payment_request_not_available';
+            resolve({ success: false, error: msg });
+          });
+        });
+      };
+
+      console.log('✅ window.showStripePaymentRequest definida (Stripe.js — Apple Pay)');
+    </script>
+    <!-- ─────────────────────────────────────────────────────────────────── -->
+
 </head>
 <body>
   <!-- Inicializar EmailJS ANTES de que cargue Flutter -->

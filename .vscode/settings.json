@@ -1,4 +1,5 @@
 {
   "dart.flutterSdkPath": ".fvm/versions/stable",
-  "github.copilot.chat.agent.autoFix": true
+  "github.copilot.chat.agent.autoFix": true,
+  "github.copilot.chat.alternateGeminiModelFPrompt.enabled": true
 }

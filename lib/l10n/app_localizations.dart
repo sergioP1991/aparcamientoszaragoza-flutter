@@ -2204,6 +2204,66 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Configuración guardada'**
   String get configurationSaved;
+
+  /// No description provided for @activeRental.
+  ///
+  /// In es, this message translates to:
+  /// **'Alquiler Activo'**
+  String get activeRental;
+
+  /// No description provided for @rentalExpired.
+  ///
+  /// In es, this message translates to:
+  /// **'Alquiler vencido'**
+  String get rentalExpired;
+
+  /// No description provided for @timeRemaining.
+  ///
+  /// In es, this message translates to:
+  /// **'Tiempo restante: {time}'**
+  String timeRemaining(Object time);
+
+  /// No description provided for @manageRental.
+  ///
+  /// In es, this message translates to:
+  /// **'Gestionar'**
+  String get manageRental;
+
+  /// No description provided for @timeUsed.
+  ///
+  /// In es, this message translates to:
+  /// **'Tiempo usado'**
+  String get timeUsed;
+
+  /// No description provided for @duration.
+  ///
+  /// In es, this message translates to:
+  /// **'Duración'**
+  String get duration;
+
+  /// No description provided for @estimatedPrice.
+  ///
+  /// In es, this message translates to:
+  /// **'Precio estimado'**
+  String get estimatedPrice;
+
+  /// No description provided for @min.
+  ///
+  /// In es, this message translates to:
+  /// **'min'**
+  String get min;
+
+  /// No description provided for @minute.
+  ///
+  /// In es, this message translates to:
+  /// **'minuto'**
+  String get minute;
+
+  /// No description provided for @minutes.
+  ///
+  /// In es, this message translates to:
+  /// **'minutos'**
+  String get minutes;
 }
 
 class _AppLocalizationsDelegate

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
+import 'package:aparcamientoszaragoza/Services/StripeService.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
@@ -20,6 +22,7 @@ class RentByHoursScreen extends ConsumerStatefulWidget {
 class _RentByHoursScreenState extends ConsumerState<RentByHoursScreen> {
   int _selectedDuration = 1; // horas
   bool _isProcessing = false;
+  String _selectedPaymentMethod = 'google_pay'; // default: Google Pay
 
   // Precios por hora (configurables)
   static const double pricePerHour = 2.50; // €/hora
@@ -73,6 +76,10 @@ class _RentByHoursScreenState extends ConsumerState<RentByHoursScreen> {
 
             // Desglose de precios
             _buildPriceBreakdown(context, basePrice, iva, total, l10n),
+            const SizedBox(height: 30),
+
+            // Selector de método de pago
+            _buildPaymentMethodSelector(),
             const SizedBox(height: 30),
 
             // Información de vencimiento
@@ -411,6 +418,116 @@ class _RentByHoursScreenState extends ConsumerState<RentByHoursScreen> {
     );
   }
 
+  // ─── Widget: selector de método de pago ────────────────────────────────────
+  Widget _buildPaymentMethodSelector() {
+    final methods = [
+      _PaymentOption(
+        id: 'google_pay',
+        label: 'Google Pay',
+        icon: Icons.g_mobiledata_rounded,
+        color: const Color(0xFF4285F4),
+        subtitle: 'Paga con tu cuenta de Google',
+      ),
+      _PaymentOption(
+        id: 'apple_pay',
+        label: 'Apple Pay',
+        icon: Icons.apple,
+        color: Colors.white,
+        subtitle: kIsWeb ? 'Disponible en Safari (iOS/macOS)' : 'Solo en dispositivos Apple',
+      ),
+      _PaymentOption(
+        id: 'paypal',
+        label: 'PayPal',
+        icon: Icons.account_balance_wallet_rounded,
+        color: const Color(0xFF003087),
+        subtitle: 'Paga con tu cuenta PayPal',
+      ),
+      _PaymentOption(
+        id: 'card',
+        label: 'Tarjeta',
+        icon: Icons.credit_card_rounded,
+        color: Colors.orangeAccent,
+        subtitle: 'Visa, Mastercard, Amex…',
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '💳 Método de pago',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...methods.map((option) {
+          final isSelected = _selectedPaymentMethod == option.id;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedPaymentMethod = option.id),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.blue.withOpacity(0.15)
+                    : AppColors.darkCardBackground,
+                border: Border.all(
+                  color: isSelected ? Colors.blue : Colors.grey[700]!,
+                  width: isSelected ? 2 : 1,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: option.color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(option.icon, color: option.color, size: 26),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          option.label,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          option.subtitle,
+                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    isSelected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: isSelected ? Colors.blue : Colors.grey,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  // ─── Procesar pago y crear alquiler ─────────────────────────────────────────
   Future<void> _confirmRental(
     BuildContext context,
     Garaje plaza,
@@ -420,7 +537,141 @@ class _RentByHoursScreenState extends ConsumerState<RentByHoursScreen> {
     try {
       setState(() => _isProcessing = true);
 
-      // Crear el alquiler
+      // 1 ── Crear PaymentIntent en Stripe
+      final totalInCents = (total * 100).round();
+      final piResult = await StripeService.createPaymentIntent(
+        amountInCents: totalInCents,
+        currency: 'eur',
+        plazaId: plaza.idPlaza!,
+        description:
+            'Alquiler Plaza #${plaza.idPlaza} — ${_selectedDuration}h ($durationMinutes min)',
+      );
+
+      if (!piResult['success']) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Error Stripe: ${piResult['error']}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final clientSecret = piResult['clientSecret'] as String;
+
+      // 2 ── Procesar pago según método seleccionado
+      StripePaymentResult paymentResult;
+      switch (_selectedPaymentMethod) {
+        case 'google_pay':
+          paymentResult = await StripeService.processGooglePayment(
+            clientSecret: clientSecret,
+            amount: total,
+            currency: 'eur',
+            label: 'Plaza #${plaza.idPlaza}',
+          );
+          break;
+        case 'apple_pay':
+          paymentResult = await StripeService.processApplePayment(
+            clientSecret: clientSecret,
+            amount: total,
+            currency: 'eur',
+            label: 'Plaza #${plaza.idPlaza}',
+          );
+          break;
+        case 'paypal':
+          paymentResult = await StripeService.processPaypalPayment(
+            clientSecret: clientSecret,
+            amount: total,
+            currency: 'eur',
+            label: 'Plaza #${plaza.idPlaza}',
+          );
+          break;
+        default: // 'card'
+          paymentResult = await StripeService.processCardPayment(
+            clientSecret: clientSecret,
+            amount: total,
+            currency: 'eur',
+          );
+      }
+
+      // 3 ── Evaluar resultado del pago
+      if (paymentResult.status == 'canceled') {
+        // Usuario canceló voluntariamente — sin error rojo
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('🚫 Pago cancelado'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (paymentResult.status == 'google_pay_not_available') {
+        // Google Pay no está configurado en este navegador
+        if (mounted) {
+          await showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF1E2A3A),
+              title: const Row(
+                children: [
+                  Icon(Icons.g_mobiledata_rounded,
+                      color: Color(0xFF4285F4), size: 28),
+                  SizedBox(width: 8),
+                  Text('Google Pay no disponible',
+                      style: TextStyle(color: Colors.white, fontSize: 16)),
+                ],
+              ),
+              content: const Text(
+                'Google Pay no está disponible en este navegador o '
+                'en tu cuenta de Google.\n\n'
+                '• Asegúrate de estar en Chrome y tener una tarjeta guardada en tu cuenta Google.\n'
+                '• Puedes usar Tarjeta como método alternativo.',
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancelar',
+                      style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orangeAccent),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    setState(
+                        () => _selectedPaymentMethod = 'card');
+                  },
+                  child: const Text('Usar Tarjeta',
+                      style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
+      if (paymentResult.status != 'succeeded' &&
+          paymentResult.status != 'processing') {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  '❌ Pago no completado: ${paymentResult.errorMessage ?? paymentResult.status}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // 4 ── Pago exitoso → crear alquiler en Firestore
       final rentalId = await RentalByHoursService.createRental(
         plazaId: plaza.idPlaza!,
         durationMinutes: durationMinutes,
@@ -430,19 +681,19 @@ class _RentByHoursScreenState extends ConsumerState<RentByHoursScreen> {
       if (rentalId != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Alquiler creado exitosamente por \$$total'),
+            content: Text(
+              '✅ Pago confirmado y alquiler creado — Total: €${total.toStringAsFixed(2)}',
+            ),
             backgroundColor: Colors.green,
           ),
         );
-
-        // Navegar a pantalla de alquileres activos
         Navigator.of(context).pushNamed('/activeRentals');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error: $e'),
+            content: Text('❌ Error inesperado: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -453,4 +704,21 @@ class _RentByHoursScreenState extends ConsumerState<RentByHoursScreen> {
       }
     }
   }
+}
+
+// ─── Modelo interno para las opciones de pago ───────────────────────────────
+class _PaymentOption {
+  final String id;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final String subtitle;
+
+  const _PaymentOption({
+    required this.id,
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.subtitle,
+  });
 }

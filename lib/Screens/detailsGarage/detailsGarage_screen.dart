@@ -1,10 +1,13 @@
 import 'package:aparcamientoszaragoza/Models/favorite.dart';
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
+import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
+import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Screens/timeline/timeline_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/rent_screen.dart' hide Text;
+import 'package:aparcamientoszaragoza/Screens/active_rentals/active_rentals_screen.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/widgets/Buttons.dart';
 import 'package:aparcamientoszaragoza/widgets/Spaces.dart';
@@ -107,7 +110,7 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
                         ),
                       ],
                       const SizedBox(height: 25),
-                      _buildAvailabilityBanner(plaza, l10n),
+                      _buildAvailabilityBanner(plaza, user, l10n),
                       const SizedBox(height: 25),
                       _buildDescription(plaza, l10n),
                       const SizedBox(height: 25),
@@ -396,41 +399,179 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
     );
   }
 
-  Widget _buildAvailabilityBanner(Garaje plaza, AppLocalizations l10n) {
+  Widget _buildAvailabilityBanner(Garaje plaza, User? user, AppLocalizations l10n) {
     bool isAvailable = plaza.alquiler == null;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: (isAvailable ? Colors.green : Colors.orange).withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: (isAvailable ? Colors.green : Colors.orange).withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 10,
-            height: 10,
+    return StreamBuilder<AlquilerPorHoras?>(
+      stream: RentalByHoursService.watchPlazaRental(plaza.idPlaza ?? 0),
+      builder: (context, snapshot) {
+        final activeRental = snapshot.data;
+        final isUserRental = activeRental != null && activeRental.idArrendatario == user?.uid;
+        
+        if (isUserRental) {
+          // Mostrar información del alquiler activo del usuario
+          final timeRemaining = activeRental.tiempoRestante();
+          final isExpired = activeRental.estaVencido();
+          final minutesUsed = activeRental.calcularTiempoUsado();
+          
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isAvailable ? Colors.green : Colors.orange,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: (isAvailable ? Colors.green : Colors.orange).withOpacity(0.5),
-                  blurRadius: 4,
-                  spreadRadius: 1,
-                )
+              color: (isExpired ? Colors.red : Colors.blue).withOpacity(0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: (isExpired ? Colors.red : Colors.blue).withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: isExpired ? Colors.red : Colors.blue,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isExpired ? Colors.red : Colors.blue).withOpacity(0.5),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          )
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.activeRental,
+                            style: TextStyle(
+                              color: isExpired ? Colors.red : Colors.blue,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isExpired 
+                              ? l10n.rentalExpired
+                              : l10n.timeRemaining('$timeRemaining ' + (timeRemaining == 1 ? l10n.minute : l10n.minutes)),
+                            style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pushNamed(ActiveRentalsScreen.routeName);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        backgroundColor: Colors.blue.withOpacity(0.3),
+                        foregroundColor: Colors.blue,
+                      ),
+                      icon: const Icon(Icons.directions_run, size: 16),
+                      label: Text(l10n.manageRental),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildRentalInfoCell(
+                        icon: Icons.timer,
+                        label: l10n.timeUsed,
+                        value: '$minutesUsed ${l10n.min}',
+                      ),
+                      Container(width: 1, color: Colors.white10),
+                      _buildRentalInfoCell(
+                        icon: Icons.schedule,
+                        label: l10n.duration,
+                        value: '${activeRental.duracionContratada} ${l10n.min}',
+                      ),
+                      Container(width: 1, color: Colors.white10),
+                      _buildRentalInfoCell(
+                        icon: Icons.euro,
+                        label: l10n.estimatedPrice,
+                        value: '€${activeRental.calcularPrecioFinal().toStringAsFixed(2)}',
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
+          );
+        }
+        
+        // Mostrar disponibilidad normal
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: (isAvailable ? Colors.green : Colors.orange).withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: (isAvailable ? Colors.green : Colors.orange).withOpacity(0.2)),
           ),
-          const SizedBox(width: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: isAvailable ? Colors.green : Colors.orange,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isAvailable ? Colors.green : Colors.orange).withOpacity(0.5),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    )
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                isAvailable ? l10n.availableNow : l10n.notAvailable,
+                style: TextStyle(
+                  color: isAvailable ? Colors.green : Colors.orange,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRentalInfoCell({required IconData icon, required String label, required String value}) {
+    return Expanded(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.blue, size: 18),
+          const SizedBox(height: 4),
           Text(
-            isAvailable ? l10n.availableNow : l10n.notAvailable,
-            style: TextStyle(
-              color: isAvailable ? Colors.green : Colors.orange,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

@@ -1121,4 +1121,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get configurationSaved => 'Settings saved';
+
+  @override
+  String get activeRental => 'Active Rental';
+
+  @override
+  String get rentalExpired => 'Rental expired';
+
+  @override
+  String timeRemaining(Object time) {
+    return 'Time remaining: $time';
+  }
+
+  @override
+  String get manageRental => 'Manage';
+
+  @override
+  String get timeUsed => 'Time used';
+
+  @override
+  String get duration => 'Duration';
+
+  @override
+  String get estimatedPrice => 'Estimated price';
+
+  @override
+  String get min => 'min';
+
+  @override
+  String get minute => 'minute';
+
+  @override
+  String get minutes => 'minutes';
 }

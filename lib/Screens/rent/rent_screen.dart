@@ -727,6 +727,12 @@ class _RentPageState extends ConsumerState<RentPage> {
       }
 
       try {
+        debugPrint('═══════════════════════════════════════════════════════════════════');
+        debugPrint('✅ Método seleccionado: $_selectedPaymentMethod');
+        debugPrint('💳 Método de pago seleccionado: $_selectedPaymentMethod');
+        debugPrint('💰 Procesando pago: ${total.toStringAsFixed(2)}€ para plaza ${plaza.idPlaza}');
+        debugPrint('═══════════════════════════════════════════════════════════════════');
+        
         final response = await StripeService.createPaymentIntent(
           amountInCents: amountInCents,
           currency: 'eur',
@@ -741,41 +747,64 @@ class _RentPageState extends ConsumerState<RentPage> {
           late StripePaymentResult result;
 
           if (kIsWeb) {
-            // En web: crear PaymentMethod con datos de tarjeta del formulario
-            String? paymentMethodId;
-            if (cardData != null) {
-              debugPrint('💳 Creando PaymentMethod con datos de tarjeta...');
-              final pmResult = await StripeService.createPaymentMethodFromCard(
-                cardNumber: cardData['number']!,
-                expMonth: cardData['exp_month']!,
-                expYear: cardData['exp_year']!,
-                cvc: cardData['cvc']!,
-              );
-              if (pmResult['success'] == true) {
-                paymentMethodId = pmResult['paymentMethodId'] as String;
-                debugPrint('✅ PaymentMethod creado: $paymentMethodId');
-              } else {
-                if (mounted) Navigator.pop(context);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('❌ Tarjeta inválida: ${pmResult['error']}'),
-                      backgroundColor: Colors.red,
-                    ),
+            // En web: USAR el método seleccionado según tipo de pago
+            debugPrint('🌐 PLATAFORMA WEB - Procesando con método: $_selectedPaymentMethod');
+            
+            switch (_selectedPaymentMethod) {
+              case 'google_pay':
+                debugPrint('▶ Llamando processGooglePayment()...');
+                result = await StripeService.processGooglePayment(
+                  clientSecret: clientSecret,
+                  amount: total,
+                  currency: 'eur',
+                  label: 'Alquiler Plaza: ${plaza.direccion}',
+                );
+                break;
+              case 'apple_pay':
+                debugPrint('▶ Llamando processApplePayment()...');
+                result = await StripeService.processApplePayment(
+                  clientSecret: clientSecret,
+                  amount: total,
+                  currency: 'eur',
+                  label: 'Alquiler Plaza: ${plaza.direccion}',
+                );
+                break;
+              default: // 'card'
+                debugPrint('▶ Llamando processCardPayment() para tarjeta...');
+                // Para tarjeta: crear PaymentMethod desde datos del formulario
+                String? paymentMethodId;
+                if (cardData != null) {
+                  debugPrint('💳 Creando PaymentMethod con datos de tarjeta...');
+                  final pmResult = await StripeService.createPaymentMethodFromCard(
+                    cardNumber: cardData['number']!,
+                    expMonth: cardData['exp_month']!,
+                    expYear: cardData['exp_year']!,
+                    cvc: cardData['cvc']!,
                   );
+                  if (pmResult['success'] == true) {
+                    paymentMethodId = pmResult['paymentMethodId'] as String;
+                    debugPrint('✅ PaymentMethod creado: $paymentMethodId');
+                  } else {
+                    if (mounted) Navigator.pop(context);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('❌ Tarjeta inválida: ${pmResult['error']}'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                    setState(() => _isProcessingPayment = false);
+                    return;
+                  }
                 }
-                setState(() => _isProcessingPayment = false);
-                return;
-              }
+                result = await StripeService.processCardPayment(
+                  clientSecret: clientSecret,
+                  amount: total,
+                  currency: 'eur',
+                  paymentMethodId: paymentMethodId,
+                );
             }
-
-            // En web todos los métodos se procesan con tarjeta
-            result = await StripeService.processCardPayment(
-              clientSecret: clientSecret,
-              amount: total,
-              currency: 'eur',
-              paymentMethodId: paymentMethodId,
-            );
           } else {
             // En móvil: usar SDKs nativos según método seleccionado
             debugPrint('💳 Método móvil: $_selectedPaymentMethod');
@@ -806,6 +835,68 @@ class _RentPageState extends ConsumerState<RentPage> {
           }
 
           debugPrint('💳 Resultado de pago: ${result.status}');
+
+          if (result.status == 'canceled') {
+            // Usuario canceló voluntariamente — sin error rojo
+            if (mounted) Navigator.pop(context);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('🚫 Pago cancelado'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+            setState(() => _isProcessingPayment = false);
+            return;
+          }
+
+          if (result.status == 'google_pay_not_available') {
+            // Google Pay no está configurado en este navegador
+            if (mounted) Navigator.pop(context);
+            if (mounted) {
+              await showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: AppColors.darkestBlue,
+                  title: const Row(
+                    children: [
+                      Icon(Icons.g_mobiledata_rounded,
+                          color: Color(0xFF4285F4), size: 28),
+                      SizedBox(width: 8),
+                      Text('Google Pay no disponible',
+                          style: TextStyle(color: Colors.white, fontSize: 16)),
+                    ],
+                  ),
+                  content: const Text(
+                    'Google Pay no está disponible en este navegador o en tu cuenta.\n\n'
+                    '• Asegúrate de estar en Chrome y tener una tarjeta guardada.\n'
+                    '• Puedes usar Tarjeta como método alternativo.',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Cancelar',
+                          style: TextStyle(color: Colors.grey)),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orangeAccent),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        setState(() => _selectedPaymentMethod = 'card');
+                      },
+                      child: const Text('Usar Tarjeta',
+                          style: TextStyle(color: Colors.black)),
+                    ),
+                  ],
+                ),
+              );
+            }
+            setState(() => _isProcessingPayment = false);
+            return;
+          }
 
           if (!result.isSuccessful) {
             if (mounted) Navigator.pop(context); // Cerrar diálogo
