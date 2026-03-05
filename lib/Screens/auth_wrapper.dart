@@ -5,6 +5,7 @@ import 'package:aparcamientoszaragoza/Screens/welcome_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/login/login_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/home_screen.dart';
 import 'package:aparcamientoszaragoza/Services/SecurityService.dart';
+import 'package:aparcamientoszaragoza/Services/ReAuthService.dart';
 
 /// Pantalla que decide qué mostrar basándose en el estado de autenticación de Firebase
 /// - Home: Si ya hay una sesión activa en Firebase Auth (usuario logueado)
@@ -30,8 +31,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
   /// En web, FirebaseAuth necesita tiempo para restaurar la sesión desde localStorage
   /// Orden de verificación:
   /// 1. ¿Hay sesión activa en Firebase Auth? → Home
-  /// 2. ¿Hay usuario recordado en SharedPreferences? → Login (para poder cambiar)
-  /// 3. Nada de lo anterior? → Welcome
+  /// 2. ¿Hay usuario recordado CON session token válido? → Auto-login sin pedir contraseña
+  /// 3. ¿Hay usuario recordado SIN sesión token válido? → Login (para poder cambiar)
+  /// 4. Nada de lo anterior? → Welcome
   Future<Widget> _checkAuthState() async {
     try {
       // 🔑 CRÍTICO para web: usar authStateChanges() para esperar a que Firebase restaure la sesión
@@ -61,13 +63,57 @@ class _AuthWrapperState extends State<AuthWrapper> {
         return HomePage();
       }
       
-      // Si no hay sesión en Firebase, verificar si hay usuario recordado
+      // Si no hay sesión en Firebase, verificar si hay usuario recordado + session token válido
       final prefs = await SharedPreferences.getInstance();
       final lastUserEmail = prefs.getString('lastUserEmail');
       
       if (lastUserEmail != null && lastUserEmail.isNotEmpty) {
-        // Hay usuario recordado pero no sesión activa
-        // Mostrar LoginPage para que pueda continuar o cambiar de usuario
+        // Verificar si tiene session token válido
+        final reAuthService = ReAuthService();
+        final hasValidToken = await reAuthService.hasValidSessionToken(lastUserEmail);
+        
+        if (hasValidToken) {
+          // ✅ Hay usuario recordado CON session token válido → intenta auto-login
+          SecurityService.secureLog(
+            'Session token válido encontrado para: $lastUserEmail. Intentando auto-login.',
+            level: 'DEBUG'
+          );
+          
+          // Obtener credenciales encriptadas para auto-login
+          final cachedEmail = await SecurityService.getSecureData('cached_email');
+          final cachedPassword = await SecurityService.getSecureData('cached_password');
+          
+          if (cachedEmail != null && cachedPassword != null) {
+            // ✅ Intentar auto-login con credenciales encriptadas
+            try {
+              await FirebaseAuth.instance.signInWithEmailAndPassword(
+                email: cachedEmail,
+                password: cachedPassword,
+              );
+              SecurityService.secureLog(
+                'Auto-login exitoso para: $cachedEmail',
+                level: 'DEBUG'
+              );
+              return HomePage();
+            } catch (e) {
+              // Auto-login falló (ej: contraseña cambió) → mostrar LoginPage
+              SecurityService.secureLog(
+                'Auto-login falló: ${e.runtimeType}. Mostrando LoginPage.',
+                level: 'WARNING'
+              );
+              return LoginPage();
+            }
+          }
+        } else {
+          // Hay usuario recordado PERO sin session token válido (token expiró)
+          // → Mostrar LoginPage para pedir credenciales de nuevo
+          SecurityService.secureLog(
+            'Session token expirado o no existe para: $lastUserEmail. Mostrar LoginPage.',
+            level: 'DEBUG'
+          );
+        }
+        
+        // Hay usuario recordado → mostrar LoginPage
         SecurityService.secureLog(
           'Usuario recordado encontrado: $lastUserEmail. Mostrar LoginPage.',
           level: 'DEBUG'

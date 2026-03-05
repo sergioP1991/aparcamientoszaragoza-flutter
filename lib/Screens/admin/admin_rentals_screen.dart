@@ -1,6 +1,7 @@
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
+import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminRentalsScreen extends StatefulWidget {
   static const routeName = '/admin-rentals';
@@ -22,38 +23,44 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> {
       _isLoading = true;
       _message = null;
       _isSuccess = false;
+      _releasedCount = 0;
     });
 
     try {
-      final HttpsCallable callable =
-          FirebaseFunctions.instance.httpsCallable('releaseAllRentals');
-      final result = await callable.call();
+      // Obtener todos los alquileres activos de Firestore
+      final snapshot = await FirebaseFirestore.instance
+          .collection('alquileres')
+          .where('tipo', isEqualTo: 2) // tipo 2 = alquiler por horas
+          .get();
 
-      final data = result.data as Map<dynamic, dynamic>;
-      final success = data['success'] as bool? ?? false;
-      final message = data['message'] as String? ?? 'Operación completada';
-      final releasedCount = data['releasedCount'] as int? ?? 0;
+      debugPrint('🔍 Encontrados ${snapshot.docs.length} alquileres para liberar');
+
+      int releasedCount = 0;
+
+      // Liberar cada alquiler usando método admin (sin verificación de propiedad)
+      for (var doc in snapshot.docs) {
+        try {
+          debugPrint('📋 Liberando alquiler: ${doc.id}');
+          await RentalByHoursService.releaseRentalAsAdmin(doc.id);
+          releasedCount++;
+          debugPrint('✅ Alquiler liberado: ${doc.id}');
+        } catch (e) {
+          debugPrint('⚠️ Error liberando ${doc.id}: $e');
+        }
+      }
 
       setState(() {
         _isLoading = false;
-        _isSuccess = success;
-        _message = message;
+        _isSuccess = true;
+        _message = '✅ $releasedCount alquileres liberados exitosamente';
         _releasedCount = releasedCount;
       });
 
-      if (success) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message),
+            content: Text(_message!),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.orange,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -66,13 +73,15 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> {
         _message = '❌ Error: ${e.toString()}';
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -290,9 +299,10 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '• Esta función accede a la Cloud Function releaseAllRentals\n'
+                    '• Esta función libera alquileres localmente\n'
                     '• Busca todos los alquileres con estado "activo"\n'
                     '• Los marca como "liberado" con timestamp actual\n'
+                    '• Cálcula precio final según tiempo usado\n'
                     '• Solo disponible en modo desarrollo/admin',
                     style: TextStyle(
                       color: Colors.white70,

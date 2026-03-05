@@ -113,6 +113,8 @@ dev_dependencies:
 
   google_maps_flutter: ^2.7.0
 
+  google_fonts: ^6.2.0
+
   #intl: ^0.18.1 # O la versión más reciente
 
 # For information on the generic Dart part of this file, see the

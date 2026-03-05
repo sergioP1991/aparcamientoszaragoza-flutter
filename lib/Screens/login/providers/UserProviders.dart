@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:aparcamientoszaragoza/Services/SecurityService.dart';
+import 'package:aparcamientoszaragoza/Services/ReAuthService.dart';
 
 class UserLoginState extends StateNotifier<AsyncValue<User?>> {
 
@@ -43,8 +44,8 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
       final user = userCredential.user;
       
       if (user != null) {
-        // ✅ Almacenar datos de forma segura
-        await _saveUserSecurely(user);
+        // ✅ Almacenar datos de forma segura + guardar credenciales encriptadas
+        await _saveUserSecurely(user, mail, password);
         
         // ✅ Resetear intentos fallidos tras login exitoso
         await SecurityService.resetLoginAttempts(mail);
@@ -126,14 +127,29 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
   }
 
   /// ✅ Guardar datos de usuario para recordar (email, displayName, photo)
+  /// + Guardar credenciales encriptadas para auto-login
+  /// + Generar session token para auto-login en siguientes X días
   /// Nota: Estos datos son públicos, no sensibles, por lo que SharedPreferences es seguro
-  Future<void> _saveUserSecurely(User user) async {
+  Future<void> _saveUserSecurely(User user, [String? email, String? password]) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('lastUserEmail', user.email ?? '');
       await prefs.setString('lastUserDisplayName', user.displayName ?? '');
       await prefs.setString('lastUserPhoto', user.photoURL ?? '');
-      SecurityService.secureLog('User data saved for remember me', level: 'DEBUG');
+      
+      // ✅ Guardar credenciales encriptadas en SecureStorage para permitir auto-login
+      if (email != null && password != null) {
+        await SecurityService.saveSecureData('cached_email', email);
+        await SecurityService.saveSecureData('cached_password', password);
+      }
+      
+      // ✅ Generar session token para permitir auto-login en los próximos 7 días
+      if (user.email != null) {
+        final reAuthService = ReAuthService();
+        await reAuthService.generateSessionToken(user.email!);
+      }
+      
+      SecurityService.secureLog('User data saved + session token generated', level: 'DEBUG');
     } catch (e) {
       SecurityService.secureLog('Error saving user data: ${e.runtimeType}', level: 'ERROR');
     }
@@ -149,9 +165,17 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
       // ✅ Limpiar datos sensibles del almacenamiento seguro
       await SecurityService.clearAllSecureData();
       
+      // ✅ Invalidar session token para forzar re-login en siguiente acceso
+      final prefs = await SharedPreferences.getInstance();
+      final email = prefs.getString('lastUserEmail');
+      if (email != null) {
+        final reAuthService = ReAuthService();
+        await reAuthService.invalidateSessionToken(email);
+      }
+      
       // NO limpiar SharedPreferences - mantener usuario recordado para mostrar en login
-      // El usuario recordado permite que el LoginScreen muestre "¿No eres tú?"
-      // pero NO causa entrada automática al home (eso lo controla AuthWrapper)
+      // El usuario recordado permite que LoginScreen muestre "¿No eres tú?"
+      // pero el session token invalidado fuerza re-entrada de contraseña
       
       // Cerrar sesión de Google (disconnect para eliminar tokens)
       try {

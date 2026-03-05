@@ -53,12 +53,19 @@ class HomePageState extends ConsumerState<HomePage> {
   bool _notMyGaragesFilter = true; // Filtro por defecto: mostrar solo plazas donde el usuario no es propietario
   String _searchQuery = "";
 
+  // Admin panel secret access
+  int _titleTapCount = 0;
+  late DateTime _lastTitleTap;
+  static const int _secretTapThreshold = 5;
+  static const int _tapTimeWindowMs = 3000; // 3 segundos para completar 5 taps
+
   @override
   void initState() {
     super.initState();
 
      configurationState = ConfigurationApp();
     stateHome = _ScafollState.listado;
+    _lastTitleTap = DateTime.now();
     
     // Set interval on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -141,14 +148,17 @@ class HomePageState extends ConsumerState<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  l10n.homeHeaderTitle,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+                GestureDetector(
+                  onTap: _handleTitleTap,
+                  child: Text(
+                    l10n.homeHeaderTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
                 GestureDetector(
@@ -659,6 +669,26 @@ class HomePageState extends ConsumerState<HomePage> {
         }
       },
     );
+  }
+
+  void _handleTitleTap() {
+    final now = DateTime.now();
+    
+    // Reset counter si pasaron más de 3 segundos
+    if (now.difference(_lastTitleTap).inMilliseconds > _tapTimeWindowMs) {
+      _titleTapCount = 1;
+      _lastTitleTap = now;
+      return;
+    }
+    
+    _titleTapCount++;
+    _lastTitleTap = now;
+    
+    // Si alcanzó 5 taps, abre el panel de admin
+    if (_titleTapCount >= _secretTapThreshold) {
+      _titleTapCount = 0; // Reset para evitar abrir múltiples veces
+      Navigator.of(context).pushNamed(AdminRentalsScreen.routeName);
+    }
   }
 }
 

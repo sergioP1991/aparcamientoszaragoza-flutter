@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,48 +32,19 @@ class GarageCard extends ConsumerStatefulWidget {
 }
 
 class _GarageCardState extends ConsumerState<GarageCard> {
-  late Timer _updateTimer;
-  AlquilerPorHoras? _activeRental;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadActiveRental();
-    // Actualizar cada segundo para mostrar tiempo restante
-    _updateTimer = Timer.periodic(Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _updateTimer.cancel();
-    super.dispose();
-  }
-
-  Future<void> _loadActiveRental() async {
-    try {
-      final rental = await RentalByHoursService.getActiveRentalForPlaza(widget.item.idPlaza ?? 0);
-      if (mounted) {
-        setState(() {
-          _activeRental = rental;
-        });
-      }
-    } catch (e) {
-      debugPrint('❌ Error loading active rental: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isOwner = widget.item.propietario == widget.user?.uid;
-    final hasActiveRental = _activeRental != null && _activeRental!.estado.name == 'activo';
-    final tiempoRestante = hasActiveRental ? _activeRental!.tiempoRestante() : 0;
+    final plazaId = widget.item.idPlaza ?? 0;
     
-    return GestureDetector(
+    return StreamBuilder<AlquilerPorHoras?>(
+      stream: RentalByHoursService.watchPlazaRental(plazaId),
+      builder: (context, snapshot) {
+        final activeRental = snapshot.data;
+        final hasActiveRental = activeRental != null && activeRental.estado.name == 'activo';
+        final tiempoRestante = hasActiveRental ? activeRental.tiempoRestante() : 0;
+        
+        return GestureDetector(
       onTap: () {
         if (widget.onTap != null) {
           widget.onTap!(widget.item.idPlaza!);
@@ -336,6 +306,8 @@ class _GarageCardState extends ConsumerState<GarageCard> {
           ],
         ),
       ),
+        );
+      },
     );
   }
 

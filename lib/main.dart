@@ -22,6 +22,7 @@ import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provid
 import 'package:aparcamientoszaragoza/Services/faq_service.dart';
 import 'package:aparcamientoszaragoza/Screens/rent_by_hours/rent_by_hours_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/active_rentals/active_rentals_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/admin/admin_rentals_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
@@ -135,6 +136,7 @@ class MyApp extends ConsumerWidget {
           ComposeEmailScreen.routeName: (context) => ComposeEmailScreen(),
           RentByHoursScreen.routeName: (context) => const RentByHoursScreen(),
           ActiveRentalsScreen.routeName: (context) => const ActiveRentalsScreen(),
+          AdminRentalsScreen.routeName: (context) => const AdminRentalsScreen(),
           PaymentPage.routeName: (context) => PaymentPage(
             plaza: ModalRoute.of(context)?.settings.arguments as dynamic ?? null,
             rentalDays: 1,

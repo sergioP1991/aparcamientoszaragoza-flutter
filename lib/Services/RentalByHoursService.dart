@@ -141,6 +141,37 @@ class RentalByHoursService {
     }
   }
 
+  /// 🔓 Admin Release: Libera un alquiler SIN verificar propiedad (solo para admin)
+  /// No hay validación de usuario - se usa en herramientas administrativas
+  static Future<void> releaseRentalAsAdmin(String rentalId) async {
+    try {
+      final rental = await _firestore.collection('alquileres').doc(rentalId).get();
+      if (!rental.exists) {
+        print('⚠️ Alquiler no encontrado: $rentalId');
+        return; // No existe, saltamos
+      }
+
+      final alquiler = AlquilerPorHoras.fromFirestore(rental);
+      
+      // Calcular precio final basado en tiempo realmente usado
+      final tiempoUsado = alquiler.calcularTiempoUsado();
+      final precioFinal = alquiler.calcularPrecioFinal();
+
+      // Actualizar documento con estado liberado
+      await _firestore.collection('alquileres').doc(rentalId).update({
+        'estado': EstadoAlquilerPorHoras.liberado.toString(),
+        'tiempoUsado': tiempoUsado,
+        'precioCalculado': precioFinal,
+        'fechaLiberacion': DateTime.now().toIso8601String(),
+      });
+      
+      print('✅ Alquiler liberado (admin): $rentalId');
+    } catch (e) {
+      print('❌ Error al liberar alquiler (admin): $e');
+      rethrow;
+    }
+  }
+
   /// Verifica si el usuario actual es el propietario de un alquiler
   static Future<bool> isRentalOwner(String rentalId) async {
     try {
