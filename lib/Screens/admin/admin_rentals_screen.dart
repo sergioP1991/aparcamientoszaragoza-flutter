@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
+import 'package:aparcamientoszaragoza/Screens/admin/admin_plazas_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminRentalsScreen extends StatefulWidget {
@@ -12,11 +13,25 @@ class AdminRentalsScreen extends StatefulWidget {
   State<AdminRentalsScreen> createState() => _AdminRentalsScreenState();
 }
 
-class _AdminRentalsScreenState extends State<AdminRentalsScreen> {
+class _AdminRentalsScreenState extends State<AdminRentalsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   bool _isLoading = false;
   String? _message;
   bool _isSuccess = false;
   int _releasedCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   Future<void> _releaseAllRentals() async {
     setState(() {
@@ -131,15 +146,45 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.darkBlue,
-        title: const Text('🔐 Admin - Gestionar Alquileres'),
+        title: const Text('🔐 Panel Admin'),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppColors.primaryColor,
+          labelColor: AppColors.primaryColor,
+          unselectedLabelColor: Colors.white60,
+          tabs: const [
+            Tab(
+              icon: Icon(Icons.receipt),
+              text: 'Alquileres',
+            ),
+            Tab(
+              icon: Icon(Icons.business_outlined),
+              text: 'Plazas',
+            ),
+          ],
+        ),
       ),
       backgroundColor: AppColors.darkCardBackground,
-      body: SingleChildScrollView(
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // TAB 1: Gestión de Alquileres
+          _buildRentalsTab(),
+          
+          // TAB 2: Gestión de Plazas
+          const AdminPlazasScreen(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRentalsTab() {
+    return SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,7 +359,6 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
+      );
+    }
 }
