@@ -1,4 +1,6 @@
-/// Servicio para generar URLs de imágenes únicas y variadas para cada plaza de garaje
+import 'package:aparcamientoszaragoza/Models/garaje.dart';
+
+/// Servicio para obtener URLs de imágenes de plazas desde Firebase Storage o fallback local
 class PlazaImageService {
   /// Lista de imágenes locales de fallback
   static const List<String> _imageAssets = [
@@ -8,6 +10,23 @@ class PlazaImageService {
     'assets/garaje4.jpeg',
     'assets/garaje5.jpeg',
   ];
+
+  /// Obtiene la primera imagen del Garaje (desde Firebase Storage) con fallback a assets
+  static String getImageFromGaraje(Garaje garaje) {
+    if (garaje.imagenes.isNotEmpty) {
+      return garaje.imagenes.first;  // URL real de Firebase Storage
+    }
+    return _imageAssets[garaje.idPlaza ?? 0 % _imageAssets.length];
+  }
+
+  /// Obtiene todas las imágenes del Garaje para un carrusel
+  static List<String> getCarouselUrlsFromGaraje(Garaje garaje) {
+    if (garaje.imagenes.isNotEmpty) {
+      return garaje.imagenes;  // URLs reales de Firebase Storage
+    }
+    // Fallback: usar assets locales
+    return List.generate(5, (i) => _imageAssets[(garaje.idPlaza ?? 0 + i) % _imageAssets.length]);
+  }
 
   /// Retorna una imagen local basada en el ID de plaza (sin intentar cargar remotas que pueden fallar)
   static String getImageUrl(int plazaId, {int width = 400, int height = 300}) {

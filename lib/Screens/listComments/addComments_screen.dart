@@ -5,6 +5,7 @@ import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/providers/CommentsProviders.dart';
+import 'package:aparcamientoszaragoza/widgets/plaza_image_loader.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -226,17 +227,12 @@ class _AddCommentsState extends ConsumerState<AddComments> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: Image.network(
-                  PlazaImageService.getThumbnailUrl(plaza.idPlaza ?? 0),
+                child: PlazaImageLoader(
+                  imageUrl: plaza.imagenes.isNotEmpty ? plaza.imagenes.first : PlazaImageService.getThumbnailUrl(plaza.idPlaza ?? 0),
                   width: 45,
                   height: 45,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: 45,
-                    height: 45,
-                    color: Colors.grey,
-                    child: const Icon(Icons.image_not_supported, color: Colors.white, size: 20),
-                  ),
+                  showWarningOnError: false,
                 ),
               ),
               const SizedBox(width: 12),

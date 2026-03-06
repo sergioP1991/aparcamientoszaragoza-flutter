@@ -5,6 +5,7 @@ import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Services/StripeService.dart';
+import 'package:aparcamientoszaragoza/widgets/plaza_image_loader.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
@@ -99,46 +100,54 @@ class _RentByHoursScreenState extends ConsumerState<RentByHoursScreen> {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.darkCardBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       clipBehavior: Clip.hardEdge,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Imagen
-          Image.network(
-            PlazaImageService.getLargeUrl(plaza.idPlaza ?? 0),
-            height: 200,
+          // Imagen (usando imágenes reales subidas o fallback)
+          PlazaImageLoader(
+            imageUrl: plaza.imagenes.isNotEmpty ? plaza.imagenes.first : PlazaImageService.getLargeUrl(plaza.idPlaza ?? 0),
+            height: 220,
             width: double.infinity,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              height: 200,
-              color: Colors.grey[800],
-              child: const Icon(Icons.image_not_supported, color: Colors.grey),
-            ),
+            showWarningOnError: true,
           ),
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Nombre principal de la plaza
                 Text(
-                  'Plaza #${plaza.idPlaza}',
+                  plaza.direccion.split(',').first,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
+                // Dirección completa
                 Row(
                   children: [
-                    const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                    const Icon(Icons.location_on, size: 16, color: Colors.orange),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         plaza.direccion,
-                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),

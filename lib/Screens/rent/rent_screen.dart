@@ -6,6 +6,7 @@ import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Services/StripeService.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/providers/RentProvider.dart';
+import 'package:aparcamientoszaragoza/widgets/plaza_image_loader.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -121,51 +122,79 @@ class _RentPageState extends ConsumerState<RentPage> {
 
   Widget _buildPlazaSummary(Garaje plaza) {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.darkCardBackground,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Row(
+      clipBehavior: Clip.hardEdge,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
+          // Imagen grande y clara (usando imágenes reales subidas o fallback)
+          PlazaImageLoader(
+            imageUrl: plaza.imagenes.isNotEmpty ? plaza.imagenes.first : PlazaImageService.getLargeUrl(plaza.idPlaza ?? 0),
+            height: 220,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            showWarningOnError: true,
+          ),
+          
+          // Información de la plaza
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Etiqueta verificada
                 Row(
                   children: [
-                    const Icon(Icons.verified, color: Colors.blue, size: 16),
+                    const Icon(Icons.verified_user, color: Colors.blue, size: 16),
                     const SizedBox(width: 6),
-                    Text(AppLocalizations.of(context)!.verifiedLabel, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                    Text(
+                      AppLocalizations.of(context)!.verifiedLabel,
+                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
+                
+                // Nombre principal
                 Text(
-                  "${AppLocalizations.of(context)!.navGarages} ${plaza.direccion.split(',').first}",
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  plaza.direccion.split(',').first,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  plaza.direccion,
-                  style: const TextStyle(color: Colors.white38, fontSize: 14),
+                const SizedBox(height: 8),
+                
+                // Dirección completa
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.location_on, size: 16, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        plaza.direccion,
+                        style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              PlazaImageService.getMediumUrl(plaza.idPlaza ?? 0),
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: 80,
-                height: 80,
-                color: Colors.grey,
-                child: const Icon(Icons.image_not_supported, color: Colors.white, size: 24),
-              ),
             ),
           ),
         ],
