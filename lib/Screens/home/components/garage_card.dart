@@ -193,6 +193,7 @@ class _GarageCardState extends ConsumerState<GarageCard> {
                   const SizedBox(height: 12),
                   // Status indicator with time if rental is active
                   if (hasActiveRental && tiempoRestante > 0)
+                    // Banner azul para alquileres por horas
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
@@ -209,6 +210,32 @@ class _GarageCardState extends ConsumerState<GarageCard> {
                               '⏱️ ${_formatRentalTime(tiempoRestante)}',
                               style: const TextStyle(
                                 color: AppColors.primaryColor,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (widget.item.alquiler != null && widget.item.alquiler!.tipo == 0)
+                    // Banner naranja para alquileres mensuales
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.2),
+                        border: Border.all(color: Colors.orange, width: 1.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_month, color: Colors.orange, size: 16),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '📅 Alquiler Mensual',
+                              style: const TextStyle(
+                                color: Colors.orange,
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),

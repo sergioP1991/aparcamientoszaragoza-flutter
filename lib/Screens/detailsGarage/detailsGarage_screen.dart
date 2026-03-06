@@ -983,6 +983,11 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
   /// Ejecuta la liberación del alquiler
   Future<void> _performReleaseRental(AlquilerPorHoras rental, AppLocalizations l10n) async {
     try {
+      // Validar que tenemos el ID del documento
+      if (rental.documentId == null || rental.documentId!.isEmpty) {
+        throw Exception('Error: No se encontró el ID del alquiler');
+      }
+
       // Mostrar loading
       if (mounted) {
         showDialog(
@@ -1002,9 +1007,9 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
         );
       }
 
-      // Liberar el alquiler
-      final rentalId = '${rental.idPlaza}_${rental.idArrendatario}';
-      await RentalByHoursService.releaseRental(rentalId);
+      // Liberar el alquiler usando el ID correcto del documento
+      debugPrint('🔑 Liberando alquiler con documentId: ${rental.documentId}');
+      await RentalByHoursService.releaseRental(rental.documentId!);
 
       if (mounted) {
         Navigator.pop(context); // Cerrar loading
@@ -1018,7 +1023,10 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
           ),
         );
         
-        // Refrescar la vista
+        // Refrescar la lista de garages en home para actualizar estado de plaza
+        await ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+        
+        // Refrescar la vista local
         setState(() {});
       }
     } catch (e) {
@@ -1033,6 +1041,7 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
           ),
         );
       }
+      debugPrint('❌ Error al liberar alquiler: $e');
     }
   }
 

@@ -10,6 +10,9 @@ enum EstadoAlquilerPorHoras {
 }
 
 class AlquilerPorHoras extends Alquiler {
+  // ID del documento en Firestore (para poder actualizar/eliminar)
+  String? documentId;
+  
   // Información temporal
   DateTime fechaInicio;
   DateTime fechaVencimiento;
@@ -42,6 +45,7 @@ class AlquilerPorHoras extends Alquiler {
     required this.precioMinuto,
     required int idPlaza,
     required String idArrendatario,
+    this.documentId,
     this.fechaLiberacion,
     this.tiempoUsado,
     this.precioCalculado,
@@ -133,8 +137,9 @@ class AlquilerPorHoras extends Alquiler {
       'tipo': tipo,
       'notificacionVencimientoEnviada': notificacionVencimientoEnviada,
       'notificacionMultaEnviada': notificacionMultaEnviada,
+      'documentId': documentId,
     };
-    print('🗂️ AlquilerPorHoras.objectToMap() generando: idPlaza=$idPlaza, tipo=${tipo}, estado=${estado.toString()}');
+    print('🗂️ AlquilerPorHoras.objectToMap() generando: idPlaza=$idPlaza, tipo=${tipo}, estado=${estado.toString()}, documentId=$documentId');
     return map;
   }
 
@@ -162,6 +167,7 @@ class AlquilerPorHoras extends Alquiler {
     return AlquilerPorHoras(
       idPlaza: data['idPlaza'] as int? ?? 0,
       idArrendatario: data['idArrendatario'] as String? ?? 'unknown',
+      documentId: snapshot.id, // ← CAPTURAR EL ID DEL DOCUMENTO
       fechaInicio: (data['fechaInicio'] as Timestamp).toDate(),
       fechaVencimiento: (data['fechaVencimiento'] as Timestamp).toDate(),
       fechaLiberacion: data['fechaLiberacion'] != null 
@@ -195,6 +201,7 @@ class AlquilerPorHoras extends Alquiler {
     return AlquilerPorHoras(
       idPlaza: map['idPlaza'],
       idArrendatario: map['idArrendatario'],
+      documentId: map['documentId'] as String?,
       fechaInicio: map['fechaInicio'] is Timestamp 
         ? (map['fechaInicio'] as Timestamp).toDate()
         : DateTime.parse(map['fechaInicio']),

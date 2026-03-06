@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
+import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'dart:async';
@@ -511,6 +512,9 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
               backgroundColor: Colors.green,
             ),
           );
+          
+          // Refrescar la lista de garages en home para actualizar estado de plaza
+          await ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
           
           // El stream se actualiza automáticamente y la pantalla se recarga
         }

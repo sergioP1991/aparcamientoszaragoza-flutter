@@ -14,7 +14,7 @@ import 'garage_card.dart';
 
 Widget bodyContainer (BuildContext context, WidgetRef ref, [HomeData? data, Function(int)? onGarageTap]) {
   if (data != null) {
-    return _buildList(context, data, onGarageTap);
+    return _buildListWithRefresh(context, ref, data, onGarageTap);
   }
 
   final homeDataState = ref.watch(fetchHomeProvider(allGarages: true));
@@ -22,7 +22,20 @@ Widget bodyContainer (BuildContext context, WidgetRef ref, [HomeData? data, Func
   return homeDataState.when(
       loading: () => loadingBody(context),
       error: (err, stack) => Text(AppLocalizations.of(context)!.genericError(err.toString())),
-      data: (data) => _buildList(context, data, onGarageTap)
+      data: (data) => _buildListWithRefresh(context, ref, data, onGarageTap)
+  );
+}
+
+Widget _buildListWithRefresh(BuildContext context, WidgetRef ref, HomeData? data, [Function(int)? onGarageTap]) {
+  return RefreshIndicator(
+    onRefresh: () async {
+      // Refrescar el provider de home para obtener datos actualizados
+      ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+    },
+    color: const Color(0xFF2E3192), // Color azul primario
+    backgroundColor: Colors.white10,
+    strokeWidth: 2.5,
+    child: _buildList(context, data, onGarageTap),
   );
 }
 
