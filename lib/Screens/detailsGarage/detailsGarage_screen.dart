@@ -10,6 +10,7 @@ import 'package:aparcamientoszaragoza/Screens/timeline/timeline_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/rent_screen.dart' hide Text;
+import 'package:aparcamientoszaragoza/Screens/rent_by_hours/rent_by_hours_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/active_rentals/active_rentals_screen.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/widgets/Buttons.dart';
@@ -160,10 +161,16 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
             },
             itemCount: imageUrls.length,
             itemBuilder: (context, index) {
+              final imageUrl = imageUrls[index];
+              // Detectar si es un asset local (comienza con 'assets/') o una URL remota
+              final isAsset = imageUrl.startsWith('assets/');
+              
               return Container(
                 decoration: BoxDecoration(
                   image: DecorationImage(
-                    image: NetworkImage(imageUrls[index]),
+                    image: isAsset 
+                        ? AssetImage(imageUrl) as ImageProvider
+                        : NetworkImage(imageUrl),
                     fit: BoxFit.cover,
                     onError: (exception, stackTrace) {
                       // Usar fallback si hay error
@@ -367,12 +374,24 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            // Mostrar precio según tipo de alquiler
+            if (plaza.rentIsNormal)
+              // Alquiler mensual
+              Text(
+                '€${plaza.precio.toStringAsFixed(2).replaceAll('.', ',')} /mes',
+                style: const TextStyle(color: Colors.blue, fontSize: 22, fontWeight: FontWeight.bold),
+              )
+            else
+              // Alquiler por horas
+              Text(
+                l10n.pricePerHour(plaza.precio.toStringAsFixed(2).replaceAll('.', ',')),
+                style: const TextStyle(color: Colors.blue, fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            // Mostrar estimado por día
             Text(
-              l10n.pricePerHour(plaza.precio.toStringAsFixed(2).replaceAll('.', ',')),
-              style: const TextStyle(color: Colors.blue, fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              l10n.pricePerDay((plaza.precio * 8).toStringAsFixed(2).replaceAll('.', ',')), // Estimate
+              plaza.rentIsNormal 
+                ? l10n.pricePerDay((plaza.precio / 30).toStringAsFixed(2).replaceAll('.', ',')) // Estimado: precio mensual / 30
+                : l10n.pricePerDay((plaza.precio * 8).toStringAsFixed(2).replaceAll('.', ',')), // Estimado: precio hora * 8
               style: const TextStyle(color: Colors.white38, fontSize: 12),
             ),
           ],
@@ -836,7 +855,12 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
         height: 60,
         child: ElevatedButton(
           onPressed: isAvailable 
-              ? () => Navigator.of(context).pushNamed(RentPage.routeName, arguments: plaza.idPlaza)
+              ? () => Navigator.of(context).pushNamed(
+                    plaza.rentIsNormal 
+                      ? RentPage.routeName  // Monthly rental: calendar picker
+                      : RentByHoursScreen.routeName,  // Hourly rental: duration picker
+                    arguments: plaza.idPlaza
+                  )
               : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue,

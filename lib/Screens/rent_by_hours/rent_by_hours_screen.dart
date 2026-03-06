@@ -687,7 +687,11 @@ class _RentByHoursScreenState extends ConsumerState<RentByHoursScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pushNamed('/activeRentals');
+        // Navegar a Home (listado de plazas)
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/',
+          (route) => false,
+        );
       }
     } catch (e) {
       if (mounted) {

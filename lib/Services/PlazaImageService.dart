@@ -1,59 +1,26 @@
 /// Servicio para generar URLs de imágenes únicas y variadas para cada plaza de garaje
 class PlazaImageService {
-  /// Lista de proveedores de imágenes especializados en garajes y plazas de aparcamiento
-  static const List<String> _imageProviders = [
-    'loremflickr_parking',      // Imágenes de parkings y plazas
-    'loremflickr_garage',       // Imágenes de garajes
-    'loremflickr_parking_lot',  // Imágenes de lotes de estacionamiento
+  /// Lista de imágenes locales de fallback
+  static const List<String> _imageAssets = [
+    'assets/garaje1.jpeg',
+    'assets/garaje2.jpeg',
+    'assets/garaje3.jpeg',
+    'assets/garaje4.jpeg',
+    'assets/garaje5.jpeg',
   ];
 
-  /// Genera una URL de imagen única basada en el ID de plaza
-  /// Asegura que todas las imágenes sean de plazas de garaje y estacionamiento
+  /// Retorna una imagen local basada en el ID de plaza (sin intentar cargar remotas que pueden fallar)
   static String getImageUrl(int plazaId, {int width = 400, int height = 300}) {
-    // Usar diferente proveedor según el ID para variedad
-    final providerIndex = plazaId % _imageProviders.length;
-    
-    switch (providerIndex) {
-      case 0:
-        // loremflickr con keyword "parking" - plazas de estacionamiento
-        return 'https://loremflickr.com/$width/$height/parking,garage?lock=${plazaId * 12345}';
-      
-      case 1:
-        // loremflickr con keyword "garage" - garajes
-        return 'https://loremflickr.com/$width/$height/garage,parking?lock=${plazaId * 23456}';
-      
-      case 2:
-        // loremflickr con keyword "parking lot" - lotes de estacionamiento
-        return 'https://loremflickr.com/$width/$height/parking,lot,space?lock=${plazaId * 34567}';
-      
-      default:
-        // Fallback a parking
-        return 'https://loremflickr.com/$width/$height/parking,garage?lock=${plazaId * 12345}';
-    }
+    // Usar imagen local del asset
+    return _imageAssets[plazaId % _imageAssets.length];
   }
 
-  /// Genera múltiples URLs de imágenes para un carrusel (4-6 imágenes diferentes)
+  /// Genera múltiples URLs de imágenes para un carrusel (rotando entre los assets disponibles)
   static List<String> getCarouselUrls(int plazaId, {int width = 600, int height = 400, int count = 5}) {
     final List<String> urls = [];
     for (int i = 0; i < count; i++) {
-      final seed = plazaId + i; // Seed diferente para cada imagen
-      final providerIndex = seed % _imageProviders.length;
-      
-      String url;
-      switch (providerIndex) {
-        case 0:
-          url = 'https://loremflickr.com/$width/$height/parking,garage?lock=${seed * 12345}';
-          break;
-        case 1:
-          url = 'https://loremflickr.com/$width/$height/garage,parking?lock=${seed * 23456}';
-          break;
-        case 2:
-          url = 'https://loremflickr.com/$width/$height/parking,lot,space?lock=${seed * 34567}';
-          break;
-        default:
-          url = 'https://loremflickr.com/$width/$height/parking,garage?lock=${seed * 12345}';
-      }
-      urls.add(url);
+      // Rotar entre las imágenes disponibles
+      urls.add(_imageAssets[(plazaId + i) % _imageAssets.length]);
     }
     return urls;
   }
@@ -73,17 +40,8 @@ class PlazaImageService {
     return getImageUrl(plazaId, width: 600, height: 400);
   }
 
-  /// Lista de imágenes alternativas como fallback
-  static const List<String> fallbackAssets = [
-    'assets/garaje1.jpeg',
-    'assets/garaje2.jpeg',
-    'assets/garaje3.jpeg',
-    'assets/garaje4.jpeg',
-    'assets/garaje5.jpeg',
-  ];
-
   /// Obtiene una imagen de fallback diferente según el ID
   static String getFallbackAsset(int plazaId) {
-    return fallbackAssets[plazaId % fallbackAssets.length];
+    return _imageAssets[plazaId % _imageAssets.length];
   }
 }

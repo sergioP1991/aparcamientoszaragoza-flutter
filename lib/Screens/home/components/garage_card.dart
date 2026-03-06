@@ -12,6 +12,7 @@ import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:aparcamientoszaragoza/widgets/network_image_loader.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/rent_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/rent_by_hours/rent_by_hours_screen.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
 
@@ -81,13 +82,26 @@ class _GarageCardState extends ConsumerState<GarageCard> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(15),
-                    child: NetworkImageLoader(
-                      imageUrl: widget.item.imagenes.isNotEmpty ? widget.item.imagenes.first : PlazaImageService.getThumbnailUrl(widget.item.idPlaza ?? 0),
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.cover,
-                      fallbackAsset: PlazaImageService.getFallbackAsset(widget.item.idPlaza ?? 0),
-                    ),
+                    child: widget.item.imagenes.isNotEmpty
+                        ? NetworkImageLoader(
+                            imageUrl: widget.item.imagenes.first,
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                            fallbackAsset: PlazaImageService.getFallbackAsset(widget.item.idPlaza ?? 0),
+                          )
+                        : Image.asset(
+                            PlazaImageService.getFallbackAsset(widget.item.idPlaza ?? 0),
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey[800],
+                                child: const Icon(Icons.image_not_supported, color: Colors.white30),
+                              );
+                            },
+                          ),
                   ),
                   Positioned(
                     top: 8,
@@ -243,7 +257,7 @@ class _GarageCardState extends ConsumerState<GarageCard> {
                               ),
                             ),
                             Text(
-                              l10n.perHourSuffix,
+                              widget.item.rentIsNormal ? '/mes' : l10n.perHourSuffix,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 12,
@@ -283,7 +297,12 @@ class _GarageCardState extends ConsumerState<GarageCard> {
                       else if (widget.item.alquiler == null)
                         ElevatedButton(
                           onPressed: () {
-                            Navigator.of(context).pushNamed(RentPage.routeName, arguments: widget.item.idPlaza);
+                            Navigator.of(context).pushNamed(
+                              widget.item.rentIsNormal 
+                                ? RentPage.routeName  // Monthly rental: calendar picker
+                                : RentByHoursScreen.routeName,  // Hourly rental: duration picker
+                              arguments: widget.item.idPlaza
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primaryColor,
