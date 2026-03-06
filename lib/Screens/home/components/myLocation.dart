@@ -261,7 +261,7 @@ class _MapViewState extends State<MapView> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
                         child: NetworkImageLoader(
-                          imageUrl: garage.imagen ?? PlazaImageService.getMediumUrl(garage.idPlaza ?? 0),
+                          imageUrl: garage.imagenes.isNotEmpty ? garage.imagenes.first : PlazaImageService.getMediumUrl(garage.idPlaza ?? 0),
                           width: 110,
                           height: 110,
                           fit: BoxFit.cover,

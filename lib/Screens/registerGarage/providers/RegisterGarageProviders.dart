@@ -13,25 +13,11 @@ class GarajeProvider with ChangeNotifier {
   /// Añadir un garaje
   Future<void> addGaraje(Garaje garaje) async {
     try {
-      await _firestore.collection('garaje').add({
-        'idPlaza': garaje.idPlaza,
-        'direccion': garaje.direccion,
-        'codigo_postal': garaje.CodigoPostal,
-        'provincia': garaje.Provincia,
-        'latitud': garaje.latitud,
-        'longitud': garaje.longitud,
-        'ancho': garaje.ancho,
-        'largo': garaje.largo,
-        'planta': garaje.planta,
-        'vehicleType': garaje.vehicleType.name,
-        'alquiler': null,
-        'propietario': garaje.propietario,
-        'rentIsNormal': garaje.rentIsNormal,
-        'precio': garaje.precio,
-        'esCubierto': garaje.esCubierto,
-        'imagen': garaje.imagen,
-        'comments': null
-      });
+      final data = garaje.toFirestore();
+      data['alquiler'] = null;
+      data['comments'] = null;
+      
+      await _firestore.collection('garaje').add(data);
 
       await ActivityService.recordEvent(History(
         fecha: DateTime.now(),
@@ -48,21 +34,11 @@ class GarajeProvider with ChangeNotifier {
   /// Actualizar garaje
   Future<void> updateGaraje(String idDoc, Garaje garaje) async {
     try {
-      await _firestore.collection('garaje').doc(idDoc).update({
-        'idPlaza': garaje.idPlaza,
-        'direccion': garaje.direccion,
-        'latitud': garaje.latitud,
-        'longitud': garaje.longitud,
-        'ancho': garaje.ancho,
-        'largo': garaje.largo,
-        'vehicleType': garaje.vehicleType.name,
-        'propietario': garaje.propietario,
-        'rentIsNormal': garaje.rentIsNormal,
-        'precio': garaje.precio,
-        'esCubierto': garaje.esCubierto,
-        'alquiler': garaje.alquiler?.objectToMap(),
-        'comments': [] // Fix: replace class reference with empty list
-      });
+      final data = garaje.toFirestore();
+      data['alquiler'] = garaje.alquiler?.objectToMap();
+      data['comments'] = [];
+      
+      await _firestore.collection('garaje').doc(idDoc).update(data);
 
       await ActivityService.recordEvent(History(
         fecha: DateTime.now(),

@@ -8,8 +8,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io' as io;
+import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
+import 'package:aparcamientoszaragoza/Services/GarajeImageStorageService.dart';
+import 'package:aparcamientoszaragoza/Services/GeocodingService.dart';
 import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart';
 import 'package:aparcamientoszaragoza/Models/municipio.dart';
 import 'package:aparcamientoszaragoza/Models/codigo_postal.dart';
@@ -61,10 +65,13 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
   TextEditingController _precioController = TextEditingController(text: "60.00");
 
   String? _imagePath;
-  final ImagePicker _picker = ImagePicker();
-
   String _selectedVehicle = "Coche G.";
   bool _esCubierto = true;
+
+  List<XFile> _imagePaths = [];  // Archivos XFile seleccionados
+  List<String> _uploadedImageUrls = [];  // URLs después de subir a Firebase
+  final ImagePicker _picker = ImagePicker();
+  Timer? _geocodingDebounceTimer;  // Timer para debounce del geocoding
 
   @override
   void initState() {
@@ -80,8 +87,30 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
       _precioController.text = g.precio.toString();
       _isAlquilerEspecial = !g.rentIsNormal;
       _esCubierto = g.esCubierto;
-      _imagePath = g.imagen;
+      _uploadedImageUrls = List.from(g.imagenes);  // Cargar imágenes existentes
     }
+
+    // Agregar listener al campo de dirección para re-geocodificar cuando cambie
+    _direccionController.addListener(_onDireccionChanged);
+  }
+
+  @override
+  void dispose() {
+    _geocodingDebounceTimer?.cancel();
+    _direccionController.removeListener(_onDireccionChanged);
+    super.dispose();
+  }
+
+  void _onDireccionChanged() {
+    // Cancelar el timer anterior
+    _geocodingDebounceTimer?.cancel();
+    
+    // Crear un nuevo timer que espere 1 segundo antes de geocodificar
+    _geocodingDebounceTimer = Timer(const Duration(seconds: 1), () {
+      if (_selectedCP != null && _selectedMunicipio != null) {
+        _performGeocoding();
+      }
+    });
   }
 
   @override
@@ -263,6 +292,10 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
                             setState(() {
                               _selectedCP = newValue;
                             });
+                            // Intentar geocoding cuando se selecciona código postal
+                            if (newValue != null) {
+                              _performGeocoding();
+                            }
                           },
                         );
                       },
@@ -327,12 +360,12 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
               const SizedBox(height: 35),
 
               _buildSectionTitle(l10n.conditionsSection),
-              _buildConditionsToggle(l10n),
+              _buildRentalTypeSelector(l10n),
               const SizedBox(height: 20),
               _buildTextField(
                 controller: _precioController,
-                hintText: "60.00",
-                label: l10n.priceLabel,
+                hintText: _isAlquilerEspecial ? "2.50" : "60.00",
+                label: _isAlquilerEspecial ? l10n.pricePerHourLabel : l10n.pricePerMonthLabel,
                 suffixText: "€",
               ),
               const SizedBox(height: 50),
@@ -468,9 +501,11 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
         onPressed: () async {
           // Validation Logic
           String? missingField;
-          if (_imagePath == null) {
-            missingField = l10n.photoField;
-          } else if (_direccionController.text.trim().isEmpty) {
+          // Las imágenes son opcionales ahora (usuario puede seleccionar durante registro)
+          // if (_imagePaths.isEmpty && _uploadedImageUrls.isEmpty) {
+          //   missingField = l10n.photoField;
+          // } else 
+          if (_direccionController.text.trim().isEmpty) {
             missingField = l10n.addressLabel;
           } else if (_selectedComunidad == null) {
             missingField = l10n.comunidadLabel;
@@ -499,6 +534,24 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
             final user = ref.read(loginUserProvider).value;
             if (user == null) return;
 
+            // Mostrar loading mientras se suben imágenes
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l10n.uploadingImages ?? 'Subiendo imágenes...')),
+              );
+            }
+
+            // Subir imágenes nuevas a Firebase Storage
+            final plazaId = widget.garageToEdit?.idPlaza?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
+            
+            if (_imagePaths.isNotEmpty) {
+              final newUrls = await GarajeImageStorageService.uploadMultipleImages(
+                plazaId: plazaId,
+                imageSources: _imagePaths,
+              );
+              _uploadedImageUrls.addAll(newUrls);
+            }
+
             final garageData = Garaje(
               widget.garageToEdit?.idPlaza ?? DateTime.now().millisecondsSinceEpoch,
               _direccionController.text,
@@ -522,7 +575,7 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
               double.tryParse(_precioController.text) ?? 60.0,
               _esCubierto,
               widget.garageToEdit?.comments ?? [],
-              imagen: _imagePath,
+              imagenes: _uploadedImageUrls,  // URLs de Firebase Storage
               docId: widget.garageToEdit?.docId,
             );
 
@@ -532,7 +585,7 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
               await GarajeProvider().addGaraje(garageData);
             }
             
-            // Refrescar listado de la Home (forzando ambos casos para seguridad)
+            // Refrescar listado de la Home
             ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
             ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
             
@@ -597,6 +650,201 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildRentalTypeSelector(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Title
+        Text(
+          l10n.rentalTypeSection,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          l10n.rentalTypeDescription,
+          style: const TextStyle(
+            color: Colors.white54,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Two selectable cards
+        Row(
+          children: [
+            // Normal Rental Card
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _isAlquilerEspecial = false),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: !_isAlquilerEspecial
+                        ? AppColors.primaryColor.withOpacity(0.15)
+                        : AppColors.cardBackground.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: !_isAlquilerEspecial
+                          ? AppColors.primaryColor
+                          : Colors.white.withOpacity(0.1),
+                      width: !_isAlquilerEspecial ? 2 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: !_isAlquilerEspecial
+                                  ? AppColors.primaryColor
+                                  : Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.calendar_today,
+                              color: !_isAlquilerEspecial ? AppColors.primaryColor : Colors.white54,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          if (!_isAlquilerEspecial)
+                            Icon(Icons.check_circle, color: AppColors.primaryColor, size: 20),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.normalRentLabel,
+                        style: TextStyle(
+                          color: !_isAlquilerEspecial ? Colors.white : Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.normalRentSubtitle,
+                        style: TextStyle(
+                          color: !_isAlquilerEspecial ? Colors.white70 : Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Hourly Rental Card
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _isAlquilerEspecial = true),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _isAlquilerEspecial
+                        ? AppColors.primaryColor.withOpacity(0.15)
+                        : AppColors.cardBackground.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                      color: _isAlquilerEspecial
+                          ? AppColors.primaryColor
+                          : Colors.white.withOpacity(0.1),
+                      width: _isAlquilerEspecial ? 2 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: _isAlquilerEspecial
+                                  ? AppColors.primaryColor
+                                  : Colors.white.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.schedule,
+                              color: _isAlquilerEspecial ? AppColors.primaryColor : Colors.white54,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          if (_isAlquilerEspecial)
+                            Icon(Icons.check_circle, color: AppColors.primaryColor, size: 20),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.specialRentLabel,
+                        style: TextStyle(
+                          color: _isAlquilerEspecial ? Colors.white : Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.specialRentSubtitle,
+                        style: TextStyle(
+                          color: _isAlquilerEspecial ? Colors.white70 : Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        // Details section
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _isAlquilerEspecial ? l10n.specialRentLabel : l10n.normalRentLabel,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _isAlquilerEspecial ? l10n.specialRentDetails : l10n.normalRentDetails,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  height: 1.6,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -724,56 +972,167 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
   }
 
   Widget _buildPhotoUploadArea(AppLocalizations l10n) {
-    return GestureDetector(
-      onTap: _pickImage,
-      child: Container(
-        width: double.infinity,
-        height: 180,
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.white10, style: BorderStyle.solid), // Dash effect usually needs CustomPainter
-          image: _imagePath != null
-              ? DecorationImage(image: _getImageProvider(_imagePath!), fit: BoxFit.cover)
-              : null,
-        ),
-        child: _imagePath == null
-            ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryColor.withOpacity(0.1),
-                      shape: BoxShape.circle,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Galería de imágenes seleccionadas
+        if (_imagePaths.isNotEmpty || _uploadedImageUrls.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: SizedBox(
+              height: 120,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _imagePaths.length + _uploadedImageUrls.length,
+                itemBuilder: (context, index) {
+                  final isLocal = index < _imagePaths.length;
+                  final imageData = isLocal ? _imagePaths[index] : _uploadedImageUrls[index - _imagePaths.length];
+                  
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.grey[800],
+                          ),
+                          child: isLocal
+                            ? _buildLocalImagePreview(imageData as XFile)
+                            : Image.network(
+                                imageData as String,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Center(
+                                    child: Icon(Icons.broken_image, color: Colors.grey[600]),
+                                  );
+                                },
+                              ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (isLocal) {
+                                  _imagePaths.removeAt(index);
+                                } else {
+                                  _uploadedImageUrls.removeAt(index - _imagePaths.length);
+                                }
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.close, color: Colors.white, size: 16),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.image_outlined, color: AppColors.primaryColor, size: 32),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(l10n.exploreImages,
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Text(l10n.photoDetailHint, style: const TextStyle(color: Colors.white24, fontSize: 12)),
-                ],
-              )
-            : Align(
-                alignment: Alignment.bottomRight,
-                child: Container(
-                  margin: const EdgeInsets.all(12),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                  child: const Icon(Icons.edit, color: Colors.white, size: 20),
-                ),
+                  );
+                },
               ),
-      ),
+            ),
+          ),
+        
+        // Botón para agregar más imágenes
+        GestureDetector(
+          onTap: _pickMultipleImages,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.add_photo_alternate_outlined, color: AppColors.primaryColor, size: 32),
+                ),
+                const SizedBox(height: 16),
+                Text(l10n.exploreImages,
+                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                Text('${_imagePaths.length + _uploadedImageUrls.length} imagen${_imagePaths.length + _uploadedImageUrls.length != 1 ? 'es' : ''} seleccionada${_imagePaths.length + _uploadedImageUrls.length != 1 ? 's' : ''}',
+                    style: const TextStyle(color: Colors.white24, fontSize: 12)),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
+  /// Widget para mostrar vista previa de imágenes locales (XFile) en web y mobile
+  Widget _buildLocalImagePreview(XFile xfile) {
+    if (kIsWeb) {
+      // En web, usar FutureBuilder para leer bytes
+      return FutureBuilder<Uint8List>(
+        future: xfile.readAsBytes(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.memory(
+                snapshot.data!,
+                fit: BoxFit.cover,
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Icon(Icons.broken_image, color: Colors.grey[600]),
+            );
+          } else {
+            return Center(
+              child: SizedBox(
+                width: 30,
+                height: 30,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+                ),
+              ),
+            );
+          }
+        },
+      );
+    } else {
+      // En mobile, usar File directamente
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.file(
+          io.File(xfile.path),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return Center(
+              child: Icon(Icons.broken_image, color: Colors.grey[600]),
+            );
+          },
+        ),
+      );
+    }
+  }
+
+  Future<void> _pickMultipleImages() async {
+    final List<XFile> images = await _picker.pickMultiImage();
+    if (images.isNotEmpty) {
       setState(() {
-        _imagePath = image.path;
+        _imagePaths.addAll(images);
       });
     }
   }
@@ -847,5 +1206,70 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
         ],
       ),
     );
+  }
+
+  /// Obtiene automáticamente las coordenadas GPS basadas en la dirección completa
+  Future<void> _performGeocoding() async {
+    // Verificar que todos los campos necesarios estén rellenados
+    if (_direccionController.text.isEmpty ||
+        _selectedProvincia == null ||
+        _selectedMunicipio == null ||
+        _selectedCP == null) {
+      return;  // Esperamos a que se completen todos los campos
+    }
+
+    try {
+      // Mostrar un indicador de que se está geocodificando
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('🌍 Obteniendo coordenadas GPS...'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // Llamar al servicio de geocoding
+      final coords = await GeocodingService.geocodeAddress(
+        direccion: _direccionController.text,
+        municipio: _selectedMunicipio!.nombre,
+        provincia: _selectedProvincia!.nombre,
+        codigoPostal: _selectedCP!.codigoPostal,
+      );
+
+      if (coords != null && mounted) {
+        setState(() {
+          _latitudController.text = coords['latitud']!.toStringAsFixed(4);
+          _longitudController.text = coords['longitud']!.toStringAsFixed(4);
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '✅ Coordenadas obtenidas: ${coords['latitud']!.toStringAsFixed(4)}, ${coords['longitud']!.toStringAsFixed(4)}',
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('⚠️ No se pudo obtener las coordenadas. Verifica la dirección.'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Error en geocoding: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('❌ Error al obtener coordenadas.'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

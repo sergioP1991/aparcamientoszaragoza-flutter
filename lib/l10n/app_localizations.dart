@@ -809,13 +809,13 @@ abstract class AppLocalizations {
   /// No description provided for @specialRentLabel.
   ///
   /// In es, this message translates to:
-  /// **'Alquiler especial'**
+  /// **'Alquiler por Horas'**
   String get specialRentLabel;
 
   /// No description provided for @specialRentSubtitle.
   ///
   /// In es, this message translates to:
-  /// **'Servicios adicionales incluidos'**
+  /// **'Por horas, múltiples usuarios diarios, precio por hora'**
   String get specialRentSubtitle;
 
   /// No description provided for @priceLabel.
@@ -1521,6 +1521,12 @@ abstract class AppLocalizations {
   /// **'Procesando pago...'**
   String get processingPayment;
 
+  /// No description provided for @uploadingImages.
+  ///
+  /// In es, this message translates to:
+  /// **'Subiendo imágenes...'**
+  String get uploadingImages;
+
   /// No description provided for @rentSuccess.
   ///
   /// In es, this message translates to:
@@ -2103,11 +2109,53 @@ abstract class AppLocalizations {
   /// **'NO Alquilada'**
   String get notRentedLabel;
 
+  /// No description provided for @rentalTypeSection.
+  ///
+  /// In es, this message translates to:
+  /// **'Tipo de Alquiler'**
+  String get rentalTypeSection;
+
+  /// No description provided for @rentalTypeDescription.
+  ///
+  /// In es, this message translates to:
+  /// **'Elige cómo arrendar tu plaza'**
+  String get rentalTypeDescription;
+
   /// No description provided for @normalRentLabel.
   ///
   /// In es, this message translates to:
-  /// **'Alquiler normal'**
+  /// **'Alquiler por Meses'**
   String get normalRentLabel;
+
+  /// No description provided for @normalRentSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Meses completos, un único arrendatario, precio mensual'**
+  String get normalRentSubtitle;
+
+  /// No description provided for @normalRentDetails.
+  ///
+  /// In es, this message translates to:
+  /// **'• Periodo mínimo: 1 mes completo\n• Un solo cliente por periodo\n• Contrato mensual renovable\n• Precio fijo por mes'**
+  String get normalRentDetails;
+
+  /// No description provided for @specialRentDetails.
+  ///
+  /// In es, this message translates to:
+  /// **'• Flexible: desde 1 hora en adelante\n• Múltiples clientes por día\n• Sin contrato de largo plazo\n• Precio por hora'**
+  String get specialRentDetails;
+
+  /// No description provided for @pricePerMonthLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Precio por mes'**
+  String get pricePerMonthLabel;
+
+  /// No description provided for @pricePerHourLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Precio por hora'**
+  String get pricePerHourLabel;
 
   /// No description provided for @searchConfigTitle.
   ///

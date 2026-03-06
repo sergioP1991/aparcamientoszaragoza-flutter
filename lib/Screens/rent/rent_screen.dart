@@ -8,6 +8,7 @@ import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/providers/RentProvider.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,10 +47,16 @@ class _RentPageState extends ConsumerState<RentPage> {
     }
 
     // Validaciones defensivas
+    // Si es alquiler normal (mensual): 1 mes
+    // Si es especial (por horas): múltiples días × 9 horas/día
     int durationDays = _selectedDates.isNotEmpty ? _selectedDates.length : 1;
-    int hours = plaza.rentIsNormal ? 720 : (durationDays * 9);
+    int months = plaza.rentIsNormal ? 1 : 0;  // 1 mes para alquiler normal
+    int hours = plaza.rentIsNormal ? 0 : (durationDays * 9);  // Horas solo para especial
+    
     double precioBase = plaza.precio.toDouble();
-    double basePrice = (hours * precioBase);
+    // Alquiler normal: precio es por mes (1 mes)
+    // Alquiler especial: precio es por hora
+    double basePrice = plaza.rentIsNormal ? (months * precioBase) : (hours * precioBase);
     double iva = basePrice * ivaRate;
     double total = basePrice + managementFee + iva;
 
@@ -82,7 +89,7 @@ class _RentPageState extends ConsumerState<RentPage> {
             const SizedBox(height: 30),
             
             _buildSectionTitle(AppLocalizations.of(context)!.paymentBreakdownTitle),
-            _buildPriceBreakdown(plaza, hours, basePrice, iva),
+            _buildPriceBreakdown(plaza, hours, basePrice, iva, months),
             const SizedBox(height: 10),
             const Divider(color: Colors.white10),
             const SizedBox(height: 10),
@@ -238,11 +245,16 @@ class _RentPageState extends ConsumerState<RentPage> {
     );
   }
 
-  Widget _buildPriceBreakdown(Garaje plaza, int hours, double base, double iva) {
+  Widget _buildPriceBreakdown(Garaje plaza, int hours, double base, double iva, int months) {
     final l10n = AppLocalizations.of(context)!;
+    // Mostrar desglose diferente según tipo de alquiler
+    String baseRateLabel = plaza.rentIsNormal
+        ? l10n.baseRateLabel(months, l10n.pricePerMonthLabel)  // "1 mes × Precio por mes"
+        : l10n.baseRateLabel(hours, plaza.precio.toStringAsFixed(2));  // "18 horas × €2.50/h"
+    
     return Column(
       children: [
-        _buildPriceRow(l10n.baseRateLabel(hours, plaza.precio.toStringAsFixed(2)), base),
+        _buildPriceRow(baseRateLabel, base),
         _buildPriceRow(l10n.managementFeesLabel, managementFee),
         _buildPriceRow(l10n.ivaLabel, iva),
       ],
@@ -691,8 +703,11 @@ class _RentPageState extends ConsumerState<RentPage> {
 
     try {
       // Calcular total usando la plaza que ya tenemos
-      int hours = plaza.rentIsNormal ? 720 : (_selectedDates.length * 9);
-      double basePrice = (hours * plaza.precio).toDouble();
+      int months = plaza.rentIsNormal ? 1 : 0;
+      int hours = plaza.rentIsNormal ? 0 : (_selectedDates.length * 9);
+      double basePrice = plaza.rentIsNormal 
+          ? (months * plaza.precio) 
+          : (hours * plaza.precio);
       double iva = basePrice * ivaRate;
       double total = basePrice + managementFee + iva;
 
@@ -963,36 +978,94 @@ class _RentPageState extends ConsumerState<RentPage> {
             );
           }
           
-          // Crear el alquiler en Firestore como AlquilerPorHoras
+          // Crear el alquiler en Firestore
           try {
-            debugPrint('📝 Creando alquiler por horas en Firestore...');
-            int durationMinutes = hours * 60; // Convertir horas a minutos
-            double precioPlaza = plaza.precio;
-            double pricePerMinute = precioPlaza > 0 ? (precioPlaza / 60.0) : 0.0;
-            
-            // Usar docId si está disponible, si no usar idPlaza
-            int plazaIdentifier = plaza?.idPlaza ?? 0;
-            if (plazaIdentifier == 0 && plaza?.docId != null) {
-              // Si idPlaza es 0 e inválido pero tenemos docId, intentar parsear docId como int
-              try {
-                plazaIdentifier = int.parse(plaza!.docId!);
-              } catch (e) {
-                debugPrint('📌 No se pudo parsear docId como int: ${plaza?.docId}');
-                plazaIdentifier = plaza?.idPlaza?.hashCode ?? 0;
+            // Solo crear AlquilerPorHoras si es un alquiler por horas (no normal)
+            if (!plaza.rentIsNormal && hours > 0) {
+              debugPrint('📝 Creando alquiler por horas en Firestore...');
+              int durationMinutes = hours * 60; // Convertir horas a minutos
+              double precioPlaza = plaza.precio;
+              double pricePerMinute = precioPlaza > 0 ? (precioPlaza / 60.0) : 0.0;
+              
+              // Usar docId si está disponible, si no usar idPlaza
+              int plazaIdentifier = plaza?.idPlaza ?? 0;
+              if (plazaIdentifier == 0 && plaza?.docId != null) {
+                // Si idPlaza es 0 e inválido pero tenemos docId, intentar parsear docId como int
+                try {
+                  plazaIdentifier = int.parse(plaza!.docId!);
+                } catch (e) {
+                  debugPrint('📌 No se pudo parsear docId como int: ${plaza?.docId}');
+                  plazaIdentifier = plaza?.idPlaza?.hashCode ?? 0;
+                }
+              }
+              
+              debugPrint('🔍 Duración: $durationMinutes min, Precio/min: $pricePerMinute, PlazaID: $plazaIdentifier');
+              debugPrint('📍 Plaza: idPlaza=${plaza?.idPlaza}, docId=${plaza?.docId}');
+              
+              await RentalByHoursService.createRental(
+                plazaId: plazaIdentifier,
+                durationMinutes: durationMinutes,
+                pricePerMinute: pricePerMinute,
+              );
+              debugPrint('✅ Alquiler por horas creado exitosamente');
+            } else if (plaza.rentIsNormal) {
+              debugPrint('📝 Creando alquiler mensual en Firestore...');
+              
+              // Obtener fecha actual y calcular próximo mes
+              final now = DateTime.now();
+              int mesInicio = now.month;
+              int anyoInicio = now.year;
+              int mesFin = now.month + 1;
+              int anyoFinal = now.year;
+              
+              // Si el mes siguiente es >12, ajustar al próximo año
+              if (mesFin > 12) {
+                mesFin = 1;
+                anyoFinal = now.year + 1;
+              }
+              
+              // Convertir número de mes a nombre (1: enero, 2: febrero, etc.)
+              final monthNamesEs = [
+                'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+              ];
+              
+              final mesInicioStr = monthNamesEs[mesInicio - 1];
+              final mesFinStr = monthNamesEs[mesFin - 1];
+              
+              // Crear AlquilerNormal
+              final alquilerNormal = AlquilerNormal(
+                mesInicio: mesInicioStr,
+                mesFin: mesFinStr,
+                anyoInicio: anyoInicio,
+                anyoFinal: anyoFinal,
+                idPlaza: plaza.idPlaza ?? 0,
+                idArrendatario: user!.uid,
+              );
+              
+              // Guardar en Firestore
+              await FirebaseFirestore.instance
+                  .collection('alquileres')
+                  .add(alquilerNormal.objectToMap());
+              
+              debugPrint('📅 Alquiler mensual creado:');
+              debugPrint('   - De: $mesInicioStr $anyoInicio');
+              debugPrint('   - Hasta: $mesFinStr $anyoFinal');
+              debugPrint('   - Plaza: ${plaza.idPlaza}');
+              debugPrint('✅ Alquiler mensual confirmado en Firestore');
+            } else {
+              debugPrint('⚠️ Alquiler de horas sin duración válida');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('⚠️ Por favor selecciona una duración válida'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
               }
             }
-            
-            debugPrint('🔍 Duración: $durationMinutes min, Precio/min: $pricePerMinute, PlazaID: $plazaIdentifier');
-            debugPrint('📍 Plaza: idPlaza=${plaza?.idPlaza}, docId=${plaza?.docId}');
-            
-            await RentalByHoursService.createRental(
-              plazaId: plazaIdentifier,
-              durationMinutes: durationMinutes,
-              pricePerMinute: pricePerMinute,
-            );
-            debugPrint('✅ Alquiler por horas creado exitosamente');
           } catch (e) {
-            debugPrint('❌ Error creando alquiler por horas: $e');
+            debugPrint('❌ Error creando alquiler: $e');
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),

@@ -633,6 +633,9 @@ class StripeService {
       }
 
       // En móvil: usar Google Pay Sheet de Stripe
+      // NOTA: googlePaySheet() no está disponible en flutter_stripe 10.2.0
+      // Será soportado en versiones 12.3.0+
+      /* // Comentado por incompatibilidad con flutter_stripe 10.2.0
       debugPrint('✓ Detectado: PLATAFORMA MÓVIL');
       debugPrint('  • Abriendo Google Pay Sheet de Stripe');
       final result = await stripe.Stripe.instance.googlePaySheet(
@@ -652,6 +655,18 @@ class StripeService {
         currency: currency,
         paymentMethod: 'google_pay',
         timestamp: DateTime.now(),
+      );
+      */
+      // Fallback: devolver error porque Google Pay no está disponible en esta versión
+      debugPrint('⚠️ Google Pay mobile no disponible en flutter_stripe 10.2.0');
+      return StripePaymentResult(
+        paymentIntentId: '',
+        status: 'error',
+        amount: amount,
+        currency: currency,
+        paymentMethod: 'google_pay',
+        timestamp: DateTime.now(),
+        errorMessage: 'Google Pay mobile no soportado en esta versión. Usa tarjeta de crédito.',
       );
     } catch (e) {
       debugPrint('■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■');
@@ -726,6 +741,9 @@ class StripeService {
       }
 
       // En iOS: usar Apple Pay Sheet de Stripe
+      // NOTA: applePaySheet() no está disponible en flutter_stripe 10.2.0
+      // Será soportado en versiones 12.3.0+
+      /* // Comentado por incompatibilidad con flutter_stripe 10.2.0
       final result = await stripe.Stripe.instance.applePaySheet(
         options: stripe.ApplePaySheetOptions(
           currencyCode: currency.toUpperCase(),
@@ -742,6 +760,18 @@ class StripeService {
         currency: currency,
         paymentMethod: 'apple_pay',
         timestamp: DateTime.now(),
+      );
+      */
+      // Fallback: devolver error porque Apple Pay no está disponible en esta versión
+      debugPrint('⚠️ Apple Pay mobile no disponible en flutter_stripe 10.2.0');
+      return StripePaymentResult(
+        paymentIntentId: '',
+        status: 'error',
+        amount: amount,
+        currency: currency,
+        paymentMethod: 'apple_pay',
+        timestamp: DateTime.now(),
+        errorMessage: 'Apple Pay mobile no soportado en esta versión. Usa tarjeta de crédito.',
       );
     } catch (e) {
       debugPrint('❌ Error en processApplePayment: $e');

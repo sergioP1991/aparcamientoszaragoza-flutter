@@ -54,6 +54,7 @@ dependencies:
 
   firebase_core: ^4.0.0
   cloud_firestore: ^6.0.0
+  firebase_storage: ^13.0.6
 
   easter_egg_trigger: ^1.0.1
 

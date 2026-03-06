@@ -82,7 +82,7 @@ class _GarageCardState extends ConsumerState<GarageCard> {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(15),
                     child: NetworkImageLoader(
-                      imageUrl: widget.item.imagen ?? PlazaImageService.getThumbnailUrl(widget.item.idPlaza ?? 0),
+                      imageUrl: widget.item.imagenes.isNotEmpty ? widget.item.imagenes.first : PlazaImageService.getThumbnailUrl(widget.item.idPlaza ?? 0),
                       width: 120,
                       height: 120,
                       fit: BoxFit.cover,

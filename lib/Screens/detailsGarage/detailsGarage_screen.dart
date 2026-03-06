@@ -142,7 +142,10 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
   }
 
   Widget _buildImageCarousel(BuildContext context, WidgetRef ref, Garaje plaza, User? user, bool isFavorite) {
-    final imageUrls = PlazaImageService.getCarouselUrls(plaza.idPlaza ?? 0, width: 600, height: 400, count: 5);
+    // Usar imágenes subidas si existen, si no, generar con PlazaImageService
+    final List<String> imageUrls = plaza.imagenes.isNotEmpty
+        ? plaza.imagenes
+        : PlazaImageService.getCarouselUrls(plaza.idPlaza ?? 0, width: 600, height: 400, count: 5);
     
     return Stack(
       children: [

@@ -371,10 +371,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get conditionsSection => 'CONDICIONES';
 
   @override
-  String get specialRentLabel => 'Alquiler especial';
+  String get specialRentLabel => 'Alquiler por Horas';
 
   @override
-  String get specialRentSubtitle => 'Servicios adicionales incluidos';
+  String get specialRentSubtitle =>
+      'Por horas, múltiples usuarios diarios, precio por hora';
 
   @override
   String get priceLabel => 'Precio Mensual';
@@ -770,6 +771,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get processingPayment => 'Procesando pago...';
 
   @override
+  String get uploadingImages => 'Subiendo imágenes...';
+
+  @override
   String get rentSuccess => '¡Alquiler realizado con éxito!';
 
   @override
@@ -1081,7 +1085,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get notRentedLabel => 'NO Alquilada';
 
   @override
-  String get normalRentLabel => 'Alquiler normal';
+  String get rentalTypeSection => 'Tipo de Alquiler';
+
+  @override
+  String get rentalTypeDescription => 'Elige cómo arrendar tu plaza';
+
+  @override
+  String get normalRentLabel => 'Alquiler por Meses';
+
+  @override
+  String get normalRentSubtitle =>
+      'Meses completos, un único arrendatario, precio mensual';
+
+  @override
+  String get normalRentDetails =>
+      '• Periodo mínimo: 1 mes completo\n• Un solo cliente por periodo\n• Contrato mensual renovable\n• Precio fijo por mes';
+
+  @override
+  String get specialRentDetails =>
+      '• Flexible: desde 1 hora en adelante\n• Múltiples clientes por día\n• Sin contrato de largo plazo\n• Precio por hora';
+
+  @override
+  String get pricePerMonthLabel => 'Precio por mes';
+
+  @override
+  String get pricePerHourLabel => 'Precio por hora';
 
   @override
   String get searchConfigTitle => 'Configuración para la búsqueda';

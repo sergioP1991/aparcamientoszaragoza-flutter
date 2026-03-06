@@ -30,7 +30,7 @@ class Garaje {
   bool esCubierto;
   List<Favorite>? favorita;
   List<Comment>? comments;
-  String? imagen;
+  List<String> imagenes;  // URLs de imágenes subidas a Firebase Storage
   String? docId;
 
   Garaje(
@@ -50,7 +50,7 @@ class Garaje {
       this.precio,
       this.esCubierto,
       this.comments,
-      {this.imagen, this.docId}
+      {this.imagenes = const [], this.docId}
   );
 
   @override
@@ -82,8 +82,8 @@ class Garaje {
       Tipo alquiler : $tipo
       Precio : $precio
       Cubierta: ${esCubierto ? 'Sí' : 'No'}
-      Imagen : ${imagen ?? 'N/A'}
-      -----------------------------
+      Imágenes: ${imagenes.length} subidas
+      ----------------------------
     ''';
   }
 
@@ -113,6 +113,15 @@ class Garaje {
       type = data['moto'] == true ? VehicleType.moto : VehicleType.cochePequeno;
     }
 
+    // Cargar imágenes: si existen como lista nueva, usar esas; si no, intentar cargar imagen antigua
+    List<String> imagenesList = [];
+    if (data.containsKey('imagenes') && data['imagenes'] is List) {
+      imagenesList = List<String>.from(data['imagenes'] ?? []);
+    } else if (data.containsKey('imagen') && data['imagen'] != null) {
+      // Fallback: convertir imagen antigua a lista
+      imagenesList = [data['imagen'] as String];
+    }
+    
     return Garaje(
         data['idPlaza'],
         data['direccion'],
@@ -130,7 +139,7 @@ class Garaje {
         data['precio'],
         data['esCubierto'] ?? true,
         comments,
-        imagen: data.containsKey('imagen') ? data['imagen'] : null,
+        imagenes: imagenesList,
         docId: snapshotGarage.id
     );
   }
@@ -141,6 +150,27 @@ class Garaje {
 
   int countFavorites(){
     return favorita?.length ?? 0;
+  }
+  
+  // Método para serializar a Firestore
+  Map<String, dynamic> toFirestore() {
+    return {
+      'idPlaza': idPlaza,
+      'direccion': direccion,
+      'codigo_postal': CodigoPostal,
+      'provincia': Provincia,
+      'latitud': latitud,
+      'longitud': longitud,
+      'ancho': ancho,
+      'largo': largo,
+      'planta': planta,
+      'vehicleType': vehicleType.name,
+      'propietario': propietario,
+      'rentIsNormal': rentIsNormal,
+      'precio': precio,
+      'esCubierto': esCubierto,
+      'imagenes': imagenes,  // Lista de URLs de Firebase Storage
+    };
   }
 
 }

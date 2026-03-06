@@ -370,10 +370,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conditionsSection => 'CONDITIONS';
 
   @override
-  String get specialRentLabel => 'Special rent';
+  String get specialRentLabel => 'Hourly Rental';
 
   @override
-  String get specialRentSubtitle => 'Additional services included';
+  String get specialRentSubtitle =>
+      'By the hour, multiple daily users, hourly price';
 
   @override
   String get priceLabel => 'Monthly Price';
@@ -768,6 +769,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get processingPayment => 'Processing Payment...';
 
   @override
+  String get uploadingImages => 'Uploading images...';
+
+  @override
   String get rentSuccess => 'Rent successful!';
 
   @override
@@ -1072,7 +1076,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notRentedLabel => 'NOT Rented';
 
   @override
-  String get normalRentLabel => 'Normal rent';
+  String get rentalTypeSection => 'Rental Type';
+
+  @override
+  String get rentalTypeDescription => 'Choose how to rent your parking spot';
+
+  @override
+  String get normalRentLabel => 'Monthly Rental';
+
+  @override
+  String get normalRentSubtitle => 'Full months, single tenant, monthly price';
+
+  @override
+  String get normalRentDetails =>
+      '• Minimum period: 1 full month\n• One customer per period\n• Monthly recurring contract\n• Fixed price per month';
+
+  @override
+  String get specialRentDetails =>
+      '• Flexible: from 1 hour onwards\n• Multiple customers per day\n• No long-term contract\n• Hourly rate';
+
+  @override
+  String get pricePerMonthLabel => 'Price per month';
+
+  @override
+  String get pricePerHourLabel => 'Price per hour';
 
   @override
   String get searchConfigTitle => 'Search Settings';
