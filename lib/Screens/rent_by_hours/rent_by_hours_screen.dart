@@ -687,6 +687,10 @@ class _RentByHoursScreenState extends ConsumerState<RentByHoursScreen> {
             backgroundColor: Colors.green,
           ),
         );
+        
+        // Refrescar el proveedor de home para actualizar la lista de plazas
+        await ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+        
         // Navegar a Home (listado de plazas)
         Navigator.of(context).pushNamedAndRemoveUntil(
           '/',

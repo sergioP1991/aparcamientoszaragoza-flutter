@@ -432,7 +432,77 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
 
   Widget _buildAvailabilityBanner(Garaje plaza, int plazaId, User? user, AppLocalizations l10n) {
     bool isAvailable = plaza.alquiler == null;
-    print('🔍 _buildAvailabilityBanner: plazaId=$plazaId, plaza.idPlaza=${plaza.idPlaza}');
+    print('🔍 _buildAvailabilityBanner: plazaId=$plazaId, plaza.idPlaza=${plaza.idPlaza}, alquiler=${plaza.alquiler}');
+    
+    // Si hay un alquiler mensual (AlquilerNormal), mostrar UI simplementmente como ocupado
+    if (plaza.alquiler != null && plaza.alquiler is! AlquilerPorHoras) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.orange.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.orange.withOpacity(0.4), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.withOpacity(0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.6),
+                        blurRadius: 6,
+                        spreadRadius: 2,
+                      )
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Alquiler Mensual Activo',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Esta plaza está alquilada por un período mensual',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Para alquileres por horas, usar el StreamBuilder existente
     return StreamBuilder<AlquilerPorHoras?>(
       stream: RentalByHoursService.watchPlazaRental(plazaId),
       builder: (context, snapshot) {

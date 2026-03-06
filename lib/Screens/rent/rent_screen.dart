@@ -1053,6 +1053,9 @@ class _RentPageState extends ConsumerState<RentPage> {
               debugPrint('   - Hasta: $mesFinStr $anyoFinal');
               debugPrint('   - Plaza: ${plaza.idPlaza}');
               debugPrint('✅ Alquiler mensual confirmado en Firestore');
+              
+              // Refrescar el proveedor de home para actualizar la lista de plazas
+              await ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
             } else {
               debugPrint('⚠️ Alquiler de horas sin duración válida');
               if (mounted) {
