@@ -59,11 +59,16 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
       body: StreamBuilder<List<AlquilerPorHoras>>(
         stream: rentalsStream,
         builder: (context, snapshot) {
+          debugPrint('🔄 StreamBuilder estado: ${snapshot.connectionState}');
+          debugPrint('📦 Datos: ${snapshot.data?.length ?? 0} alquileres');
+          
           if (snapshot.connectionState == ConnectionState.waiting) {
+            debugPrint('⏳ Esperando datos...');
             return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
+            debugPrint('❌ Error en stream: ${snapshot.error}');
             return Center(
               child: Text(
                 'Error: ${snapshot.error}',
@@ -73,8 +78,10 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
           }
 
           final rentals = snapshot.data ?? [];
+          debugPrint('✅ Alquileres recibidos: ${rentals.length}');
 
           if (rentals.isEmpty) {
+            debugPrint('📭 Sin alquileres activos');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -84,6 +91,11 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
                   Text(
                     'No tienes alquileres activos',
                     style: TextStyle(color: Colors.grey[400], fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Busca una plaza y alquila por horas',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 13),
                   ),
                 ],
               ),

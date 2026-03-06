@@ -33,6 +33,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get accountSection => 'CUENTA';
 
   @override
+  String get myRentals => 'Mis Alquileres';
+
+  @override
   String get changePassword => 'Cambiar Contraseña';
 
   @override

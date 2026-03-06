@@ -48,7 +48,7 @@ class _RentPageState extends ConsumerState<RentPage> {
     // Validaciones defensivas
     int durationDays = _selectedDates.isNotEmpty ? _selectedDates.length : 1;
     int hours = plaza.rentIsNormal ? 720 : (durationDays * 9);
-    double precioBase = (plaza.precio ?? 0).toDouble();
+    double precioBase = plaza.precio.toDouble();
     double basePrice = (hours * precioBase);
     double iva = basePrice * ivaRate;
     double total = basePrice + managementFee + iva;
@@ -967,7 +967,7 @@ class _RentPageState extends ConsumerState<RentPage> {
           try {
             debugPrint('📝 Creando alquiler por horas en Firestore...');
             int durationMinutes = hours * 60; // Convertir horas a minutos
-            double precioPlaza = (plaza?.precio ?? 0).toDouble();
+            double precioPlaza = plaza.precio;
             double pricePerMinute = precioPlaza > 0 ? (precioPlaza / 60.0) : 0.0;
             
             // Usar docId si está disponible, si no usar idPlaza

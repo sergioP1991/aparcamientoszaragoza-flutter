@@ -519,7 +519,7 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
               widget.garageToEdit?.alquiler,
               user.uid,
               !_isAlquilerEspecial,
-              int.tryParse(_precioController.text.replaceAll(".00", "")) ?? 60,
+              double.tryParse(_precioController.text) ?? 60.0,
               _esCubierto,
               widget.garageToEdit?.comments ?? [],
               imagen: _imagePath,

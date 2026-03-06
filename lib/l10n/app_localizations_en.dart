@@ -33,6 +33,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountSection => 'ACCOUNT';
 
   @override
+  String get myRentals => 'My Rentals';
+
+  @override
   String get changePassword => 'Change Password';
 
   @override

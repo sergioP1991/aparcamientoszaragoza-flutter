@@ -146,6 +146,12 @@ abstract class AppLocalizations {
   /// **'CUENTA'**
   String get accountSection;
 
+  /// No description provided for @myRentals.
+  ///
+  /// In es, this message translates to:
+  /// **'Mis Alquileres'**
+  String get myRentals;
+
   /// No description provided for @changePassword.
   ///
   /// In es, this message translates to:

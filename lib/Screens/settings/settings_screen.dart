@@ -1,5 +1,6 @@
 import 'package:aparcamientoszaragoza/Screens/forgetPassword/ForgetPassword_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/help_support_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/active_rentals/active_rentals_screen.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
 import 'package:aparcamientoszaragoza/Models/user_settings.dart';
@@ -74,6 +75,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Icons.campaign, l10n.offersPromotions, settings.offersPromotions, (val) {
                 settingsNotifier.updateOffersPromotions(val);
               }),
+            ]),
+
+            const SizedBox(height: 32),
+            _buildSectionTitle(l10n.myRentals),
+            const SizedBox(height: 12),
+            _buildSettingsCard(children: [
+              _buildSettingsItem(
+                Icons.directions_car,
+                l10n.myRentals,
+                "",
+                onTap: () {
+                  Navigator.pushNamed(context, ActiveRentalsScreen.routeName);
+                },
+              ),
             ]),
 
             const SizedBox(height: 32),

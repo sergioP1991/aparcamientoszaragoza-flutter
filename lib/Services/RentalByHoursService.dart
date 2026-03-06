@@ -259,7 +259,10 @@ class RentalByHoursService {
   /// Stream para monitorear alquileres activos del usuario
   static Stream<List<AlquilerPorHoras>> watchUserActiveRentals() {
     final user = _auth.currentUser;
+    print('🔍 watchUserActiveRentals - Usuario: ${user?.uid ?? "NO AUTENTICADO"}');
+    
     if (user == null) {
+      print('❌ Usuario no autenticado, retornando stream vacío');
       return Stream.value([]);
     }
 
@@ -269,21 +272,33 @@ class RentalByHoursService {
         .where('tipo', isEqualTo: 2)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
+          print('📊 Total documentos encontrados: ${snapshot.docs.length}');
+          
+          final rentals = snapshot.docs
               .map((doc) {
                 try {
+                  print('📝 Procesando doc: ${doc.id}, datos: ${doc.data()}');
                   final rental = AlquilerPorHoras.fromFirestore(doc);
+                  final estado = rental.estado.toString();
+                  print('   Estado: $estado, Liberado: ${estado.contains("liberado")}');
+                  
                   // Solo incluir alquileres que no estén liberados
-                  if (!rental.estado.toString().contains('liberado')) {
+                  if (!estado.contains('liberado')) {
+                    print('   ✅ Incluido en la lista');
                     return rental;
+                  } else {
+                    print('   ❌ Excluido (liberado)');
                   }
                 } catch (e) {
-                  print('Error al parsear alquiler del usuario: $e');
+                  print('❌ Error al parsear alquiler del usuario: $e');
                 }
                 return null;
               })
               .whereType<AlquilerPorHoras>()
               .toList();
+          
+          print('📈 Total alquileres activos retornados: ${rentals.length}');
+          return rentals;
         });
   }
 }

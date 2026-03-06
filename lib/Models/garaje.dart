@@ -26,7 +26,7 @@ class Garaje {
   Alquiler? alquiler;
   String propietario;
   bool rentIsNormal;
-  int precio;
+  double precio;
   bool esCubierto;
   List<Favorite>? favorita;
   List<Comment>? comments;
