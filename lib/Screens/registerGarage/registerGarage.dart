@@ -14,6 +14,8 @@ import 'dart:typed_data';
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Services/GarajeImageStorageService.dart';
 import 'package:aparcamientoszaragoza/Services/GeocodingService.dart';
+import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
+import 'package:aparcamientoszaragoza/widgets/plaza_image_loader.dart';
 import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart';
 import 'package:aparcamientoszaragoza/Models/municipio.dart';
 import 'package:aparcamientoszaragoza/Models/codigo_postal.dart';
@@ -1034,14 +1036,12 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
                           ),
                           child: isLocal
                             ? _buildLocalImagePreview(imageData as XFile)
-                            : Image.network(
-                                imageData as String,
+                            : PlazaImageLoader(
+                                imageUrl: imageData as String,
+                                height: 100,
+                                width: 100,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Center(
-                                    child: Icon(Icons.broken_image, color: Colors.grey[600]),
-                                  );
-                                },
+                                showWarningOnError: true,
                               ),
                         ),
                         Positioned(

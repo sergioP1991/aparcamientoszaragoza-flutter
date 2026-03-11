@@ -112,12 +112,16 @@ class RentalByHoursService {
         throw Exception('Usuario no autenticado');
       }
 
+      print('🔑 releaseRental: Intentando liberar alquiler $rentalId');
+      
       final rental = await _firestore.collection('alquileres').doc(rentalId).get();
       if (!rental.exists) {
-        throw Exception('Alquiler no encontrado');
+        throw Exception('Alquiler no encontrado con ID: $rentalId');
       }
 
       final alquiler = AlquilerPorHoras.fromFirestore(rental);
+      
+      print('📋 Alquiler encontrado: plaza=${alquiler.idPlaza}, arrendatario=${alquiler.idArrendatario}');
       
       // Verificar que el usuario es el propietario del alquiler
       if (alquiler.idArrendatario != user.uid) {
@@ -128,15 +132,19 @@ class RentalByHoursService {
       final tiempoUsado = alquiler.calcularTiempoUsado();
       final precioFinal = alquiler.calcularPrecioFinal();
 
+      print('💰 Tiempo usado: $tiempoUsado min, Precio final: €$precioFinal');
+
       // Actualizar documento con estado liberado
       await _firestore.collection('alquileres').doc(rentalId).update({
-        'estado': EstadoAlquilerPorHoras.liberado.toString(),
+        'estado': EstadoAlquilerPorHoras.liberado.toString(), // "EstadoAlquilerPorHoras.liberado"
         'tiempoUsado': tiempoUsado,
         'precioCalculado': precioFinal,
         'fechaLiberacion': DateTime.now().toIso8601String(),
       });
+
+      print('✅ Alquiler liberado exitosamente. ID: $rentalId, Plaza: ${alquiler.idPlaza}');
     } catch (e) {
-      print('Error al liberar alquiler: $e');
+      print('❌ Error al liberar alquiler: $e');
       rethrow;
     }
   }

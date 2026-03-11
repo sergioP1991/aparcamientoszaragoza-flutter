@@ -36,6 +36,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get myRentals => 'Mis Alquileres';
 
   @override
+  String get myRentalsSubtitle => 'Activos y completados';
+
+  @override
   String get changePassword => 'Cambiar Contraseña';
 
   @override

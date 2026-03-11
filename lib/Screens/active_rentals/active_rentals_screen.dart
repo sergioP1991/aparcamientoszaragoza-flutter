@@ -531,28 +531,48 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
           );
         }
 
-        // 🔑 Usar el documentId correcto de Firestore para liberar
-        debugPrint('🔑 Liberando alquiler con documentId: $documentId');
-        await RentalByHoursService.releaseRental(documentId);
+        try {
+          // 🔑 Usar el documentId correcto de Firestore para liberar
+          debugPrint('🔑 Liberando alquiler con documentId: $documentId');
+          await RentalByHoursService.releaseRental(documentId);
 
-        // ⏳ Esperar a que Firestore se actualice y el Stream emita el nuevo valor
-        await Future.delayed(const Duration(milliseconds: 500));
+          // ⏳ Esperar a que Firestore se actualice y el Stream emita el nuevo valor
+          await Future.delayed(const Duration(milliseconds: 800));
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Plaza liberada. Total: €${rental.calcularPrecioFinal().toStringAsFixed(2)}',
+          if (mounted) {
+            // 🔄 Refrescar ambos providers del Home para actualizar estado de plaza
+            ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+            ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
+            
+            // Mostrar confirmación
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Plaza liberada. Total: €${rental.calcularPrecioFinal().toStringAsFixed(2)}',
+                ),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
               ),
-              backgroundColor: Colors.green,
-            ),
-          );
-          
-          // 🔄 Refrescar ambos providers del Home para actualizar estado de plaza
-          ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
-          ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
-          
-          // El stream se actualiza automáticamente y la pantalla se recarga
+            );
+            
+            // ⏸️ Esperar a que el SnackBar se muestre antes de navegar
+            await Future.delayed(const Duration(milliseconds: 500));
+            
+            // 🏠 VOLVER A HOME después de liberar exitosamente
+            if (mounted) {
+              Navigator.pop(context);
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error al liberar: $e'),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
         }
       }
     } catch (e) {

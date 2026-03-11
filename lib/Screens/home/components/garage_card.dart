@@ -89,6 +89,7 @@ class _GarageCardState extends ConsumerState<GarageCard> {
                             height: 120,
                             fit: BoxFit.cover,
                             fallbackAsset: PlazaImageService.getFallbackAsset(widget.item.idPlaza ?? 0),
+                            showWarningOnError: true,
                           )
                         : Image.asset(
                             PlazaImageService.getFallbackAsset(widget.item.idPlaza ?? 0),

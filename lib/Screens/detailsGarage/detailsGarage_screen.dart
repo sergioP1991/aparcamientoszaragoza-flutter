@@ -7,6 +7,7 @@ import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaDescriptionService.dart';
+import 'package:aparcamientoszaragoza/widgets/plaza_image_loader.dart';
 import 'package:aparcamientoszaragoza/Screens/timeline/timeline_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
@@ -164,34 +165,32 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
             itemCount: imageUrls.length,
             itemBuilder: (context, index) {
               final imageUrl = imageUrls[index];
-              // Detectar si es un asset local (comienza con 'assets/') o una URL remota
-              final isAsset = imageUrl.startsWith('assets/');
               
-              return Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: isAsset 
-                        ? AssetImage(imageUrl) as ImageProvider
-                        : NetworkImage(imageUrl),
+              return Stack(
+                children: [
+                  // Imagen con manejo robusto de errores
+                  PlazaImageLoader(
+                    imageUrl: imageUrl,
+                    height: 350,
+                    width: double.infinity,
                     fit: BoxFit.cover,
-                    onError: (exception, stackTrace) {
-                      // Usar fallback si hay error
-                    },
+                    showWarningOnError: true,
                   ),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.4),
-                        Colors.transparent,
-                        AppColors.darkestBlue,
-                      ],
+                  // Gradiente overlay
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.4),
+                          Colors.transparent,
+                          AppColors.darkestBlue,
+                        ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               );
             },
           ),

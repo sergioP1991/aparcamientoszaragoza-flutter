@@ -1,5 +1,6 @@
 import 'package:aparcamientoszaragoza/Screens/timeline/timeline_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/favorites/favorites_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/active_rentals/active_rentals_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/login/login_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart';
@@ -67,6 +68,15 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
                 title: l10n.checkHistory,
                 subtitle: l10n.historySubtitle,
                 onTap: () => Navigator.pushNamed(context, TimelinePage.routeName),
+              ),
+              const SizedBox(height: 16),
+              
+              _buildMenuCard(
+                context,
+                icon: Icons.car_rental_rounded,
+                title: l10n.myRentals,
+                subtitle: l10n.myRentalsSubtitle,
+                onTap: () => Navigator.pushNamed(context, ActiveRentalsScreen.routeName),
               ),
               const SizedBox(height: 16),
               

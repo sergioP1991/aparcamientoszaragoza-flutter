@@ -152,6 +152,12 @@ abstract class AppLocalizations {
   /// **'Mis Alquileres'**
   String get myRentals;
 
+  /// No description provided for @myRentalsSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Activos y completados'**
+  String get myRentalsSubtitle;
+
   /// No description provided for @changePassword.
   ///
   /// In es, this message translates to:

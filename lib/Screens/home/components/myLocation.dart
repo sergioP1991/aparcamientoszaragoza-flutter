@@ -266,6 +266,7 @@ class _MapViewState extends State<MapView> {
                           height: 110,
                           fit: BoxFit.cover,
                           fallbackAsset: PlazaImageService.getFallbackAsset(garage.idPlaza ?? 0),
+                          showWarningOnError: true,
                         ),
                       ),
                     ],

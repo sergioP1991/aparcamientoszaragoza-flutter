@@ -64,8 +64,10 @@ class GarajeImageStorageService {
     required List<dynamic> imageSources,  // List<XFile> o List<File>
   }) async {
     final urls = <String>[];
+    debugPrint('🎬 Iniciando carga de ${imageSources.length} imágenes para plaza $plazaId');
 
     for (int i = 0; i < imageSources.length; i++) {
+      debugPrint('⏳ Cargando imagen ${i + 1}/${imageSources.length}...');
       final url = await uploadImage(
         plazaId: plazaId,
         imageSource: imageSources[i],
@@ -73,10 +75,16 @@ class GarajeImageStorageService {
       );
       if (url != null) {
         urls.add(url);
+        debugPrint('📊 Progreso: ${i + 1}/${imageSources.length} imágenes subidas');
+      } else {
+        debugPrint('⚠️ Falló la carga de imagen $i');
       }
     }
 
-    debugPrint('📸 Uploaded ${urls.length}/${imageSources.length} images');
+    debugPrint('📸 Resumen: ${urls.length}/${imageSources.length} imágenes subidas exitosamente');
+    if (urls.isEmpty) {
+      debugPrint('⚠️ ADVERTENCIA: Ninguna imagen se subió correctamente');
+    }
     return urls;
   }
 
