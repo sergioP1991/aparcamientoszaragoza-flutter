@@ -534,66 +534,99 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
             final user = ref.read(loginUserProvider).value;
             if (user == null) return;
 
-            // Mostrar loading mientras se suben imágenes
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.uploadingImages ?? 'Subiendo imágenes...')),
-              );
-            }
+            try {
+              // 🔑 Generar ID de plaza (se usa para Storage y Firestore)
+              final plazaId = widget.garageToEdit?.idPlaza ?? DateTime.now().millisecondsSinceEpoch;
+              
+              // 📸 Subir imágenes a Firebase Storage
+              if (_imagePaths.isNotEmpty) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.uploadingImages ?? 'Subiendo ${_imagePaths.length} imágenes...')),
+                  );
+                }
 
-            // Subir imágenes nuevas a Firebase Storage
-            final plazaId = widget.garageToEdit?.idPlaza?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
-            
-            if (_imagePaths.isNotEmpty) {
-              final newUrls = await GarajeImageStorageService.uploadMultipleImages(
-                plazaId: plazaId,
-                imageSources: _imagePaths,
-              );
-              _uploadedImageUrls.addAll(newUrls);
-            }
+                debugPrint('🖼️ Subiendo ${_imagePaths.length} imágenes para plaza $plazaId');
+                
+                final newUrls = await GarajeImageStorageService.uploadMultipleImages(
+                  plazaId: plazaId.toString(),
+                  imageSources: _imagePaths,
+                );
+                
+                if (newUrls.isNotEmpty) {
+                  _uploadedImageUrls.addAll(newUrls);
+                  debugPrint('✅ ${newUrls.length} imágenes subidas exitosamente');
+                } else {
+                  debugPrint('⚠️ No se subieron imágenes (posible error en Storage)');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('⚠️ Error al subir imágenes - continuando sin ellas')),
+                    );
+                  }
+                }
+              } else {
+                debugPrint('ℹ️ No hay imágenes nuevas que subir');
+              }
 
-            final garageData = Garaje(
-              widget.garageToEdit?.idPlaza ?? DateTime.now().millisecondsSinceEpoch,
-              _direccionController.text,
-              _selectedCP?.codigoPostal ?? widget.garageToEdit?.CodigoPostal ?? "50001",
-              _selectedProvincia?.nombre ?? widget.garageToEdit?.Provincia ?? "Zaragoza",
-              double.tryParse(_latitudController.text) ?? 41.6488,
-              double.tryParse(_longitudController.text) ?? -0.8891,
-              double.tryParse(_anchoController.text) ?? 2.5,
-              double.tryParse(_largoController.text) ?? 5.0,
-              int.tryParse(_plantaController.text) ?? -1,
-              _selectedVehicle == l10n.vehicleMoto 
-                ? VehicleType.moto 
-                : _selectedVehicle == l10n.vehicleSmallCar 
-                  ? VehicleType.cochePequeno 
-                  : _selectedVehicle == l10n.vehicleLargeCar 
-                    ? VehicleType.cocheGrande 
-                    : VehicleType.furgoneta,
-              widget.garageToEdit?.alquiler,
-              user.uid,
-              !_isAlquilerEspecial,
-              double.tryParse(_precioController.text) ?? 60.0,
-              _esCubierto,
-              widget.garageToEdit?.comments ?? [],
-              imagenes: _uploadedImageUrls,  // URLs de Firebase Storage
-              docId: widget.garageToEdit?.docId,
-            );
-
-            if (widget.garageToEdit != null) {
-              await GarajeProvider().updateGaraje(widget.garageToEdit!.docId!, garageData);
-            } else {
-              await GarajeProvider().addGaraje(garageData);
-            }
-            
-            // Refrescar listado de la Home
-            ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
-            ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
-            
-            if (mounted) {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(widget.garageToEdit != null ? l10n.successModify : l10n.successRegister)),
+              // 📝 Crear objeto Garaje con URLs de imágenes
+              final garageData = Garaje(
+                plazaId,  // ← Usa el mismo ID para Storage y Firestore
+                _direccionController.text,
+                _selectedCP?.codigoPostal ?? widget.garageToEdit?.CodigoPostal ?? "50001",
+                _selectedProvincia?.nombre ?? widget.garageToEdit?.Provincia ?? "Zaragoza",
+                double.tryParse(_latitudController.text) ?? 41.6488,
+                double.tryParse(_longitudController.text) ?? -0.8891,
+                double.tryParse(_anchoController.text) ?? 2.5,
+                double.tryParse(_largoController.text) ?? 5.0,
+                int.tryParse(_plantaController.text) ?? -1,
+                _selectedVehicle == l10n.vehicleMoto 
+                  ? VehicleType.moto 
+                  : _selectedVehicle == l10n.vehicleSmallCar 
+                    ? VehicleType.cochePequeno 
+                    : _selectedVehicle == l10n.vehicleLargeCar 
+                      ? VehicleType.cocheGrande 
+                      : VehicleType.furgoneta,
+                widget.garageToEdit?.alquiler,
+                user.uid,
+                !_isAlquilerEspecial,
+                double.tryParse(_precioController.text) ?? 60.0,
+                _esCubierto,
+                widget.garageToEdit?.comments ?? [],
+                imagenes: _uploadedImageUrls,  // URLs de Firebase Storage
+                docId: widget.garageToEdit?.docId,
               );
+
+              // 💾 Guardar en Firestore
+              debugPrint('💾 Guardando garaje en Firestore (ID: $plazaId)');
+              
+              if (widget.garageToEdit != null) {
+                await GarajeProvider().updateGaraje(widget.garageToEdit!.docId!, garageData);
+              } else {
+                await GarajeProvider().addGaraje(garageData);
+              }
+              
+              debugPrint('✅ Garaje guardado exitosamente');
+              
+              // 🔄 Refrescar listado de la Home
+              ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+              ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
+              
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(widget.garageToEdit != null ? l10n.successModify : l10n.successRegister)),
+                );
+              }
+            } catch (e) {
+              debugPrint('❌ Error al guardar plaza: $e');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             }
           }
         },

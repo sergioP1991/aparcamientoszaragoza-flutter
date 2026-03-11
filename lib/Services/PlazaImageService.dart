@@ -60,7 +60,15 @@ class PlazaImageService {
   }
 
   /// Obtiene una imagen de fallback diferente según el ID
+  /// Retorna solo el nombre del archivo sin "assets/" (para usar con Image.asset())
   static String getFallbackAsset(int plazaId) {
+    String fullPath = _imageAssets[plazaId % _imageAssets.length];
+    // Remove "assets/" prefix since Image.asset() adds it automatically
+    return fullPath.replaceFirst('assets/', '');
+  }
+
+  /// Obtiene la ruta completa del asset (con "assets/" prefix - para otros usos)
+  static String getFallbackAssetPath(int plazaId) {
     return _imageAssets[plazaId % _imageAssets.length];
   }
 }

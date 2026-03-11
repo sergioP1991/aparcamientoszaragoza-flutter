@@ -164,15 +164,26 @@ class AlquilerPorHoras extends Alquiler {
       print('Error parsing estado: $e');
     }
 
+    // Helper function to parse DateTime/Timestamp
+    DateTime parseDateTime(dynamic value) {
+      if (value == null) return DateTime.now();
+      if (value is Timestamp) {
+        return value.toDate();
+      } else if (value is String) {
+        return DateTime.parse(value);
+      } else if (value is DateTime) {
+        return value;
+      }
+      return DateTime.now();
+    }
+
     return AlquilerPorHoras(
       idPlaza: data['idPlaza'] as int? ?? 0,
       idArrendatario: data['idArrendatario'] as String? ?? 'unknown',
       documentId: snapshot.id, // ← CAPTURAR EL ID DEL DOCUMENTO
-      fechaInicio: (data['fechaInicio'] as Timestamp).toDate(),
-      fechaVencimiento: (data['fechaVencimiento'] as Timestamp).toDate(),
-      fechaLiberacion: data['fechaLiberacion'] != null 
-        ? (data['fechaLiberacion'] as Timestamp).toDate() 
-        : null,
+      fechaInicio: parseDateTime(data['fechaInicio']),
+      fechaVencimiento: parseDateTime(data['fechaVencimiento']),
+      fechaLiberacion: data['fechaLiberacion'] != null ? parseDateTime(data['fechaLiberacion']) : null,
       duracionContratada: (data['duracionContratada'] as int?) ?? 0,
       tiempoUsado: data['tiempoUsado'] as int?,
       precioMinuto: ((data['precioMinuto'] ?? 0.0) as num).toDouble(),

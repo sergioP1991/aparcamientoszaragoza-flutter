@@ -41,6 +41,7 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final rentalsStream = RentalByHoursService.watchUserActiveRentals();
+    final homeDataAsync = ref.watch(fetchHomeProvider(allGarages: true, onlyMine: false));
 
     return Scaffold(
       backgroundColor: AppColors.darkestBlue,
@@ -57,64 +58,76 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
         ),
         centerTitle: true,
       ),
-      body: StreamBuilder<List<AlquilerPorHoras>>(
-        stream: rentalsStream,
-        builder: (context, snapshot) {
-          debugPrint('🔄 StreamBuilder estado: ${snapshot.connectionState}');
-          debugPrint('📦 Datos: ${snapshot.data?.length ?? 0} alquileres');
-          
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            debugPrint('⏳ Esperando datos...');
-            return const Center(child: CircularProgressIndicator());
+      body: homeDataAsync.when(
+        data: (homeData) {
+          // Crear un map de plazaId -> dirección para acceso rápido
+          final plazaMap = <int, String>{};
+          if (homeData != null && homeData.listGarajes.isNotEmpty) {
+            for (var garajeItem in homeData.listGarajes) {
+              if (garajeItem.idPlaza != null) {
+                plazaMap[garajeItem.idPlaza!] = garajeItem.direccion;
+              }
+            }
           }
 
-          if (snapshot.hasError) {
-            debugPrint('❌ Error en stream: ${snapshot.error}');
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: const TextStyle(color: Colors.white),
-              ),
-            );
-          }
+          return StreamBuilder<List<AlquilerPorHoras>>(
+            stream: RentalByHoursService.watchUserActiveRentals(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          final rentals = snapshot.data ?? [];
-          debugPrint('✅ Alquileres recibidos: ${rentals.length}');
-
-          if (rentals.isEmpty) {
-            debugPrint('📭 Sin alquileres activos');
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.directions_car, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No tienes alquileres activos',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 16),
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Error: ${snapshot.error}',
+                    style: const TextStyle(color: Colors.white),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Busca una plaza y alquila por horas',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 13),
-                  ),
-                ],
-              ),
-            );
-          }
+                );
+              }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: rentals.length,
-            itemBuilder: (context, index) {
-              final rental = rentals[index];
-              // Generar un ID consistente basado en plazaId y arrendatario
-              // En producción, el servicio debería retornar el doc ID
-              final rentalId = '${rental.idPlaza}_${rental.idArrendatario}';
-              return _buildRentalCard(context, rental, rentalId, l10n);
+              final rentals = snapshot.data ?? [];
+
+              if (rentals.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.directions_car, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No tienes alquileres activos',
+                        style: TextStyle(color: Colors.grey[400], fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Busca una plaza y alquila por horas',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: rentals.length,
+                itemBuilder: (context, index) {
+                  final rental = rentals[index];
+                  final plazaAddress = plazaMap[rental.idPlaza] ?? 'Plaza #${rental.idPlaza}';
+                  return _buildRentalCard(context, rental, l10n, plazaAddress);
+                },
+              );
             },
           );
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Text(
+            'Error al cargar plazas: $error',
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
       ),
     );
   }
@@ -122,8 +135,8 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
   Widget _buildRentalCard(
     BuildContext context,
     AlquilerPorHoras rental,
-    String rentalId,
     AppLocalizations l10n,
+    String plazaAddress,
   ) {
     final isExpired = rental.estaVencido();
     final isInPenalty = rental.estaEnMargenMulta();
@@ -144,21 +157,26 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Plaza #${rental.idPlaza}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        plazaAddress,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    _buildStatusBadge(rental.estado, isExpired, hasPenalty),
-                  ],
+                      const SizedBox(height: 4),
+                      _buildStatusBadge(rental.estado, isExpired, hasPenalty),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 _buildStateIcon(rental.estado, isExpired, hasPenalty),
               ],
             ),
@@ -234,7 +252,7 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
             const SizedBox(height: 16),
 
             // Botones de acción
-            _buildActionButtons(context, rental, l10n, rentalId),
+            _buildActionButtons(context, rental, l10n, rental.documentId ?? ''),
           ],
         ),
       ),
@@ -415,7 +433,7 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
     BuildContext context,
     AlquilerPorHoras rental,
     AppLocalizations l10n,
-    String rentalDocId,
+    String documentId,
   ) {
     final isExpired = rental.estaVencido();
 
@@ -449,7 +467,7 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
                 side: const BorderSide(color: Colors.blue),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onPressed: () => _releaseRental(context, rental, rentalDocId),
+              onPressed: () => _releaseRental(context, rental, documentId),
               child: const Text(
                 'Liberar Ahora',
                 style: TextStyle(color: Colors.blue),
@@ -464,9 +482,22 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
   Future<void> _releaseRental(
     BuildContext context,
     AlquilerPorHoras rental,
-    String rentalId,
+    String documentId,
   ) async {
     try {
+      // Validar que el documentId no esté vacío
+      if (documentId.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: ID del alquiler no válido'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
       final confirmation = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -500,8 +531,12 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
           );
         }
 
-        // Liberar usando servicio local (sin Cloud Functions)
-        await RentalByHoursService.releaseRental(rentalId);
+        // 🔑 Usar el documentId correcto de Firestore para liberar
+        debugPrint('🔑 Liberando alquiler con documentId: $documentId');
+        await RentalByHoursService.releaseRental(documentId);
+
+        // ⏳ Esperar a que Firestore se actualice y el Stream emita el nuevo valor
+        await Future.delayed(const Duration(milliseconds: 500));
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -513,8 +548,9 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
             ),
           );
           
-          // Refrescar la lista de garages en home para actualizar estado de plaza
-          await ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+          // 🔄 Refrescar ambos providers del Home para actualizar estado de plaza
+          ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+          ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
           
           // El stream se actualiza automáticamente y la pantalla se recarga
         }

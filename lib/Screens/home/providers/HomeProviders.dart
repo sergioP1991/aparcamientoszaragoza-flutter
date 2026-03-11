@@ -146,7 +146,21 @@ Future<HomeData?> fetchHome(Ref ref, {required bool allGarages, bool onlyMine = 
   }
 
   final QuerySnapshot<Map<String, dynamic>> snapshotRent = await FirebaseFirestore.instance.collection('alquileres').get();
-  List<Alquiler> listAlquileres = snapshotRent.docs.map<Alquiler>((doc) {
+  List<Alquiler> listAlquileres = snapshotRent.docs
+      .where((doc) {
+        // 🔥 FILTRO CRÍTICO: Solo incluir alquileres ACTIVOS
+        // Para tipo 0 (AlquilerNormal): no filtrar por estado, siempre activo
+        // Para tipo 1 (AlquilerEspecial): no filtrar por estado, siempre activo
+        // Para tipo 2 (AlquilerPorHoras): excluir si estado contiene "liberado" o "vencido"
+        if (doc['tipo'] == 2) {
+          final estado = doc['estado'] as String?;
+          if (estado != null && (estado.contains('liberado') || estado.contains('vencido'))) {
+            return false; // Excluir este alquiler
+          }
+        }
+        return true; // Incluir este alquiler
+      })
+      .map<Alquiler>((doc) {
     try {
       if (doc['tipo'] == 0) {
         return AlquilerNormal.fromFirestore(doc);

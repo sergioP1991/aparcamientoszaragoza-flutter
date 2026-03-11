@@ -11,13 +11,21 @@ class GarajeProvider with ChangeNotifier {
   List<Garaje> get garajes => _garajes;
 
   /// Añadir un garaje
+  /// ✅ Usa el idPlaza como documentId para sincronizar con rutas de storage
   Future<void> addGaraje(Garaje garaje) async {
     try {
       final data = garaje.toFirestore();
       data['alquiler'] = null;
       data['comments'] = null;
       
-      await _firestore.collection('garaje').add(data);
+      // 🔑 CRÍTICO: Especificar el ID del documento como idPlaza
+      // Esto asegura que las imágenes en Storage (garajes/{idPlaza}/imagen_X.jpg)
+      // coincidan con el documento en Firestore
+      final docId = garaje.idPlaza.toString();
+      
+      debugPrint('📝 Guardando garaje con docId: $docId');
+      
+      await _firestore.collection('garaje').doc(docId).set(data);
 
       await ActivityService.recordEvent(History(
         fecha: DateTime.now(),

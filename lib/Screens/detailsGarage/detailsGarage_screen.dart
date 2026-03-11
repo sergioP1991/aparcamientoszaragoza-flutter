@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:aparcamientoszaragoza/Models/favorite.dart';
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
+import 'package:aparcamientoszaragoza/Models/alquiler.dart';
 import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
@@ -17,6 +18,7 @@ import 'package:aparcamientoszaragoza/widgets/Buttons.dart';
 import 'package:aparcamientoszaragoza/widgets/Spaces.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -434,8 +436,9 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
     bool isAvailable = plaza.alquiler == null;
     print('🔍 _buildAvailabilityBanner: plazaId=$plazaId, plaza.idPlaza=${plaza.idPlaza}, alquiler=${plaza.alquiler}');
     
-    // Si hay un alquiler mensual (AlquilerNormal), mostrar UI simplementmente como ocupado
+    // Si hay un alquiler mensual (AlquilerNormal), mostrar UI con opción de liberar si es el propietario
     if (plaza.alquiler != null && plaza.alquiler is! AlquilerPorHoras) {
+      final isOwner = plaza.alquiler?.idArrendatario == user?.uid;
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
@@ -486,7 +489,9 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Esta plaza está alquilada por un período mensual',
+                        isOwner 
+                          ? 'Tienes esta plaza alquilada por período mensual'
+                          : 'Esta plaza está alquilada por un período mensual',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.8),
                           fontSize: 12,
@@ -497,6 +502,28 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
                 ),
               ],
             ),
+            if (isOwner) ...[  
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                height: 40,
+                child: ElevatedButton(
+                  onPressed: () => _releaseMonthlyRentalDialog(context, plaza, plaza.alquiler, l10n),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text('Liberar Alquiler', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+            ]
           ],
         ),
       );
@@ -933,11 +960,11 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
                   )
               : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            disabledBackgroundColor: Colors.grey.withOpacity(0.1),
+            backgroundColor: isAvailable ? Colors.blue : Colors.red.withOpacity(0.7),
+            disabledBackgroundColor: Colors.red.withOpacity(0.7),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 8,
-            shadowColor: Colors.blue.withOpacity(0.4),
+            elevation: isAvailable ? 8 : 4,
+            shadowColor: (isAvailable ? Colors.blue : Colors.red).withOpacity(0.4),
           ),
           child: Text(
             isAvailable ? l10n.rentNowAction : l10n.notAvailableAction,
@@ -1011,6 +1038,9 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
       debugPrint('🔑 Liberando alquiler con documentId: ${rental.documentId}');
       await RentalByHoursService.releaseRental(rental.documentId!);
 
+      // ⏳ Esperar a que Firestore se actualice y el Stream emita el nuevo valor
+      await Future.delayed(const Duration(milliseconds: 500));
+
       if (mounted) {
         Navigator.pop(context); // Cerrar loading
         
@@ -1023,10 +1053,13 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
           ),
         );
         
-        // Refrescar la lista de garages en home para actualizar estado de plaza
-        await ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+        // 🔄 Refrescar la lista de garages en home para actualizar estado de plaza
+        // Esto asegura que el Home muestre la plaza como disponible
+        ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+        ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
         
-        // Refrescar la vista local
+        // 🔄 Forzar reconstrucción de la pantalla actual
+        // El StreamBuilder debería actualizarse automáticamente, pero esto asegura que se muestren cambios
         setState(() {});
       }
     } catch (e) {
@@ -1045,5 +1078,139 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
     }
   }
 
+  /// Diálogo para confirmar la liberación del alquiler mensual
+  Future<void> _releaseMonthlyRentalDialog(BuildContext context, Garaje plaza, Alquiler? rental, AppLocalizations l10n) async {
+    if (rental == null) return;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.darkestBlue,
+        title: const Text(
+          'Liberar alquiler mensual',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Confirma liberar esta plaza. Se eliminarán los datos del alquiler mensual.',
+          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _performReleaseMonthlyRental(plaza, rental, l10n);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Liberar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Ejecuta la liberación del alquiler mensual
+  Future<void> _performReleaseMonthlyRental(Garaje plaza, Alquiler rental, AppLocalizations l10n) async {
+    try {
+      // Mostrar loading
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppColors.darkestBlue,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Liberando alquiler mensual...', style: TextStyle(color: Colors.white)),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Obtener referencia a Firestore
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+      final User? user = FirebaseAuth.instance.currentUser;
+      
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      debugPrint('🔄 Buscando alquiler mensual: plazaId=${plaza.idPlaza}, userId=${user.uid}');
+      
+      // Eliminar el alquiler de la tabla alquileres
+      // Buscar el documento del alquiler por plazaId, idArrendatario y tipo
+      final rentalQuery = await firestore
+          .collection('alquileres')
+          .where('idPlaza', isEqualTo: plaza.idPlaza)
+          .where('idArrendatario', isEqualTo: user.uid)
+          .where('tipo', isEqualTo: 0)  // tipo 0 = AlquilerNormal (mensual)
+          .get();
+
+      debugPrint('📋 Documentos encontrados: ${rentalQuery.docs.length}');
+
+      // Eliminar todos los documentos encontrados (normalmente solo 1)
+      if (rentalQuery.docs.isEmpty) {
+        throw Exception('No se encontró alquiler mensual para liberar');
+      }
+
+      for (var doc in rentalQuery.docs) {
+        await firestore.collection('alquileres').doc(doc.id).delete();
+        debugPrint('✅ Documento de alquiler eliminado: ${doc.id}');
+      }
+
+      // Actualizar el documento de la plaza (establecer alquiler a null)
+      await firestore
+          .collection('garajes')
+          .doc(plaza.idPlaza.toString())
+          .update({
+            'alquiler': null,
+            'alquilerId': null,
+            'alquilerTipo': null,
+          });
+      
+      debugPrint('✅ Campos de plaza actualizados');
+
+      if (mounted) {
+        Navigator.pop(context); // Cerrar loading
+        
+        // Mostrar éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Alquiler mensual liberado exitosamente'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        
+        // Refrescar la lista de garages en home para actualizar estado
+        await ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+        
+        // Refrescar la vista local
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Cerrar loading
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error al liberar: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      debugPrint('❌ Error al liberar alquiler mensual: $e');
+    }
+  }
+
 }
+
 

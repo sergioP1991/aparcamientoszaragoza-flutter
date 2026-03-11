@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Screens/admin/admin_plazas_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class AdminRentalsScreen extends StatefulWidget {
+class AdminRentalsScreen extends ConsumerStatefulWidget {
   static const routeName = '/admin-rentals';
 
   const AdminRentalsScreen({Key? key}) : super(key: key);
 
   @override
-  State<AdminRentalsScreen> createState() => _AdminRentalsScreenState();
+  ConsumerState<AdminRentalsScreen> createState() => _AdminRentalsScreenState();
 }
 
-class _AdminRentalsScreenState extends State<AdminRentalsScreen>
+class _AdminRentalsScreenState extends ConsumerState<AdminRentalsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isLoading = false;
@@ -64,6 +66,9 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen>
         }
       }
 
+      // ⏳ Esperar a que Firestore se actualice
+      await Future.delayed(const Duration(milliseconds: 500));
+
       setState(() {
         _isLoading = false;
         _isSuccess = true;
@@ -79,6 +84,10 @@ class _AdminRentalsScreenState extends State<AdminRentalsScreen>
             duration: const Duration(seconds: 3),
           ),
         );
+        
+        // 🔄 Refrescar los providers del Home para actualizar estado de plazas
+        ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+        ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
       }
     } catch (e) {
       debugPrint('❌ Error liberando alquileres: $e');

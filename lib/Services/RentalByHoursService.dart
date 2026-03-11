@@ -301,4 +301,18 @@ class RentalByHoursService {
           return rentals;
         });
   }
+
+  /// Obtiene la información de una plaza (dirección) basándose en el ID
+  static Future<String?> getPlazaAddress(int plazaId) async {
+    try {
+      final doc = await _firestore.collection('garaje').doc(plazaId.toString()).get();
+      if (doc.exists) {
+        return doc.data()?['direccion'] as String?;
+      }
+      return null;
+    } catch (e) {
+      print('Error al obtener dirección de plaza: $e');
+      return null;
+    }
+  }
 }

@@ -10,7 +10,7 @@ import 'package:aparcamientoszaragoza/widgets/plaza_image_loader.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -317,205 +317,114 @@ class _RentPageState extends ConsumerState<RentPage> {
   }
 
   Widget _buildPaymentMethod(AppLocalizations l10n) {
-    final paymentMethods = [
-      {'id': 'card', 'name': 'Tarjeta', 'description': 'Visa, Mastercard, Amex'},
-      {'id': 'apple_pay', 'name': 'Apple Pay', 'description': 'Pago rápido y seguro'},
-      {'id': 'google_pay', 'name': 'Google Pay', 'description': 'Pago con tu cuenta Google'},
-      {'id': 'paypal', 'name': 'PayPal', 'description': 'Cuenta de PayPal'},
+    final methods = [
+      _PaymentOption(
+        id: 'google_pay',
+        label: 'Google Pay',
+        icon: Icons.g_mobiledata_rounded,
+        color: const Color(0xFF4285F4),
+        subtitle: 'Paga con tu cuenta de Google',
+      ),
+      _PaymentOption(
+        id: 'apple_pay',
+        label: 'Apple Pay',
+        icon: Icons.apple,
+        color: Colors.white,
+        subtitle: kIsWeb ? 'Disponible en Safari (iOS/macOS)' : 'Solo en dispositivos Apple',
+      ),
+      _PaymentOption(
+        id: 'paypal',
+        label: 'PayPal',
+        icon: Icons.account_balance_wallet_rounded,
+        color: const Color(0xFF003087),
+        subtitle: 'Paga con tu cuenta PayPal',
+      ),
+      _PaymentOption(
+        id: 'card',
+        label: 'Tarjeta',
+        icon: Icons.credit_card_rounded,
+        color: Colors.orangeAccent,
+        subtitle: 'Visa, Mastercard, Amex…',
+      ),
     ];
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Selecciona método de pago',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '💳 ${l10n.paymentMethodTitle}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 12),
-          Column(
-            children: paymentMethods.map((method) {
-              final isSelected = _selectedPaymentMethod == method['id'];
-              
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedPaymentMethod = method['id'] as String;
-                  });
-                  debugPrint('✅ Método seleccionado: ${method['name']}');
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.blue.withOpacity(0.1)
-                        : Colors.white.withOpacity(0.02),
-                    border: Border.all(
-                      color: isSelected ? Colors.blue : Colors.white12,
-                      width: isSelected ? 2 : 1,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      _buildPaymentIcon(method['id'] as String),
-                      const SizedBox(width: 12),
-                      // Nombre y descripción
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              method['name'] as String,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                            Text(
-                              method['description'] as String,
-                              style: const TextStyle(
-                                color: Colors.white38,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Radio button mejorado
-                      Container(
-                        width: 22,
-                        height: 22,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: isSelected ? Colors.blue : Colors.white30,
-                            width: isSelected ? 2.5 : 1.5,
-                          ),
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        child: isSelected
-                            ? Center(
-                                child: Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue,
-                                    borderRadius: BorderRadius.circular(50),
-                                  ),
-                                ),
-                              )
-                            : null,
-                      ),
-                    ],
-                  ),
+        ),
+        const SizedBox(height: 12),
+        ...methods.map((option) {
+          final isSelected = _selectedPaymentMethod == option.id;
+          return GestureDetector(
+            onTap: () => setState(() => _selectedPaymentMethod = option.id),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.blue.withOpacity(0.15)
+                    : AppColors.darkCardBackground,
+                border: Border.all(
+                  color: isSelected ? Colors.blue : Colors.grey[700]!,
+                  width: isSelected ? 2 : 1,
                 ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: option.color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(option.icon, color: option.color, size: 26),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          option.label,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          option.subtitle,
+                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    isSelected
+                        ? Icons.radio_button_checked
+                        : Icons.radio_button_unchecked,
+                    color: isSelected ? Colors.blue : Colors.grey,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ],
     );
   }
 
-  Widget _buildPaymentIcon(String methodId) {
-    switch (methodId) {
-      case 'card':
-        return Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFF8A00), Color(0xFFE52E71)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.credit_card_rounded, color: Colors.white, size: 26),
-        );
-      case 'apple_pay':
-        return Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white24),
-          ),
-          child: const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.apple, color: Colors.white, size: 22),
-              Text('Pay', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600, height: 1.0)),
-            ],
-          ),
-        );
-      case 'google_pay':
-        return Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFDADCE0)),
-          ),
-          child: const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('G', style: TextStyle(
-                color: Color(0xFF4285F4),
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              )),
-              Text('Pay', style: TextStyle(color: Color(0xFF5F6368), fontSize: 9, fontWeight: FontWeight.w500, height: 1.0)),
-            ],
-          ),
-        );
-      case 'paypal':
-        return Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF003087), Color(0xFF009CDE)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Center(
-            child: Text('PP', style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              fontStyle: FontStyle.italic,
-              letterSpacing: -1,
-            )),
-          ),
-        );
-      default:
-        return Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade800,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.payment, color: Colors.white, size: 26),
-        );
-    }
-  }
+
 
   Future<Map<String, String>?> _showCardInputDialog() async {
     final cardCtrl = TextEditingController();
@@ -1154,4 +1063,20 @@ class _RentPageState extends ConsumerState<RentPage> {
       }
     }
   }
+}
+
+class _PaymentOption {
+  final String id;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final String subtitle;
+
+  const _PaymentOption({
+    required this.id,
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.subtitle,
+  });
 }
