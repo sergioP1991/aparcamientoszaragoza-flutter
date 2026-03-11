@@ -8,7 +8,7 @@ library stripe_payment_web;
 
 import 'dart:async'; // Para Completer
 import 'dart:js' as js;
-import 'dart:js_util' as js_util;
+import 'dart:js' show allowInterop;
 
 /// Muestra la ventana nativa de pagos de Google Pay usando el Google Pay Web SDK.
 ///
@@ -61,9 +61,9 @@ Future<Map<String, dynamic>> showGooglePayWeb({
       }
 
       try {
-        final bool success = js_util.getProperty<dynamic>(result, 'success') == true;
-        final dynamic errorProp = js_util.getProperty<dynamic>(result, 'error');
-        final dynamic pmId = js_util.getProperty<dynamic>(result, 'paymentMethodId');
+        final bool success = result['success'] == true;
+        final dynamic errorProp = result['error'];
+        final dynamic pmId = result['paymentMethodId'];
         
         print('  ✓ Propiedades extraídas:');
         print('    • success: $success');
@@ -170,12 +170,12 @@ Future<Map<String, dynamic>> showNativePaymentSheet({
       }
 
       try {
-        final bool success = js_util.getProperty<dynamic>(result, 'success') == true;
+        final bool success = result['success'] == true;
         if (success) {
-          final dynamic pmId = js_util.getProperty<dynamic>(result, 'paymentMethodId');
+          final dynamic pmId = result['paymentMethodId'];
           completer.complete({'success': true, 'paymentMethodId': (pmId as String?) ?? ''});
         } else {
-          final dynamic error = js_util.getProperty<dynamic>(result, 'error');
+          final dynamic error = result['error'];
           completer.complete({'success': false, 'error': (error as String?) ?? 'unknown'});
         }
       } catch (e) {
