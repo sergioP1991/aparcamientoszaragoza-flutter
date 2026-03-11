@@ -64,6 +64,16 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
     final plaza = homeDataState.value?.getGarageById(idPlaza);
     final user = homeDataState.value?.user;
 
+    debugPrint('🔍 DetailScreen DEBUG - idPlaza: $idPlaza');
+    if (plaza != null) {
+      debugPrint('🔍 DetailScreen DEBUG - plaza.imagenes: ${plaza.imagenes.length} imágenes');
+      for (int i = 0; i < plaza.imagenes.length; i++) {
+        debugPrint('   [$i] ${plaza.imagenes[i]}');
+      }
+    } else {
+      debugPrint('🔍 DetailScreen DEBUG - Plaza NO ENCONTRADA en home provider');
+    }
+
     if (plaza == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -147,9 +157,18 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
 
   Widget _buildImageCarousel(BuildContext context, WidgetRef ref, Garaje plaza, User? user, bool isFavorite) {
     // Usar imágenes subidas si existen, si no, generar con PlazaImageService
+    debugPrint('🖼️ Carousel - plaza.imagenes.length: ${plaza.imagenes.length}');
+    
     final List<String> imageUrls = plaza.imagenes.isNotEmpty
         ? plaza.imagenes
         : PlazaImageService.getCarouselUrls(plaza.idPlaza ?? 0, width: 600, height: 400, count: 5);
+    
+    debugPrint('🖼️ Carousel - imageUrls.length: ${imageUrls.length}');
+    if (plaza.imagenes.isEmpty) {
+      debugPrint('🖼️ Carousel - Usando FALLBACK (PlazaImageService)');
+    } else {
+      debugPrint('🖼️ Carousel - Usando URLs de FIREBASE');
+    }
     
     return Stack(
       children: [

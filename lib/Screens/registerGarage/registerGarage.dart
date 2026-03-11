@@ -571,6 +571,11 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
               }
 
               // 📝 Crear objeto Garaje con URLs de imágenes
+              debugPrint('🔍 DEBUG - URLs cargadas: ${_uploadedImageUrls.length} imágenes');
+              for (int i = 0; i < _uploadedImageUrls.length; i++) {
+                debugPrint('   [$i] ${_uploadedImageUrls[i]}');
+              }
+              
               final garageData = Garaje(
                 plazaId,  // ← Usa el mismo ID para Storage y Firestore
                 _direccionController.text,
@@ -597,6 +602,8 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
                 imagenes: _uploadedImageUrls,  // URLs de Firebase Storage
                 docId: widget.garageToEdit?.docId,
               );
+              
+              debugPrint('🔍 DEBUG - Garaje.imagenes creado con ${garageData.imagenes.length} URLs');
 
               // 💾 Guardar en Firestore
               debugPrint('💾 Guardando garaje en Firestore (ID: $plazaId)');

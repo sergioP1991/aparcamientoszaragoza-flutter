@@ -24,8 +24,12 @@ class GarajeProvider with ChangeNotifier {
       final docId = garaje.idPlaza.toString();
       
       debugPrint('📝 Guardando garaje con docId: $docId');
+      debugPrint('🔍 DEBUG - Datos a guardar: ${data.keys.join(', ')}');
+      debugPrint('🔍 DEBUG - imagenes en datos: ${data['imagenes']}');
       
       await _firestore.collection('garaje').doc(docId).set(data);
+      
+      debugPrint('✅ Garaje guardado en Firestore - Verificando...');
 
       await ActivityService.recordEvent(History(
         fecha: DateTime.now(),
