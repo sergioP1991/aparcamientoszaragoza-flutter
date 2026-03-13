@@ -6,7 +6,7 @@ import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Services/StripeService.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/providers/RentProvider.dart';
-import 'package:aparcamientoszaragoza/widgets/plaza_image_loader.dart';
+import 'package:aparcamientoszaragoza/widgets/firebase_storage_image.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -138,18 +138,21 @@ class _RentPageState extends ConsumerState<RentPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Imagen grande y clara (usando imágenes reales subidas o fallback)
-          PlazaImageLoader(
-            imageUrl: plaza.imagenes.isNotEmpty ? plaza.imagenes.first : PlazaImageService.getLargeUrl(plaza.idPlaza ?? 0),
-            height: 220,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            showWarningOnError: true,
-          ),
-          
-          // Información de la plaza
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+          if (plaza.imagenes.isNotEmpty)
+            FirebaseStorageImage(
+              plazaId: plaza.idPlaza.toString(),
+              index: 0,
+              height: 220,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            )
+          else
+            Image.network(
+              PlazaImageService.getLargeUrl(plaza.idPlaza ?? 0),
+              height: 220,
+              width: double.infinity,
+              fit: BoxFit.cover,
+
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Etiqueta verificada

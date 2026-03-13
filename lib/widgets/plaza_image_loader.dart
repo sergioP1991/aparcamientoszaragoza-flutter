@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aparcamientoszaragoza/Services/ImageProxyService.dart';
 
 /// Widget para cargar imágenes de plazas con manejo robusto de errores
 /// Muestra imagen fallback + icono de warning si hay error de descarga
@@ -29,7 +30,9 @@ class _PlazaImageLoaderState extends State<PlazaImageLoader> {
   @override
   void initState() {
     super.initState();
-    _imageProvider = NetworkImage(widget.imageUrl);
+    // 🔧 Usar proxy en web para evitar problemas de CORS con Firebase Storage
+    final imageUrl = ImageProxyService.getProxyUrl(widget.imageUrl);
+    _imageProvider = NetworkImage(imageUrl);
     _imageProvider.resolve(ImageConfiguration.empty).addListener(
       ImageStreamListener(
         (image, synchronousCall) {},

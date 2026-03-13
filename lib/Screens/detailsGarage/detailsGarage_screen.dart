@@ -7,7 +7,7 @@ import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaDescriptionService.dart';
-import 'package:aparcamientoszaragoza/widgets/plaza_image_loader.dart';
+import 'package:aparcamientoszaragoza/widgets/firebase_storage_image.dart';
 import 'package:aparcamientoszaragoza/Screens/timeline/timeline_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
 import 'package:aparcamientoszaragoza/Screens/listComments/listComments_screen.dart';
@@ -187,14 +187,40 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
               
               return Stack(
                 children: [
-                  // Imagen con manejo robusto de errores
-                  PlazaImageLoader(
-                    imageUrl: imageUrl,
-                    height: 350,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    showWarningOnError: true,
-                  ),
+                  // Si hay imágenes subidas en Firebase, descargar como bytes
+                  // Si no, usar fallback de PlazaImageService
+                  if (plaza.imagenes.isNotEmpty)
+                    FirebaseStorageImage(
+                      plazaId: plaza.idPlaza.toString(),
+                      index: index,
+                      height: 350,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      showWarningOnError: true,
+                    )
+                  else
+                    // Fallback: imagen de PlazaImageService (demo/genérica)
+                    Image.network(
+                      imageUrl,
+                      height: 350,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.image_not_supported),
+                        );
+                      },
+                    ),
                   // Gradiente overlay
                   Container(
                     decoration: BoxDecoration(

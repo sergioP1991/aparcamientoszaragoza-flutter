@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aparcamientoszaragoza/Services/ImageProxyService.dart';
 
 /// Widget que carga imágenes de red con mejor manejo de errores
 /// Muestra imagen fallback + icono de warning si hay error de descarga
@@ -44,6 +45,9 @@ class _NetworkImageLoaderState extends State<NetworkImageLoader> {
       return _buildFallback();
     }
 
+    // 🔧 Usar proxy en web para evitar problemas de CORS
+    final imageUrl = ImageProxyService.getProxyUrl(widget.imageUrl);
+
     // Cargar desde red
     return Stack(
       children: [
@@ -54,7 +58,7 @@ class _NetworkImageLoaderState extends State<NetworkImageLoader> {
           child: _hasError
               ? _buildFallback()
               : Image.network(
-                  widget.imageUrl,
+                  imageUrl,
                   width: widget.width,
                   height: widget.height,
                   fit: widget.fit,
@@ -62,7 +66,7 @@ class _NetworkImageLoaderState extends State<NetworkImageLoader> {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted) setState(() => _hasError = true);
                     });
-                    debugPrint('❌ Error cargando imagen: ${widget.imageUrl}');
+                    debugPrint('❌ Error cargando imagen: $imageUrl');
                     debugPrint('📋 Error details: $error');
                     return _buildFallback();
                   },
