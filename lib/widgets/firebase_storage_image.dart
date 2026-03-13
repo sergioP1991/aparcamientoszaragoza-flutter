@@ -1,11 +1,16 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:aparcamientoszaragoza/Services/FirebaseImageService.dart';
+import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 
 /// Widget para mostrar imágenes de Firebase Storage SIN problemas de CORS
 /// 
 /// Descarga imágenes como bytes en lugar de usar Image.network()
 /// Esto evita CORS completamente.
+/// 
+/// Si falla la descarga de Firebase (timeout, sin auth, archivo no existe, etc.),
+/// automáticamente muestra la imagen de aparcamientos por defecto (como en la lista de plazas)
+/// e incluye un icono de alerta rojo si está habilitado.
 /// 
 /// Uso:
 /// ```dart
@@ -14,6 +19,7 @@ import 'package:aparcamientoszaragoza/Services/FirebaseImageService.dart';
 ///   index: 0,
 ///   height: 200,
 ///   width: 200,
+///   showWarningOnError: true, // Muestra icono de alerta rojo en esquina
 /// )
 /// ```
 class FirebaseStorageImage extends StatefulWidget {
@@ -48,8 +54,31 @@ class FirebaseStorageImage extends StatefulWidget {
 
 class _FirebaseStorageImageState extends State<FirebaseStorageImage>
     with SingleTickerProviderStateMixin {
-  late Future<void> _loadImage;
   late AnimationController _fadeAnimation;
+  late Future<Uint8List?> _imageFuture;
+
+  /// Intenta cargar de Firebase, si falla cae a PlazaImageService fallback
+  Future<Uint8List?> _loadImageWithFallback() async {
+    try {
+      // Intenta cargar de Firebase
+      final bytes = await FirebaseImageService.getImageBytes(
+        widget.plazaId,
+        widget.index,
+      );
+      
+      if (bytes != null) {
+        debugPrint('✅ [FirebaseStorageImage] Firebase cargó imagen exitosamente');
+        return bytes;
+      }
+      
+      // Si Firebase retorna null, retorna null para que el builder sepa usar fallback
+      debugPrint('⚠️ [FirebaseStorageImage] Firebase retornó null, usando fallback visual');
+      return null;
+    } catch (e) {
+      debugPrint('❌ [FirebaseStorageImage] Error con Firebase: $e, usando fallback visual');
+      return null;
+    }
+  }
 
   @override
   void initState() {
@@ -58,41 +87,34 @@ class _FirebaseStorageImageState extends State<FirebaseStorageImage>
       duration: widget.fadeInDuration,
       vsync: this,
     );
-    _loadImage = _loadImageData();
-  }
-
-  Future<void> _loadImageData() async {
-    try {
-      final bytes = await FirebaseImageService.getImageBytes(
+    // Crear el future UNA SOLA VEZ en initState
+    debugPrint('===============================================');
+    debugPrint('✅ [FirebaseStorageImage] Widget iniciado');
+    debugPrint('   plazaId: ${widget.plazaId}');
+    debugPrint('   index: ${widget.index}');
+    debugPrint('   height: ${widget.height}, width: ${widget.width}');
+    debugPrint('===============================================');
+    
+    // Usar nueva función con fallback
+    _imageFuture = _loadImageWithFallback();
+    
+    // Precachear próxima
+    Future.delayed(Duration.zero, () {
+      FirebaseImageService.precacheImage(
         widget.plazaId,
-        widget.index,
+        widget.index + 1,
       );
-      
-      if (bytes != null && mounted) {
-        // Precachear proxima imagen mientras se muestra esta
-        _precacheNext();
-        _fadeAnimation.forward();
-      }
-    } catch (e) {
-      debugPrint('Error cargando imagen: $e');
-      rethrow;
-    }
-  }
-
-  void _precacheNext() {
-    FirebaseImageService.precacheImage(
-      widget.plazaId,
-      widget.index + 1,
-    );
+    });
   }
 
   @override
   void didUpdateWidget(FirebaseStorageImage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Si cambia el widget, reinicializar el future
     if (oldWidget.plazaId != widget.plazaId ||
         oldWidget.index != widget.index) {
       _fadeAnimation.reset();
-      _loadImage = _loadImageData();
+      _imageFuture = _loadImageWithFallback();
     }
   }
 
@@ -104,25 +126,58 @@ class _FirebaseStorageImageState extends State<FirebaseStorageImage>
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: _loadImage,
+    return FutureBuilder<Uint8List?>(
+      future: _imageFuture,
       builder: (context, snapshot) {
         // Cargando
         if (snapshot.connectionState == ConnectionState.waiting) {
+          debugPrint('⏳ FirebaseStorageImage: Esperando descarga');
           return _buildLoading();
         }
 
-        // Error
-        if (snapshot.hasError) {
+        // Completado pero sin datos (error)
+        if (!snapshot.hasData || snapshot.data == null) {
+          debugPrint('❌ FirebaseStorageImage: Sin datos o datos nulos. Error: ${snapshot.error}');
           return _buildError();
         }
 
-        // Éxito - Mostrar imagen
-        if (snapshot.connectionState == ConnectionState.done) {
-          return _buildImage();
+        // Error explícito
+        if (snapshot.hasError) {
+          debugPrint('❌ FirebaseStorageImage: Error en FutureBuilder: ${snapshot.error}');
+          return _buildError();
         }
 
-        return _buildLoading();
+        // ✅ ÉXITO - Mostrar imagen con bytes descargados
+        debugPrint('✅ FirebaseStorageImage: Imagen descargada (${snapshot.data!.length} bytes). Mostrando...');
+        
+        final image = Image.memory(
+          snapshot.data!,
+          fit: widget.fit,
+          height: widget.height,
+          width: widget.width,
+          errorBuilder: (context, error, stackTrace) {
+            debugPrint('❌ Error renderizando Image.memory: $error');
+            return _buildError();
+          },
+        );
+
+        final displayWidget = ClipRRect(
+          borderRadius: widget.borderRadius ?? BorderRadius.zero,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: image,
+          ),
+        );
+
+        // Trigger animación una sola vez cuando se alcanza este punto
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_fadeAnimation.status == AnimationStatus.dismissed) {
+            debugPrint('🎬 Iniciando animación de fade-in');
+            _fadeAnimation.forward();
+          }
+        });
+
+        return displayWidget;
       },
     );
   }
@@ -150,16 +205,33 @@ class _FirebaseStorageImageState extends State<FirebaseStorageImage>
       return widget.errorWidget!;
     }
 
-    final child = Container(
-      height: widget.height,
-      width: widget.width,
-      decoration: BoxDecoration(
-        color: Colors.grey[300],
-        borderRadius: widget.borderRadius,
-      ),
-      child: const Icon(
-        Icons.image_not_supported,
-        color: Colors.grey,
+    // Obtener plazaId como int para acceder a la imagen de fallback
+    int plazaId = int.tryParse(widget.plazaId) ?? 0;
+    String fallbackAsset = PlazaImageService.getFallbackAsset(plazaId);
+
+    // Cargar imagen de fallback (como en la lista de plazas)
+    final child = ClipRRect(
+      borderRadius: widget.borderRadius ?? BorderRadius.zero,
+      child: Image.asset(
+        fallbackAsset,
+        height: widget.height,
+        width: widget.width,
+        fit: widget.fit,
+        errorBuilder: (context, error, stackTrace) {
+          // Si ni siquiera el fallback local funciona, mostrar icono gris
+          return Container(
+            height: widget.height,
+            width: widget.width,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: widget.borderRadius,
+            ),
+            child: const Icon(
+              Icons.image_not_supported,
+              color: Colors.grey,
+            ),
+          );
+        },
       ),
     );
 
@@ -195,52 +267,5 @@ class _FirebaseStorageImageState extends State<FirebaseStorageImage>
     }
 
     return child;
-  }
-
-  Widget _buildImage() {
-    return FutureBuilder<void>(
-      future: _loadImage,
-      builder: (context, snapshot) {
-        // Mientras carga, mostrar placeholder
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoading();
-        }
-
-        // Si error, mostrar error widget
-        if (snapshot.hasError) {
-          return _buildError();
-        }
-
-        // Mostrar imagen descargada
-        return FutureBuilder<Uint8List?>(
-          future: FirebaseImageService.getImageBytes(
-            widget.plazaId,
-            widget.index,
-          ),
-          builder: (context, imageSnapshot) {
-            if (imageSnapshot.hasData && imageSnapshot.data != null) {
-              final image = Image.memory(
-                imageSnapshot.data!,
-                fit: widget.fit,
-                height: widget.height,
-                width: widget.width,
-              );
-
-              final widget = ClipRRect(
-                borderRadius: this.widget.borderRadius ?? BorderRadius.zero,
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: image,
-                ),
-              );
-
-              return widget;
-            }
-
-            return _buildError();
-          },
-        );
-      },
-    );
   }
 }

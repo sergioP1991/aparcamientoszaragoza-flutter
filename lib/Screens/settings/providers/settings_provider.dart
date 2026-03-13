@@ -49,6 +49,11 @@ class SettingsState extends StateNotifier<UserSettings> {
     await _saveSettings();
   }
 
+  Future<void> updateAvailablePaymentMethods(List<String> methods) async {
+    state = state.copyWith(availablePaymentMethods: methods);
+    await _saveSettings();
+  }
+
   Future<void> _saveSettings() async {
     final user = _auth.currentUser;
     if (user != null) {

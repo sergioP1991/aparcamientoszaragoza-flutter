@@ -16,6 +16,7 @@ import 'package:aparcamientoszaragoza/Screens/favorites/favorites_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/my_garages/my_garages_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/settings_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/help_support_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/payment_methods_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/contact_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/compose_email_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
@@ -131,6 +132,7 @@ class MyApp extends ConsumerWidget {
           FavoritesScreen.routeName: (context) => const FavoritesScreen(),
           MyGaragesScreen.routeName: (context) => const MyGaragesScreen(),
           SettingsScreen.routeName: (context) => const SettingsScreen(),
+          PaymentMethodsScreen.routeName: (context) => const PaymentMethodsScreen(),
           HelpSupportScreen.routeName: (context) => const HelpSupportScreen(),
           ContactScreen.routeName: (context) => const ContactScreen(),
           ComposeEmailScreen.routeName: (context) => ComposeEmailScreen(),

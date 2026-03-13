@@ -5,12 +5,19 @@ class UserSettings {
   final bool reservationAlerts;
   final bool offersPromotions;
   final String theme;
+  final List<String> availablePaymentMethods;
 
   UserSettings({
     this.language = 'es',
     this.reservationAlerts = true,
     this.offersPromotions = false,
     this.theme = 'dark',
+    this.availablePaymentMethods = const [
+      'card',
+      'apple_pay',
+      'google_pay',
+      'paypal',
+    ],
   });
 
   Map<String, dynamic> toMap() {
@@ -19,6 +26,7 @@ class UserSettings {
       'reservationAlerts': reservationAlerts,
       'offersPromotions': offersPromotions,
       'theme': theme,
+      'availablePaymentMethods': availablePaymentMethods,
     };
   }
 
@@ -28,6 +36,9 @@ class UserSettings {
       reservationAlerts: map['reservationAlerts'] ?? true,
       offersPromotions: map['offersPromotions'] ?? false,
       theme: map['theme'] ?? 'dark',
+      availablePaymentMethods: List<String>.from(
+        map['availablePaymentMethods'] ?? ['card', 'apple_pay', 'google_pay', 'paypal'],
+      ),
     );
   }
 
@@ -36,12 +47,14 @@ class UserSettings {
     bool? reservationAlerts,
     bool? offersPromotions,
     String? theme,
+    List<String>? availablePaymentMethods,
   }) {
     return UserSettings(
       language: language ?? this.language,
       reservationAlerts: reservationAlerts ?? this.reservationAlerts,
       offersPromotions: offersPromotions ?? this.offersPromotions,
       theme: theme ?? this.theme,
+      availablePaymentMethods: availablePaymentMethods ?? this.availablePaymentMethods,
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:aparcamientoszaragoza/Screens/forgetPassword/ForgetPassword_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/help_support_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/payment_methods_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/active_rentals/active_rentals_screen.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
@@ -99,7 +100,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Navigator.pushNamed(context, ForgetPasswordScreen.routeName);
               }),
               const Divider(color: Colors.white10),
-              _buildSettingsItem(Icons.credit_card, l10n.paymentMethods, ""),
+              _buildSettingsItem(Icons.credit_card, l10n.paymentMethods, "", onTap: () {
+                Navigator.pushNamed(context, PaymentMethodsScreen.routeName);
+              }),
             ]),
           ],
         ),

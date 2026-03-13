@@ -6,6 +6,7 @@ import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Services/StripeService.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/providers/RentProvider.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
 import 'package:aparcamientoszaragoza/widgets/firebase_storage_image.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -152,7 +153,10 @@ class _RentPageState extends ConsumerState<RentPage> {
               height: 220,
               width: double.infinity,
               fit: BoxFit.cover,
-
+            ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Etiqueta verificada
@@ -320,7 +324,11 @@ class _RentPageState extends ConsumerState<RentPage> {
   }
 
   Widget _buildPaymentMethod(AppLocalizations l10n) {
-    final methods = [
+    // Get user settings to filter available payment methods
+    final settings = ref.watch(settingsProvider);
+    
+    // All available payment method options
+    final allMethods = [
       _PaymentOption(
         id: 'google_pay',
         label: 'Google Pay',
@@ -350,6 +358,20 @@ class _RentPageState extends ConsumerState<RentPage> {
         subtitle: 'Visa, Mastercard, Amex…',
       ),
     ];
+
+    // Filter methods based on user's enabled payment methods
+    final methods = allMethods
+        .where((method) => settings.availablePaymentMethods.contains(method.id))
+        .toList();
+
+    // Ensure selected payment method is still available; otherwise select the first available
+    if (!methods.any((m) => m.id == _selectedPaymentMethod)) {
+      if (methods.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() => _selectedPaymentMethod = methods.first.id);
+        });
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

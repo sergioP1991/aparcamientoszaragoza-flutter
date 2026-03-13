@@ -5,6 +5,7 @@ import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Services/PlazaImageService.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Services/StripeService.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
 import 'package:aparcamientoszaragoza/widgets/plaza_image_loader.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
@@ -429,7 +430,11 @@ class _RentByHoursScreenState extends ConsumerState<RentByHoursScreen> {
 
   // ─── Widget: selector de método de pago ────────────────────────────────────
   Widget _buildPaymentMethodSelector() {
-    final methods = [
+    // Get user settings to filter available payment methods
+    final settings = ref.watch(settingsProvider);
+    
+    // All available payment method options
+    final allMethods = [
       _PaymentOption(
         id: 'google_pay',
         label: 'Google Pay',
@@ -459,6 +464,20 @@ class _RentByHoursScreenState extends ConsumerState<RentByHoursScreen> {
         subtitle: 'Visa, Mastercard, Amex…',
       ),
     ];
+
+    // Filter methods based on user's enabled payment methods
+    final methods = allMethods
+        .where((method) => settings.availablePaymentMethods.contains(method.id))
+        .toList();
+
+    // Ensure selected payment method is still available; otherwise select the first available
+    if (!methods.any((m) => m.id == _selectedPaymentMethod)) {
+      if (methods.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() => _selectedPaymentMethod = methods.first.id);
+        });
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
