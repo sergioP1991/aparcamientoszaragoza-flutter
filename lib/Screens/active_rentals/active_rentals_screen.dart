@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
+import 'package:aparcamientoszaragoza/Models/garaje.dart';
 import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Screens/home/providers/HomeProviders.dart';
+import 'package:aparcamientoszaragoza/Screens/payment/payment_screen.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'dart:async';
@@ -60,12 +62,12 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
       ),
       body: homeDataAsync.when(
         data: (homeData) {
-          // Crear un map de plazaId -> dirección para acceso rápido
-          final plazaMap = <int, String>{};
+          // Crear un map de plazaId -> Garaje para acceso rápido
+          final plazaMap = <int, Garaje>{};
           if (homeData != null && homeData.listGarajes.isNotEmpty) {
             for (var garajeItem in homeData.listGarajes) {
               if (garajeItem.idPlaza != null) {
-                plazaMap[garajeItem.idPlaza!] = garajeItem.direccion;
+                plazaMap[garajeItem.idPlaza!] = garajeItem;
               }
             }
           }
@@ -114,8 +116,9 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
                 itemCount: rentals.length,
                 itemBuilder: (context, index) {
                   final rental = rentals[index];
-                  final plazaAddress = plazaMap[rental.idPlaza] ?? 'Plaza #${rental.idPlaza}';
-                  return _buildRentalCard(context, rental, l10n, plazaAddress);
+                  final plaza = plazaMap[rental.idPlaza];
+                  final plazaAddress = plaza?.direccion ?? 'Plaza #${rental.idPlaza}';
+                  return _buildRentalCard(context, rental, l10n, plazaAddress, plaza);
                 },
               );
             },
@@ -137,6 +140,7 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
     AlquilerPorHoras rental,
     AppLocalizations l10n,
     String plazaAddress,
+    Garaje? plaza,
   ) {
     final isExpired = rental.estaVencido();
     final isInPenalty = rental.estaEnMargenMulta();
@@ -252,7 +256,13 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
             const SizedBox(height: 16),
 
             // Botones de acción
-            _buildActionButtons(context, rental, l10n, rental.documentId ?? ''),
+            _buildActionButtons(
+              context,
+              rental,
+              l10n,
+              rental.documentId ?? '',
+              plaza: plaza,
+            ),
           ],
         ),
       ),
@@ -434,6 +444,7 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
     AlquilerPorHoras rental,
     AppLocalizations l10n,
     String documentId,
+    {Garaje? plaza}
   ) {
     final isExpired = rental.estaVencido();
 
@@ -448,9 +459,33 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Ir a pagos...')),
-                );
+                if (plaza != null) {
+                  // Calcular la duración en días (basada en el tiempo usado)
+                  final tiempoUsadoMinutos = rental.calcularTiempoUsado();
+                  final rentalDays = (tiempoUsadoMinutos / 1440).ceil(); // 1440 minutos = 1 día
+                  
+                  // Obtener el precio total (incluye multa si aplica)
+                  final totalAmount = rental.calcularPrecioFinal();
+                  
+                  // Navegar a PaymentPage
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PaymentPage(
+                        plaza: plaza,
+                        rentalDays: rentalDays,
+                        totalAmount: totalAmount,
+                      ),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Error: No se pudo obtener información de la plaza'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
               child: const Text('Proceder al Pago'),
             ),
