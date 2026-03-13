@@ -8,6 +8,7 @@ import 'package:aparcamientoszaragoza/Services/RentalByHoursService.dart';
 import 'package:aparcamientoszaragoza/Screens/rent/providers/RentProvider.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
 import 'package:aparcamientoszaragoza/widgets/firebase_storage_image.dart';
+import 'package:aparcamientoszaragoza/Common_widgets/payment_method_selector.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -31,7 +32,7 @@ class RentPage extends ConsumerStatefulWidget {
 class _RentPageState extends ConsumerState<RentPage> {
   List<DateTime?> _selectedDates = [DateTime.now()];
   bool _isProcessingPayment = false;
-  String _selectedPaymentMethod = 'card'; // Track selected payment method
+  StripePaymentMethod _selectedPaymentMethod = StripePaymentMethod.card;
   
   // Pricing Constants
   static const double managementFee = 0.45;
@@ -98,8 +99,14 @@ class _RentPageState extends ConsumerState<RentPage> {
             _buildTotalRow(total, AppLocalizations.of(context)!),
             const SizedBox(height: 30),
             
-            _buildSectionTitle(AppLocalizations.of(context)!.paymentMethodTitle),
-            _buildPaymentMethod(AppLocalizations.of(context)!),
+            const SizedBox(height: 10),
+            PaymentMethodSelector(
+              initialMethod: _selectedPaymentMethod,
+              onMethodChanged: (method) {
+                setState(() => _selectedPaymentMethod = method);
+              },
+              isEnabled: !_isProcessingPayment,
+            ),
             const SizedBox(height: 30),
             
             _buildLegalText(AppLocalizations.of(context)!),
@@ -323,131 +330,10 @@ class _RentPageState extends ConsumerState<RentPage> {
     );
   }
 
-  Widget _buildPaymentMethod(AppLocalizations l10n) {
-    // Get user settings to filter available payment methods
-    final settings = ref.watch(settingsProvider);
-    
-    // All available payment method options
-    final allMethods = [
-      _PaymentOption(
-        id: 'google_pay',
-        label: 'Google Pay',
-        icon: Icons.g_mobiledata_rounded,
-        color: const Color(0xFF4285F4),
-        subtitle: 'Paga con tu cuenta de Google',
-      ),
-      _PaymentOption(
-        id: 'apple_pay',
-        label: 'Apple Pay',
-        icon: Icons.apple,
-        color: Colors.white,
-        subtitle: kIsWeb ? 'Disponible en Safari (iOS/macOS)' : 'Solo en dispositivos Apple',
-      ),
-      _PaymentOption(
-        id: 'paypal',
-        label: 'PayPal',
-        icon: Icons.account_balance_wallet_rounded,
-        color: const Color(0xFF003087),
-        subtitle: 'Paga con tu cuenta PayPal',
-      ),
-      _PaymentOption(
-        id: 'card',
-        label: 'Tarjeta',
-        icon: Icons.credit_card_rounded,
-        color: Colors.orangeAccent,
-        subtitle: 'Visa, Mastercard, Amex…',
-      ),
-    ];
-
-    // Filter methods based on user's enabled payment methods
-    final methods = allMethods
-        .where((method) => settings.availablePaymentMethods.contains(method.id))
-        .toList();
-
-    // Ensure selected payment method is still available; otherwise select the first available
-    if (!methods.any((m) => m.id == _selectedPaymentMethod)) {
-      if (methods.isNotEmpty) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          setState(() => _selectedPaymentMethod = methods.first.id);
-        });
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '💳 ${l10n.paymentMethodTitle}',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...methods.map((option) {
-          final isSelected = _selectedPaymentMethod == option.id;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedPaymentMethod = option.id),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.blue.withOpacity(0.15)
-                    : AppColors.darkCardBackground,
-                border: Border.all(
-                  color: isSelected ? Colors.blue : Colors.grey[700]!,
-                  width: isSelected ? 2 : 1,
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: option.color.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(option.icon, color: option.color, size: 26),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          option.label,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          option.subtitle,
-                          style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    isSelected
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_unchecked,
-                    color: isSelected ? Colors.blue : Colors.grey,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ],
-    );
-  }
+  // ─── Selector de método de pago ───────────────────────────────────────
+  // DEPRECATED: Este método fue reemplazado por PaymentMethodSelector widget
+  // que está implementado en Common_widgets/payment_method_selector.dart
+  // y usada directamente en el build() method (línea 103+)
 
 
 
@@ -657,7 +543,7 @@ class _RentPageState extends ConsumerState<RentPage> {
 
     // En web: mostrar formulario de tarjeta SOLO si el usuario seleccionó tarjeta
     Map<String, String>? cardData;
-    if (kIsWeb && _selectedPaymentMethod == 'card') {
+    if (kIsWeb && _selectedPaymentMethod == StripePaymentMethod.card) {
       cardData = await _showCardInputDialog();
       if (cardData == null) return; // Usuario canceló
     }
@@ -733,7 +619,7 @@ class _RentPageState extends ConsumerState<RentPage> {
             debugPrint('🌐 PLATAFORMA WEB - Procesando con método: $_selectedPaymentMethod');
             
             switch (_selectedPaymentMethod) {
-              case 'google_pay':
+              case StripePaymentMethod.googlePay:
                 debugPrint('▶ Llamando processGooglePayment()...');
                 result = await StripeService.processGooglePayment(
                   clientSecret: clientSecret,
@@ -742,7 +628,7 @@ class _RentPageState extends ConsumerState<RentPage> {
                   label: 'Alquiler Plaza: ${plaza.direccion}',
                 );
                 break;
-              case 'apple_pay':
+              case StripePaymentMethod.applePay:
                 debugPrint('▶ Llamando processApplePayment()...');
                 result = await StripeService.processApplePayment(
                   clientSecret: clientSecret,
@@ -791,7 +677,7 @@ class _RentPageState extends ConsumerState<RentPage> {
             // En móvil: usar SDKs nativos según método seleccionado
             debugPrint('💳 Método móvil: $_selectedPaymentMethod');
             switch (_selectedPaymentMethod) {
-              case 'apple_pay':
+              case StripePaymentMethod.applePay:
                 result = await StripeService.processApplePayment(
                   clientSecret: clientSecret,
                   amount: total,
@@ -799,7 +685,7 @@ class _RentPageState extends ConsumerState<RentPage> {
                   label: 'Alquiler Plaza: ${plaza.direccion}',
                 );
                 break;
-              case 'google_pay':
+              case StripePaymentMethod.googlePay:
                 result = await StripeService.processGooglePayment(
                   clientSecret: clientSecret,
                   amount: total,
@@ -1090,18 +976,6 @@ class _RentPageState extends ConsumerState<RentPage> {
   }
 }
 
-class _PaymentOption {
-  final String id;
-  final String label;
-  final IconData icon;
-  final Color color;
-  final String subtitle;
-
-  const _PaymentOption({
-    required this.id,
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.subtitle,
-  });
-}
+// ─── Modelo de opción de pago ─────────────────────────────────────────
+// DEPRECATED: Clase eliminada - reemplazada por StripePaymentMethod enum
+// en lib/Services/StripeService.dart que es más type-safe

@@ -1,4 +1,6 @@
+import 'package:aparcamientoszaragoza/Common_widgets/payment_method_selector.dart';
 import 'package:aparcamientoszaragoza/Models/garaje.dart';
+import 'package:aparcamientoszaragoza/Services/PaymentStateService.dart';
 import 'package:aparcamientoszaragoza/Services/StripeService.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
@@ -24,7 +26,7 @@ class PaymentPage extends ConsumerStatefulWidget {
 }
 
 class _PaymentPageState extends ConsumerState<PaymentPage> {
-  StripePaymentMethod? _selectedPaymentMethod;
+  late StripePaymentMethod _selectedPaymentMethod;
   bool _isProcessing = false;
   String? _errorMessage;
   StripePaymentResult? _paymentResult;
@@ -38,11 +40,6 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   }
 
   Future<void> _processPayment() async {
-    if (_selectedPaymentMethod == null) {
-      setState(() => _errorMessage = 'Por favor selecciona un método de pago');
-      return;
-    }
-
     setState(() {
       _isProcessing = true;
       _errorMessage = null;
@@ -110,7 +107,8 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
       setState(() {
         _paymentResult = result;
         if (result.isSuccessful) {
-          _showPaymentSuccess();
+          // 🎯 IMPORTANTE: Actualizar estado después del pago exitoso
+          _updateStateAndShowSuccess();
         } else {
           _errorMessage = result.errorMessage ?? 'Error en el pago';
         }
@@ -120,6 +118,28 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
     } finally {
       setState(() => _isProcessing = false);
     }
+  }
+
+  /// Actualiza el estado después de un pago exitoso
+  Future<void> _updateStateAndShowSuccess() async {
+    final paymentIntentId = _paymentResult?.paymentIntentId ?? 'unknown';
+    
+    // Actualizar estado en Firestore
+    final success = await PaymentStateService.updateStateAfterPayment(
+      plaza: widget.plaza,
+      rentalDays: widget.rentalDays,
+      totalAmount: widget.totalAmount,
+      paymentIntentId: paymentIntentId,
+      rentalType: AlquilerType.porHoras,
+    );
+
+    if (!success) {
+      // Si fallase actualizar estado, mostrar advertencia pero permitir continuar
+      print('⚠️ Advertencia: Pago exitoso pero falló actualizar estado');
+    }
+
+    // Mostrar diálogo de éxito
+    _showPaymentSuccess();
   }
 
   void _showPaymentSuccess() {
@@ -142,15 +162,28 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             _buildInfoRow('Días:', widget.rentalDays.toString()),
             _buildInfoRow('Total:', '${widget.totalAmount.toStringAsFixed(2)}€'),
             _buildInfoRow('ID Pago:', _paymentResult?.paymentIntentId.substring(0, 8) ?? ''),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                '✓ Estado actualizado en tiempo real',
+                style: TextStyle(color: Colors.green, fontSize: 12),
+              ),
+            ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.pop(context); // Volver a detalles
+              // Refrescar y volver a home
+              Navigator.popUntil(context, (route) => route.isFirst);
             },
-            child: const Text('Aceptar', style: TextStyle(color: Colors.blue)),
+            child: const Text('Continuar', style: TextStyle(color: Colors.blue)),
           ),
         ],
       ),
@@ -237,9 +270,12 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
               ),
               const SizedBox(height: 16),
 
-              // Grid de métodos de pago
-              for (var method in availableMethods)
-                _buildPaymentMethodTile(method),
+              // Selector unificado de métodos de pago
+              PaymentMethodSelector(
+                initialMethod: _selectedPaymentMethod,
+                onMethodChanged: (method) => setState(() => _selectedPaymentMethod = method),
+                isEnabled: !_isProcessing,
+              ),
 
               const SizedBox(height: 30),
 
@@ -265,9 +301,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: (_isProcessing || _selectedPaymentMethod == null)
-                      ? null
-                      : _processPayment,
+                  onPressed: _isProcessing ? null : _processPayment,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     disabledBackgroundColor: Colors.grey.withOpacity(0.3),
@@ -322,84 +356,6 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
               const SizedBox(height: 20),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPaymentMethodTile(StripePaymentMethod method) {
-    final details = StripeService.getPaymentMethodDetails(method);
-    final isSelected = _selectedPaymentMethod == method;
-
-    return GestureDetector(
-      onTap: () => setState(() => _selectedPaymentMethod = method),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.blue.withOpacity(0.2)
-              : AppColors.cardBackground,
-          border: Border.all(
-            color: isSelected ? Colors.blue : Colors.white24,
-            width: isSelected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.blue.withOpacity(0.3) : Colors.white10,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                details['icon'] ?? '💳',
-                style: const TextStyle(fontSize: 20),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    method.displayName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    details['description'] ?? '',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  color: Colors.blue,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              ),
-          ],
         ),
       ),
     );

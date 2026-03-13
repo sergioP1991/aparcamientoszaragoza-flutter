@@ -8,6 +8,7 @@ import 'package:aparcamientoszaragoza/Screens/registerGarage/registerGarage.dart
 import 'package:aparcamientoszaragoza/Screens/userDetails/userDetails_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/active_rentals/active_rentals_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/admin/admin_rentals_screen.dart';
+import 'package:aparcamientoszaragoza/Services/SecurityService.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:aparcamientoszaragoza/Screens/ad/ad_screen.dart';
@@ -215,12 +216,15 @@ class HomePageState extends ConsumerState<HomePage> {
               const SizedBox(width: 12),
               GestureDetector(
                 onTap: () async {
+                  SecurityService.secureLog('🏠 [HOME SCREEN] Logout button tapped', level: 'DEBUG');
                   await ref.read(loginUserProvider.notifier).signOut();
+                  SecurityService.secureLog('🏠 [HOME SCREEN] signOut() completed, navigating to login...', level: 'DEBUG');
                   if (mounted) {
                     Navigator.of(context).pushNamedAndRemoveUntil(
                       '/login-page',
                       (route) => false,
                     );
+                    SecurityService.secureLog('🏠 [HOME SCREEN] Navigation to /login-page completed', level: 'DEBUG');
                   }
                 },
                 child: Container(

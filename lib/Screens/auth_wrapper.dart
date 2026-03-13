@@ -38,21 +38,29 @@ class _AuthWrapperState extends State<AuthWrapper> {
   /// No borramos SharedPreferences al cerrar app, solo en logout explícito
   Future<Widget> _checkAuthState() async {
     try {
+      SecurityService.secureLog('🔐 [AUTH WRAPPER] Starting auth state check...', level: 'DEBUG');
+      
       // 🔑 CRÍTICO para web: usar authStateChanges() para esperar a que Firebase restaure la sesión
       // En web, currentUser puede ser null inicialmente mientras se restaura desde localStorage
       // Usamos .first con timeout para dar tiempo a Firebase (pero no esperar infinito)
       User? authUser;
       
       try {
+        SecurityService.secureLog('⏳ [AUTH WRAPPER] Waiting 8s for Firebase to restore session...', level: 'DEBUG');
+        
         authUser = await FirebaseAuth.instance
             .authStateChanges()
             .first
             .timeout(
               const Duration(seconds: 8), // Aumentado a 8 segundos para web
-              onTimeout: () => FirebaseAuth.instance.currentUser,
+              onTimeout: () {
+                SecurityService.secureLog('⏱️ [AUTH WRAPPER] Firebase restore timeout reached', level: 'DEBUG');
+                return FirebaseAuth.instance.currentUser;
+              },
             );
       } catch (e) {
         // Si existe error en el stream, usar currentUser como fallback
+        SecurityService.secureLog('⚠️ [AUTH WRAPPER] Error waiting for authStateChanges: ${e.runtimeType}', level: 'ERROR');
         authUser = FirebaseAuth.instance.currentUser;
       }
       
@@ -60,17 +68,24 @@ class _AuthWrapperState extends State<AuthWrapper> {
         // ✅ CASO 1: Hay sesión activa en Firebase → ir al Home directamente
         // Esto es lo normal: app se cierra y reabre, Firebase restauró la sesión automáticamente
         SecurityService.secureLog(
-          '✅ Sesión restaurada: ${authUser.email}. Ir a Home.',
+          '✅ [AUTH WRAPPER] CASE 1: Active Firebase session found for ${authUser.email} → Showing Home',
           level: 'DEBUG'
         );
         return HomePage();
       }
+      
+      SecurityService.secureLog('ℹ️ [AUTH WRAPPER] No active Firebase session found, checking SharedPreferences...', level: 'DEBUG');
       
       // Si no hay sesión en Firebase, verificar si hay usuario recordado
       final prefs = await SharedPreferences.getInstance();
       final lastUserEmail = prefs.getString('lastUserEmail');
       final lastUserDisplayName = prefs.getString('lastUserDisplayName');
       final lastUserPhoto = prefs.getString('lastUserPhoto');
+      
+      SecurityService.secureLog(
+        '📝 [AUTH WRAPPER] SharedPreferences check: lastUserEmail=$lastUserEmail, displayName=$lastUserDisplayName, photo=$lastUserPhoto',
+        level: 'DEBUG'
+      );
       
       if (lastUserEmail != null && lastUserEmail.isNotEmpty) {
         // ✅ CASO 2: Hay usuario recordado → mostrar LoginPage
@@ -79,7 +94,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         // - Usuario login pero luego cerró sesión en Firebase
         // - Session token expiró (después de 7 días)
         SecurityService.secureLog(
-          '📝 Usuario recordado: $lastUserEmail. Ir a LoginPage.',
+          '✅ [AUTH WRAPPER] CASE 2: Remembered user found: $lastUserEmail → Showing LoginPage',
           level: 'DEBUG'
         );
         return LoginPage();
@@ -87,14 +102,14 @@ class _AuthWrapperState extends State<AuthWrapper> {
       
       // CASO 3: No hay sesión ni usuario recordado - mostrar Welcome
       SecurityService.secureLog(
-        '🌟 Primera vez o sin usuario recordado. Ir a WelcomeScreen.',
+        '🌟 [AUTH WRAPPER] CASE 3: No active session and no remembered user → Showing WelcomeScreen',
         level: 'DEBUG'
       );
       return WelcomeScreen();
     } catch (e) {
       // En caso de error, mostrar WelcomeScreen como fallback seguro
       SecurityService.secureLog(
-        '❌ Error verificando autenticación: $e',
+        '❌ [AUTH WRAPPER] Unexpected error during auth check: $e',
         level: 'ERROR'
       );
       return WelcomeScreen();

@@ -136,7 +136,7 @@ class Garaje {
         null,
         data['propietario'],
         data['rentIsNormal'],
-        data['precio'],
+        (data['precio'] as num?)?.toDouble() ?? 0.0,
         data['esCubierto'] ?? true,
         comments,
         imagenes: imagenesList,

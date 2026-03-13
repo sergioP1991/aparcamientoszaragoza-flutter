@@ -73,8 +73,10 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   void initState() {
+    SecurityService.secureLog('🚀 [LOGIN SCREEN] initState() called', level: 'DEBUG');
     initializeControllers();
     _loadRememberedUser();
+    SecurityService.secureLog('✅ [LOGIN SCREEN] initState() completed', level: 'DEBUG');
     super.initState();
   }
 
@@ -86,22 +88,74 @@ class LoginPageState extends ConsumerState<LoginPage> {
 
   Future<void> _loadRememberedUser() async {
     try {
+      SecurityService.secureLog('📝 [LOGIN SCREEN] Checking for remembered user...', level: 'DEBUG');
+      
       // ✅ Usar SharedPreferences para recordar usuario (funciona mejor en web)
       final prefs = await SharedPreferences.getInstance();
       final email = prefs.getString('lastUserEmail') ?? '';
       final name = prefs.getString('lastUserDisplayName') ?? '';
       final photo = prefs.getString('lastUserPhoto') ?? '';
-      if (email.isNotEmpty) {
-        setState(() {
-          _hasRemembered = true;
-          _rememberedEmail = email;
-          _rememberedDisplayName = name;
-          _rememberedPhoto = photo;
-          _useRememberedMode = true;
-        });
+      
+      SecurityService.secureLog(
+        '📋 [LOGIN SCREEN] SharedPreferences contains: email=$email, displayName=$name, photo=$photo',
+        level: 'DEBUG'
+      );
+      
+      if (email.isNotEmpty && email.contains('@')) {
+        SecurityService.secureLog(
+          '✅ [LOGIN SCREEN] Valid remembered user loaded: $email',
+          level: 'DEBUG'
+        );
+        
+        // ✅ IMPORTANTE: Usar mounted para verificar que el widget sigue activo antes de setState
+        if (mounted) {
+          setState(() {
+            _hasRemembered = true;
+            _rememberedEmail = email;
+            _rememberedDisplayName = name;
+            _rememberedPhoto = photo;
+            _useRememberedMode = true;
+            
+            // ✅ Pre-llenar el email en el campo de texto para que esté disponible si cambia de opinión
+            usernameController.text = email;
+          });
+          
+          SecurityService.secureLog(
+            '✅ [LOGIN SCREEN] Remembered user UI updated: email=$email, displayName=$name',
+            level: 'DEBUG'
+          );
+        } else {
+          SecurityService.secureLog(
+            '⚠️ [LOGIN SCREEN] Widget not mounted when trying to update remembered user',
+            level: 'WARNING'
+          );
+        }
+      } else {
+        SecurityService.secureLog(
+          '️❌ [LOGIN SCREEN] No valid remembered user found in SharedPreferences (empty or invalid email)',
+          level: 'DEBUG'
+        );
+        _clearRememberedUser();
       }
     } catch (e) {
-      SecurityService.secureLog('Error loading remembered user: ${e.runtimeType}', level: 'ERROR');
+      SecurityService.secureLog(
+        '⚠️ [LOGIN SCREEN] Error loading remembered user: ${e.runtimeType} - $e',
+        level: 'ERROR'
+      );
+      _clearRememberedUser();
+    }
+  }
+  
+  /// ✅ Método auxiliar para limpiar el usuario recordado
+  Future<void> _clearRememberedUser() async {
+    if (mounted) {
+      setState(() {
+        _hasRemembered = false;
+        _rememberedEmail = '';
+        _rememberedDisplayName = '';
+        _rememberedPhoto = '';
+        _useRememberedMode = false;
+      });
     }
   }
 
@@ -130,11 +184,17 @@ class LoginPageState extends ConsumerState<LoginPage> {
   Future<void> _submitLogin() async {
     if (todosAlquilados) return;
     final l10n = AppLocalizations.of(context)!;
-    // If a remembered user is used, username comes from remembered email
+    
+    // ✅ If a remembered user is used, username comes from remembered email
     final emailToUse = (_hasRemembered && _useRememberedMode) ? _rememberedEmail : usernameController.text.trim();
     final password = passwordController.text.trim();
     
-    // ✅ Validación de entrada
+    SecurityService.secureLog(
+      '🔐 [LOGIN] _submitLogin() called - Using ${_useRememberedMode ? 'REMEMBERED' : 'MANUAL'} user: ${emailToUse.substring(0, emailToUse.length ~/ 2)}***',
+      level: 'DEBUG'
+    );
+    
+    // ✅ Input validation
     if (emailToUse.isEmpty) {
       QuickAlert.show(
         context: context,
@@ -142,10 +202,11 @@ class LoginPageState extends ConsumerState<LoginPage> {
         title: l10n.errorTitle,
         text: l10n.emailRequired,
       );
+      SecurityService.secureLog('🚫 [LOGIN] Email validation failed: empty', level: 'DEBUG');
       return;
     }
     
-    // ✅ Validar formato de email
+    // ✅ Email format validation
     if (!SecurityService.isValidEmail(emailToUse)) {
       QuickAlert.show(
         context: context,
@@ -153,6 +214,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
         title: l10n.errorTitle,
         text: 'Por favor ingresa un email válido',
       );
+      SecurityService.secureLog('🚫 [LOGIN] Email validation failed: invalid format', level: 'DEBUG');
       return;
     }
     
@@ -163,6 +225,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
         title: l10n.errorTitle,
         text: l10n.passwordRequired,
       );
+      SecurityService.secureLog('🚫 [LOGIN] Password validation failed: empty', level: 'DEBUG');
       return;
     }
 
@@ -210,7 +273,9 @@ class LoginPageState extends ConsumerState<LoginPage> {
       }
     }
 
+    SecurityService.secureLog('✅ [LOGIN] Calling loginMailUser() for email: ${emailToUse.substring(0, emailToUse.length ~/ 2)}***', level: 'DEBUG');
     await ref.read(loginUserProvider.notifier).loginMailUser(emailToUse, password);
+    SecurityService.secureLog('✅ [LOGIN] loginMailUser() returned successfully', level: 'DEBUG');
   }
 
   var countRentParking = 0;
@@ -381,20 +446,30 @@ class LoginPageState extends ConsumerState<LoginPage> {
                                       height: 56,
                                       child: OutlinedButton(
                                         onPressed: () async {
+                                          SecurityService.secureLog('🔄 [LOGIN SCREEN] "No soy yo" button pressed, clearing remembered user', level: 'DEBUG');
+                                          
                                           // ✅ Limpiar ambos: SharedPreferences (recordar usuario) y SecurityService (datos sensibles)
-                                          final prefs = await SharedPreferences.getInstance();
-                                          await prefs.remove('lastUserEmail');
-                                          await prefs.remove('lastUserDisplayName');
-                                          await prefs.remove('lastUserPhoto');
-                                          await SecurityService.clearAllSecureData();
-                                          setState(() {
-                                            _hasRemembered = false;
-                                            _useRememberedMode = false;
-                                            _rememberedEmail = '';
-                                            _rememberedDisplayName = '';
-                                            _rememberedPhoto = '';
-                                            usernameController.clear();
-                                          });
+                                          try {
+                                            final prefs = await SharedPreferences.getInstance();
+                                            await prefs.remove('lastUserEmail');
+                                            await prefs.remove('lastUserDisplayName');
+                                            await prefs.remove('lastUserPhoto');
+                                            SecurityService.secureLog('✅ [LOGIN SCREEN] Cleared SharedPreferences', level: 'DEBUG');
+                                          } catch (e) {
+                                            SecurityService.secureLog('⚠️ [LOGIN SCREEN] Error clearing SharedPreferences: $e', level: 'ERROR');
+                                          }
+                                          
+                                          try {
+                                            await SecurityService.clearAllSecureData();
+                                            SecurityService.secureLog('✅ [LOGIN SCREEN] Cleared SecureStorage', level: 'DEBUG');
+                                          } catch (e) {
+                                            SecurityService.secureLog('⚠️ [LOGIN SCREEN] Error clearing SecureStorage: $e', level: 'ERROR');
+                                          }
+                                          
+                                          // ✅ Limpiar UI state usando el método auxiliar
+                                          await _clearRememberedUser();
+                                          
+                                          SecurityService.secureLog('✅ [LOGIN SCREEN] Remembered user cleared, showing login form', level: 'DEBUG');
                                         },
                                         style: OutlinedButton.styleFrom(
                                           side: BorderSide(color: Colors.white.withOpacity(0.12)),
