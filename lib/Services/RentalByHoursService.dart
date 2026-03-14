@@ -323,4 +323,82 @@ class RentalByHoursService {
       return null;
     }
   }
+
+  /// Crea una multa si el alquiler está vencido y pasó el margen
+  /// Se llama cuando el usuario intenta liberar un alquiler vencido
+  static Future<bool> createPenaltyIfExpired(String rentalId) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final rental = await _firestore.collection('alquileres').doc(rentalId).get();
+      if (!rental.exists) {
+        throw Exception('Alquiler no encontrado');
+      }
+
+      final alquiler = AlquilerPorHoras.fromFirestore(rental);
+      
+      // Verificar que es propietario
+      if (alquiler.idArrendatario != user.uid) {
+        throw Exception('No tienes permiso');
+      }
+
+      // Verificar si pasó el vencimiento + margen
+      final ahora = DateTime.now();
+      final fechaVencimiento = alquiler.fechaVencimiento;
+      final margenMinutos = 5;
+      final fechaMargenExcedido = fechaVencimiento.add(Duration(minutes: margenMinutos));
+
+      if (ahora.isAfter(fechaMargenExcedido)) {
+        print('⚠️ Alquiler vencido y pasó margen. Creando multa...');
+        
+        // Calcular penalty amount (€10 fijo)
+        const penaltyAmount = 10.0;
+        
+        // Crear documento de multa
+        await _firestore.collection('multas').add({
+          'idPlaza': alquiler.idPlaza,
+          'idArrendatario': user.uid,
+          'idAlquilerPorHoras': rentalId,
+          'monto': penaltyAmount,
+          'razon': 'exceso_margen',
+          'fechaCreacion': Timestamp.now(),
+          'fechaPago': null,
+          'estado': 'pendiente',
+          'paymentIntentId': null,
+        });
+
+        print('✅ Multa creada por €$penaltyAmount');
+        return true;
+      }
+
+      print('✅ Sin multa (dentro del margen)');
+      return false;
+    } catch (e) {
+      print('❌ Error al crear multa: $e');
+      rethrow;
+    }
+  }
+
+  /// Verifica si el usuario tiene multas pendientes
+  static Future<bool> userHasPendingPenalties() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      final query = await _firestore
+          .collection('multas')
+          .where('idArrendatario', isEqualTo: user.uid)
+          .where('estado', isEqualTo: 'pendiente')
+          .limit(1)
+          .get();
+
+      return query.docs.isNotEmpty;
+    } catch (e) {
+      print('Error al verificar multas: $e');
+      return false;
+    }
+  }
 }
