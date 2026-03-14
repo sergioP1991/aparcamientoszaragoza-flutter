@@ -413,7 +413,7 @@ class LoginPageState extends ConsumerState<LoginPage> {
                                 child: ClipOval(
                                   child: Builder(builder: (_) {
                                     if (_rememberedPhoto.isEmpty) {
-                                      return Image.asset('assets/default_icon.png', fit: BoxFit.cover);
+                                      return Image.asset('default_icon.png', fit: BoxFit.cover);
                                     }
 
                                     return NetworkImageLoader(

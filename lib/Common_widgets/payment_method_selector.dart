@@ -108,7 +108,9 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    methodInfo['label'] as String,
+                    methodInfo.containsKey('label')
+                        ? methodInfo['label'] as String
+                        : method.displayName,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.white,

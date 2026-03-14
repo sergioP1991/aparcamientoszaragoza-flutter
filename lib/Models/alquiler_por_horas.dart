@@ -74,7 +74,7 @@ class AlquilerPorHoras extends Alquiler {
   /// Calcula el precio final basado en el tiempo usado
   double calcularPrecioFinal() {
     int minutos = tiempoUsado ?? calcularTiempoUsado();
-    return minutos * precioMinuto;
+    return (minutos.toDouble() * precioMinuto).toDouble();
   }
 
   /// Verifica si el alquiler ha vencido
@@ -226,7 +226,7 @@ class AlquilerPorHoras extends Alquiler {
         : null,
       duracionContratada: map['duracionContratada'] ?? 0,
       tiempoUsado: map['tiempoUsado'],
-      precioMinuto: (map['precioMinuto'] ?? 0.0).toDouble(),
+      precioMinuto: ((map['precioMinuto'] ?? 0.0) as num).toDouble(),
       precioCalculado: map['precioCalculado'] != null ? (map['precioCalculado'] as num).toDouble() : null,
       estado: estado,
       notificacionVencimientoEnviada: map['notificacionVencimientoEnviada'] ?? false,

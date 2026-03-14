@@ -981,7 +981,7 @@ class _RegisterGarageState extends ConsumerState<RegisterGarage> {
             decoration: BoxDecoration(
               color: Colors.black26,
               image: DecorationImage(
-                image: AssetImage('assets/map_placeholder.png'), // Or real GoogleMap if implemented
+                image: AssetImage('map_placeholder.png'), // Or real GoogleMap if implemented
                 fit: BoxFit.cover,
                 opacity: 0.3,
               ),

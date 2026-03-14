@@ -123,7 +123,7 @@ class _PlazaImageLoaderState extends State<PlazaImageLoader> {
       decoration: BoxDecoration(
         color: Colors.grey[850],
         image: const DecorationImage(
-          image: AssetImage('assets/garaje1.jpeg'),
+          image: AssetImage('garaje1.jpeg'),
           fit: BoxFit.cover,
         ),
       ),

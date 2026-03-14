@@ -145,31 +145,66 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
   Future<void> _saveUserSecurely(User user, [String? email, String? password]) async {
     try {
       SecurityService.secureLog('💾 [LOGIN] Saving user data to SharedPreferences...', level: 'DEBUG');
+      SecurityService.secureLog('📋 [LOGIN] Starting with user: email=${user.email}, displayName=${user.displayName}, photoURL=${user.photoURL}', level: 'DEBUG');
       
       final prefs = await SharedPreferences.getInstance();
+      SecurityService.secureLog('✅ [LOGIN] SharedPreferences instance obtained', level: 'DEBUG');
       
-      // ✅ Guardar datos públicos en SharedPreferences (para usuario recordado)
+      // ✅ Guardar email
+      SecurityService.secureLog('💾 [LOGIN] Step 1: Saving email...', level: 'DEBUG');
       await prefs.setString('lastUserEmail', user.email ?? '');
+      SecurityService.secureLog('✅ [LOGIN] Email saved: "${user.email ?? ''}"', level: 'DEBUG');
+      
+      // ✅ Guardar displayName
+      SecurityService.secureLog('💾 [LOGIN] Step 2: Saving displayName...', level: 'DEBUG');
       await prefs.setString('lastUserDisplayName', user.displayName ?? '');
+      SecurityService.secureLog('✅ [LOGIN] DisplayName saved: "${user.displayName ?? ''}"', level: 'DEBUG');
+      
+      // ✅ Guardar photo
+      SecurityService.secureLog('💾 [LOGIN] Step 3: Saving photoURL...', level: 'DEBUG');
       await prefs.setString('lastUserPhoto', user.photoURL ?? '');
+      SecurityService.secureLog('✅ [LOGIN] Photo saved: "${user.photoURL ?? ''}"', level: 'DEBUG');
       
       SecurityService.secureLog(
-        '✅ [LOGIN] Saved to SharedPreferences: email=${user.email}, displayName=${user.displayName}, photo=${user.photoURL?.isEmpty ?? true ? 'empty' : 'loaded'}',
+        '✅ [LOGIN] All SharedPreferences keys saved successfully',
         level: 'DEBUG'
       );
       
-      // ✅ Verify the data was actually saved
+      // ✅ Verify the data was actually saved (CRITICAL FOR DEBUGGING)
+      SecurityService.secureLog('🔍 [LOGIN] Starting verification of saved data...', level: 'DEBUG');
       final savedEmail = prefs.getString('lastUserEmail') ?? '';
       final savedDisplayName = prefs.getString('lastUserDisplayName') ?? '';
       final savedPhoto = prefs.getString('lastUserPhoto') ?? '';
       
       SecurityService.secureLog(
-        '🔍 [LOGIN] Verification - Saved and read back: email=$savedEmail, displayName=$savedDisplayName, photo=${savedPhoto.isEmpty ? 'empty' : 'loaded'}',
+        '🔍 [LOGIN] Saved lastUserEmail: "$savedEmail" (length=${savedEmail.length})',
+        level: 'DEBUG'
+      );
+      SecurityService.secureLog(
+        '🔍 [LOGIN] Saved lastUserDisplayName: "$savedDisplayName" (length=${savedDisplayName.length})',
+        level: 'DEBUG'
+      );
+      SecurityService.secureLog(
+        '🔍 [LOGIN] Saved lastUserPhoto: "$savedPhoto" (length=${savedPhoto.length})',
+        level: 'DEBUG'
+      );
+      
+      // ✅ CRITICAL CHECK: Si algo está vacío cuando no debería, loguear error
+      if (user.email != null && user.email!.isNotEmpty && savedEmail.isEmpty) {
+        SecurityService.secureLog(
+          '❌ [LOGIN] CRITICAL: Email was not saved! Original: "${user.email}", Saved: "$savedEmail"',
+          level: 'ERROR'
+        );
+      }
+      
+      SecurityService.secureLog(
+        '🔍 [LOGIN] Verification complete - Saved and read back: email=$savedEmail, displayName=$savedDisplayName, photo=${savedPhoto.isEmpty ? 'empty' : 'loaded'}',
         level: 'DEBUG'
       );
       
       // ✅ Guardar credenciales encriptadas en SecureStorage para permitir auto-login
       if (email != null && password != null) {
+        SecurityService.secureLog('💾 [LOGIN] Saving encrypted credentials to SecureStorage...', level: 'DEBUG');
         await SecurityService.saveSecureData('cached_email', email);
         await SecurityService.saveSecureData('cached_password', password);
         SecurityService.secureLog('✅ [LOGIN] Saved encrypted credentials to SecureStorage', level: 'DEBUG');
@@ -177,14 +212,18 @@ class UserLoginState extends StateNotifier<AsyncValue<User?>> {
       
       // ✅ Generar session token para permitir auto-login en los próximos 7 días
       if (user.email != null) {
+        SecurityService.secureLog('💾 [LOGIN] Generating session token...', level: 'DEBUG');
         final reAuthService = ReAuthService();
         await reAuthService.generateSessionToken(user.email!);
         SecurityService.secureLog('✅ [LOGIN] Session token generated for ${user.email}', level: 'DEBUG');
       }
       
       SecurityService.secureLog('🎉 [LOGIN] All user data saved successfully', level: 'DEBUG');
-    } catch (e) {
-      SecurityService.secureLog('❌ [LOGIN] Error saving user data: ${e.runtimeType} - $e', level: 'ERROR');
+    } catch (e, stackTrace) {
+      SecurityService.secureLog(
+        '❌ [LOGIN] CRITICAL ERROR saving user data: ${e.runtimeType}\nMessage: $e\nStackTrace: $stackTrace',
+        level: 'ERROR'
+      );
     }
   }
 

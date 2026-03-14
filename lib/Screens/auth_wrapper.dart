@@ -1,29 +1,38 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:aparcamientoszaragoza/Screens/welcome_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/login/login_screen.dart';
 import 'package:aparcamientoszaragoza/Screens/home/home_screen.dart';
 import 'package:aparcamientoszaragoza/Services/SecurityService.dart';
 import 'package:aparcamientoszaragoza/Services/ReAuthService.dart';
+import 'package:aparcamientoszaragoza/Screens/login/providers/UserProviders.dart';
 
 /// Pantalla que decide qué mostrar basándose en el estado de autenticación de Firebase
 /// - Home: Si ya hay una sesión activa en Firebase Auth (usuario logueado)
 /// - Login: Si no hay sesión pero hay usuario recordado (para poder cambiar o continuar)
 /// - Welcome: Si no hay sesión ni usuario recordado
-class AuthWrapper extends StatefulWidget {
+class AuthWrapper extends ConsumerStatefulWidget {
   const AuthWrapper({super.key});
 
   @override
-  State<AuthWrapper> createState() => _AuthWrapperState();
+  ConsumerState<AuthWrapper> createState() => _AuthWrapperState();
 }
 
-class _AuthWrapperState extends State<AuthWrapper> {
+class _AuthWrapperState extends ConsumerState<AuthWrapper> {
   late Future<Widget> _authState;
 
   @override
   void initState() {
     super.initState();
+    _authState = _checkAuthState();
+  }
+
+  @override
+  void didUpdateWidget(AuthWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-check auth state if widget updated
     _authState = _checkAuthState();
   }
 
@@ -118,6 +127,39 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ CRÍTICO FIX: Watch para que AuthWrapper se reconstruya cuando logout ocurra
+    // El loginUserProvider cambio cuando logout ocurre (de AsyncData<User> a AsyncData<null>)
+    // Esto trigger una reconstrucción completa del AuthWrapper
+    ref.listen(loginUserProvider, (previous, next) {
+      SecurityService.secureLog(
+        '🔐 [AUTH WRAPPER] loginUserProvider changed: ${previous?.toString() ?? "null"} → ${next.toString()}',
+        level: 'DEBUG'
+      );
+      
+      // Cuando logout ocurre (next es AsyncData<null>), recalcular el estado de auth
+      if (next is AsyncData && next.value == null) {
+        SecurityService.secureLog(
+          '🔐 [AUTH WRAPPER] LOGOUT DETECTED! Recalculating auth state...',
+          level: 'DEBUG'
+        );
+        
+        // 🔑 IMPORTANTE: Agregar pequeño delay para que SharedPreferences se estabilice
+        // En Flutter Web, localStorage puede no estar sincronizado inmediatamente después del logout
+        // Este delay permite que los datos se escriban correctamente antes de releer
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) {
+            SecurityService.secureLog(
+              '⏳ [AUTH WRAPPER] Delay elapsed, now rechecking auth state...',
+              level: 'DEBUG'
+            );
+            setState(() {
+              _authState = _checkAuthState();
+            });
+          }
+        });
+      }
+    });
+
     return FutureBuilder<Widget>(
       future: _authState,
       builder: (context, snapshot) {

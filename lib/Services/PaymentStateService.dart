@@ -33,11 +33,15 @@ class PaymentStateService {
         final now = DateTime.now();
         final fechaVencimiento = now.add(Duration(days: rentalDays));
         
+        // Asegurar que los cálculos sean en double para evitar errores de tipo
+        final durationMinutes = (rentalDays * 24 * 60).toDouble(); // Convertir a double
+        final pricePerMinute = (totalAmount / durationMinutes).toDouble(); // Asegurar double
+        
         final alquiler = AlquilerPorHoras(
           fechaInicio: now,
           fechaVencimiento: fechaVencimiento,
-          duracionContratada: rentalDays * 24 * 60, // convertir a minutos
-          precioMinuto: totalAmount / (rentalDays * 24 * 60),
+          duracionContratada: (durationMinutes).toInt(), // Usar int para duración
+          precioMinuto: pricePerMinute, // Ya es double
           idPlaza: plazaId,
           idArrendatario: user.uid,
           estado: EstadoAlquilerPorHoras.activo,

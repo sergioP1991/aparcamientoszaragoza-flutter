@@ -461,11 +461,11 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
               onPressed: () {
                 if (plaza != null) {
                   // Calcular la duración en días (basada en el tiempo usado)
-                  final tiempoUsadoMinutos = rental.calcularTiempoUsado();
-                  final rentalDays = (tiempoUsadoMinutos / 1440).ceil(); // 1440 minutos = 1 día
+                  final tiempoUsadoMinutos = rental.calcularTiempoUsado().toDouble();
+                  final rentalDays = (tiempoUsadoMinutos / 1440.0).ceil(); // 1440 minutos = 1 día
                   
                   // Obtener el precio total (incluye multa si aplica)
-                  final totalAmount = rental.calcularPrecioFinal();
+                  final totalAmount = rental.calcularPrecioFinal().toDouble();
                   
                   // Navegar a PaymentPage
                   Navigator.push(

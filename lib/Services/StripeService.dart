@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show Icons, BoxShadow, Colors;
 import 'package:http/http.dart' as http;
 // Importación condicional: usa flutter_stripe en móvil, stub en web
 import 'package:flutter_stripe/flutter_stripe.dart' if (dart.library.html) 'stripe_stub.dart' as stripe;
@@ -821,61 +822,72 @@ class StripeService {
   }
 
   static Map<String, dynamic> getPaymentMethodDetails(StripePaymentMethod method) {
-    const details = {
+    final details = {
       'card': {
-        'icon': '💳',
+        'icon': Icons.credit_card,
+        'label': '💳 Tarjeta',
         'description': 'Tarjeta de crédito o débito',
         'supported': ['ES', 'US', 'GB', 'FR', 'DE'],
       },
       'apple_pay': {
-        'icon': '🍎',
+        'icon': Icons.payment,
+        'label': '🍎 Apple Pay',
         'description': 'Pago rápido con Apple Pay',
         'supported': ['ES', 'US', 'GB', 'FR', 'DE'],
       },
       'google_pay': {
-        'icon': '🔵',
+        'icon': Icons.payment,
+        'label': '🔵 Google Pay',
         'description': 'Pago rápido con Google Pay',
         'supported': ['ES', 'US', 'GB', 'FR', 'DE'],
       },
       'sepa_debit': {
-        'icon': '🏦',
+        'icon': Icons.account_balance,
+        'label': '🏦 SEPA',
         'description': 'Transferencia bancaria SEPA',
         'supported': ['ES', 'FR', 'DE', 'IT', 'PT'],
       },
       'ideal': {
-        'icon': '🇳🇱',
+        'icon': Icons.account_balance_wallet,
+        'label': '🇳🇱 iDEAL',
         'description': 'iDEAL (Países Bajos)',
         'supported': ['NL'],
       },
       'alipay': {
-        'icon': '🐜',
+        'icon': Icons.payment,
+        'label': '🐜 Alipay',
         'description': 'Alipay (China)',
         'supported': ['CN', 'ES', 'US'],
       },
       'wechat_pay': {
-        'icon': '💬',
+        'icon': Icons.mobile_screen_share,
+        'label': '💬 WeChat Pay',
         'description': 'WeChat Pay',
         'supported': ['CN'],
       },
       'klarna': {
-        'icon': '💰',
+        'icon': Icons.card_giftcard,
+        'label': '💰 Klarna',
         'description': 'Compra ahora, paga después',
         'supported': ['ES', 'US', 'GB', 'SE', 'NO', 'DK'],
       },
       'affirm': {
-        'icon': '✅',
+        'icon': Icons.verified,
+        'label': '✅ Affirm',
         'description': 'Affirm (USA)',
         'supported': ['US'],
       },
       'paypal': {
-        'icon': '🅿️',
+        'icon': Icons.payment,
+        'label': '🅿️ PayPal',
         'description': 'PayPal',
         'supported': ['ES', 'US', 'GB', 'FR', 'DE', 'IT'],
       },
     };
 
     return details[method.stripeId] ?? {
-      'icon': '💳',
+      'icon': Icons.credit_card,
+      'label': '💳 ${method.displayName}',
       'description': method.displayName,
       'supported': ['ES'],
     };

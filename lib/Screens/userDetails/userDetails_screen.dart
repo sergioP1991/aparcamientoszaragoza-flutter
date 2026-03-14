@@ -148,7 +148,7 @@ class _UserDetailScreenState extends ConsumerState<UserDetailScreen> {
                 backgroundColor: AppColors.cardBackground,
                 backgroundImage: (user?.photoURL != null && user!.photoURL!.isNotEmpty)
                     ? NetworkImage("https://api.allorigins.win/raw?url=${user.photoURL}")
-                    : const AssetImage('assets/default_icon.png') as ImageProvider,
+                    : const AssetImage('default_icon.png') as ImageProvider,
               ),
             ),
             Container(

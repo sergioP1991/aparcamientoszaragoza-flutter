@@ -144,7 +144,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
             // Método: Google Pay
             _buildPaymentMethodItem(
               method: 'google_pay',
-              icon: Icons.g_mobiledata,
+              icon: Icons.account_balance_wallet,
               title: 'Google Pay',
               description: 'Pago rápido con Google Pay',
               isSelected: _selectedMethods.contains('google_pay'),
@@ -156,7 +156,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
             // Método: PayPal
             _buildPaymentMethodItem(
               method: 'paypal',
-              icon: Icons.paypal,
+              icon: Icons.payment,
               title: 'PayPal',
               description: 'Pago seguro con PayPal',
               isSelected: _selectedMethods.contains('paypal'),
