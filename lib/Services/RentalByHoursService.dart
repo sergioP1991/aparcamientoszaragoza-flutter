@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:aparcamientoszaragoza/Models/alquiler_por_horas.dart';
 
 class RentalByHoursService {
@@ -36,11 +37,11 @@ class RentalByHoursService {
       );
 
       final data = alquiler.objectToMap();
-      print('💾 Guardando alquiler: $data');
+      debugPrint('💾 [RENTAL_SERVICE] Guardando alquiler: $data');
       
       final docRef = await _firestore.collection('alquileres').add(data);
-      print('✅ Alquiler creado con ID: ${docRef.id}');
-      print('📍 PlazaId: $plazaId, Tipo: 2, Estado: ${alquiler.estado}');
+      debugPrint('✅ [RENTAL_SERVICE] Alquiler creado con ID: ${docRef.id}');
+      debugPrint('📍 [RENTAL_SERVICE] PlazaId: $plazaId, Tipo: 2, Estado: ${alquiler.estado}');
       return docRef.id;
     } catch (e) {
       print('❌ Error al crear alquiler por horas: $e');
@@ -112,7 +113,7 @@ class RentalByHoursService {
         throw Exception('Usuario no autenticado');
       }
 
-      print('🔑 releaseRental: Intentando liberar alquiler $rentalId');
+      debugPrint('🔑 [RENTAL_SERVICE] releaseRental: Intentando liberar alquiler $rentalId');
       
       final rental = await _firestore.collection('alquileres').doc(rentalId).get();
       if (!rental.exists) {
@@ -121,7 +122,7 @@ class RentalByHoursService {
 
       final alquiler = AlquilerPorHoras.fromFirestore(rental);
       
-      print('📋 Alquiler encontrado: plaza=${alquiler.idPlaza}, arrendatario=${alquiler.idArrendatario}');
+      debugPrint('📋 [RENTAL_SERVICE] Alquiler encontrado: plaza=${alquiler.idPlaza}, arrendatario=${alquiler.idArrendatario}');
       
       // Verificar que el usuario es el propietario del alquiler
       if (alquiler.idArrendatario != user.uid) {
@@ -132,7 +133,7 @@ class RentalByHoursService {
       final tiempoUsado = alquiler.calcularTiempoUsado();
       final precioFinal = alquiler.calcularPrecioFinal();
 
-      print('💰 Tiempo usado: $tiempoUsado min, Precio final: €$precioFinal');
+      debugPrint('💰 [RENTAL_SERVICE] Tiempo usado: $tiempoUsado min, Precio final: €$precioFinal');
 
       // Actualizar documento con estado liberado
       await _firestore.collection('alquileres').doc(rentalId).update({
@@ -142,9 +143,9 @@ class RentalByHoursService {
         'fechaLiberacion': DateTime.now().toIso8601String(),
       });
 
-      print('✅ Alquiler liberado exitosamente. ID: $rentalId, Plaza: ${alquiler.idPlaza}');
+      debugPrint('✅ [RENTAL_SERVICE] Alquiler liberado exitosamente. ID: $rentalId, Plaza: ${alquiler.idPlaza}');
     } catch (e) {
-      print('❌ Error al liberar alquiler: $e');
+      debugPrint('❌ [RENTAL_SERVICE] Error al liberar alquiler: $e');
       rethrow;
     }
   }
@@ -280,21 +281,16 @@ class RentalByHoursService {
         .where('tipo', isEqualTo: 2)
         .snapshots()
         .map((snapshot) {
-          print('📊 Total documentos encontrados: ${snapshot.docs.length}');
+          debugPrint('📊 [WATCH_RENTALS] Total documentos encontrados: ${snapshot.docs.length}');
           
           final rentals = snapshot.docs
               .map((doc) {
                 try {
-                  print('📝 Procesando doc: ${doc.id}, datos: ${doc.data()}');
+                  debugPrint('📝 [WATCH_RENTALS] Procesando doc: ${doc.id}');
                   final rental = AlquilerPorHoras.fromFirestore(doc);
+                  debugPrint('   [WATCH_RENTALS] documentId capturado: ${rental.documentId}');
                   final estado = rental.estado.toString();
-                  print('   Estado: $estado, Liberado: ${estado.contains("liberado")}');
-                  
-                  // Solo incluir alquileres que no estén liberados
-                  if (!estado.contains('liberado')) {
-                    print('   ✅ Incluido en la lista');
-                    return rental;
-                  } else {
+                  debugPrint('   [WATCH_RENTALS] Estado: $estado, Liberado: ${estado.contains("liberado")}');
                     print('   ❌ Excluido (liberado)');
                   }
                 } catch (e) {

@@ -1097,66 +1097,83 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
         throw Exception('Error: No se encontró el ID del alquiler');
       }
 
-      // Mostrar loading
+      debugPrint('🔑 [DETAILS_GARAGE] _performReleaseRental: Iniciando liberación de alquiler ${rental.documentId}');
+
+      // Mostrar SnackBar de "liberando"
       if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: AppColors.darkestBlue,
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Liberando alquiler...', style: TextStyle(color: Colors.white)),
-              ],
-            ),
-          ),
-        );
-      }
-
-      // Liberar el alquiler usando el ID correcto del documento
-      debugPrint('🔑 Liberando alquiler con documentId: ${rental.documentId}');
-      await RentalByHoursService.releaseRental(rental.documentId!);
-
-      // ⏳ Esperar a que Firestore se actualice y el Stream emita el nuevo valor
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      if (mounted) {
-        Navigator.pop(context); // Cerrar loading
-        
-        // Mostrar éxito
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Alquiler liberado exitosamente'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            content: Text('⏳ Liberando plaza...'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 10),
           ),
         );
-        
-        // 🔄 Refrescar la lista de garages en home para actualizar estado de plaza
-        // Esto asegura que el Home muestre la plaza como disponible
-        ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
-        ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
-        
-        // 🔄 Forzar reconstrucción de la pantalla actual
-        // El StreamBuilder debería actualizarse automáticamente, pero esto asegura que se muestren cambios
+      }
+
+      debugPrint('🔑 [DETAILS_GARAGE] Llamando a RentalByHoursService.releaseRental()');
+      await RentalByHoursService.releaseRental(rental.documentId!);
+      debugPrint('✅ [DETAILS_GARAGE] RentalByHoursService.releaseRental() completado');
+
+      // ⏳ Esperar 1200ms a que Firestore se sincronice (tiempo crítico)
+      debugPrint('⏳ [DETAILS_GARAGE] Esperando 1200ms para sincronización de Firestore...');
+      await Future.delayed(const Duration(milliseconds: 1200));
+
+      if (!mounted) return;
+
+      debugPrint('🔄 [DETAILS_GARAGE] Refrescando providers...');
+      ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+      ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
+
+      // ⏳ Esperar 300ms a que los providers se procesen
+      debugPrint('⏳ [DETAILS_GARAGE] Esperando 300ms para procesamiento de providers...');
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (!mounted) return;
+
+      // Eliminar SnackBar anterior (liberando)
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      // Calcular información final para mostrar
+      final tiempoUsado = rental.calcularTiempoUsado();
+      final precioFinal = rental.calcularPrecioFinal();
+      debugPrint('💰 [DETAILS_GARAGE] Tiempo usado: $tiempoUsado min, Precio final: €$precioFinal');
+
+      // Mostrar SnackBar de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Alquiler liberado - Total: €${precioFinal.toStringAsFixed(2)}'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      debugPrint('⏳ [DETAILS_GARAGE] Esperando 500ms para visual...');
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Forzar reconstrucción de la pantalla actual para actualizar el banner
+      if (mounted) {
+        debugPrint('🔄 [DETAILS_GARAGE] Llamando setState() para actualizar UI');
         setState(() {});
       }
+
+      debugPrint('✅ [DETAILS_GARAGE] Liberación completada exitosamente');
     } catch (e) {
+      debugPrint('❌ [DETAILS_GARAGE] Error al liberar alquiler: $e');
+
       if (mounted) {
-        Navigator.pop(context); // Cerrar loading
-        
+        // Eliminar SnackBar anterior
+        ScaffoldMessenger.of(context).clearSnackBars();
+
+        // Mostrar error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Error: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 5),
           ),
         );
       }
-      debugPrint('❌ Error al liberar alquiler: $e');
     }
   }
 

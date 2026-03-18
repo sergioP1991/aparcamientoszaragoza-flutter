@@ -293,15 +293,10 @@ class _PendingPenaltiesScreenState extends ConsumerState<PendingPenaltiesScreen>
   }
 
   void _navigateToPayPenalty(BuildContext context, Multa penalty) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => PaymentScreen(
-          paymentType: 'penalty',
-          penaltyId: penalty.id,
-          penaltyAmount: penalty.monto,
-          description: 'Multa - Plaza #${penalty.idPlaza}',
-        ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Pago de multa en desarrollo'),
+        duration: Duration(seconds: 2),
       ),
     );
   }
@@ -361,16 +356,10 @@ class _PendingPenaltiesScreenState extends ConsumerState<PendingPenaltiesScreen>
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              // Aquí navegarías a payment screen con todas las multas
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PaymentScreen(
-                    paymentType: 'penalties_batch',
-                    penaltyIds: penalties.map((p) => p.id!).toList(),
-                    penaltyAmount: totalAmount,
-                    description: 'Pago de ${penalties.length} multa${penalties.length > 1 ? 's' : ''}',
-                  ),
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Pago de ${penalties.length} multa${penalties.length > 1 ? 's' : ''} - Total: €${totalAmount.toStringAsFixed(2)}'),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             },
