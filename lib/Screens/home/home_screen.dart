@@ -145,6 +145,37 @@ class HomePageState extends ConsumerState<HomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // User Avatar
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).pushNamed('/user-details');
+            },
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.primaryColor,
+                  width: 2,
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 24,
+                backgroundColor: AppColors.primaryColor.withOpacity(0.2),
+                backgroundImage: user?.photoURL != null && user!.photoURL!.isNotEmpty
+                    ? NetworkImage(user.photoURL!)
+                    : null,
+                child: user?.photoURL == null || user!.photoURL!.isEmpty
+                    ? Icon(
+                        Icons.person,
+                        size: 28,
+                        color: AppColors.primaryColor,
+                      )
+                    : null,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

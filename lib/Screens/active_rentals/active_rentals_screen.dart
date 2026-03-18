@@ -503,10 +503,17 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
                 side: const BorderSide(color: Colors.blue),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-                onPressed: () {
-                  debugPrint('🔵 [BUTTON] Botón liberar presionado. documentId=${rental.documentId}');
-                  _releaseRental(context, rental, rental.documentId ?? 'NULL');
-                },
+              onPressed: () {
+                debugPrint('🔵 [BUTTON] Botón liberar presionado. documentId=${rental.documentId}');
+                _releaseRental(context, rental, rental.documentId ?? 'NULL');
+              },
+              child: const Text('Liberar Ahora', style: TextStyle(color: Colors.blue)),
+            ),
+          ),
+        ],
+      );
+    }
+  }
 
   Future<void> _releaseRental(
     BuildContext context,
@@ -515,19 +522,28 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
   ) async {
     try {
       // Validar que el documentId no esté vacío
-      if (documentId.isEmpty) {
+      debugPrint('🔵 [_RELEASE] Iniciando liberación');
+      debugPrint('   documentId recibido: "$documentId"');
+      debugPrint('   rental.documentId: "${rental.documentId}"');
+      debugPrint('   rental.idPlaza: ${rental.idPlaza}');
+      debugPrint('   rental.estado: ${rental.estado}');
+      
+      if (documentId.isEmpty || documentId == 'NULL') {
+        debugPrint('❌ [_RELEASE] Error: documentId está vacío o es NULL');
         if (mounted) {
+          ScaffoldMessenger.of(context).removeCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Error: ID del alquiler no válido'),
+              content: Text('Error: ID del alquiler no válido (vacío o null)'),
               backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
             ),
           );
         }
         return;
       }
 
-      debugPrint('🏠 [ACTIVE_RENTALS] Iniciando liberación de alquiler: $documentId');
+      debugPrint('✅ [_RELEASE] documentId válido, documentId existe: ${documentId.isNotEmpty}');
 
       final confirmation = await showDialog<bool>(
         context: context,

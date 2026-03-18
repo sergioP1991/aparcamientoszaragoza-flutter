@@ -4,8 +4,10 @@ import 'package:aparcamientoszaragoza/Screens/settings/payment_methods_screen.da
 import 'package:aparcamientoszaragoza/Screens/active_rentals/active_rentals_screen.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/providers/settings_provider.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/providers/membership_provider.dart';
 import 'package:aparcamientoszaragoza/Models/user_settings.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
+import 'package:aparcamientoszaragoza/Screens/settings/widgets/pro_membership_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -74,7 +76,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const Divider(color: Colors.white10),
               _buildToggleItem(
                   Icons.campaign, l10n.offersPromotions, settings.offersPromotions, (val) {
-                settingsNotifier.updateOffersPromotions(val);
+                _handleOffersPromotionsToggle(val, ref, context, settingsNotifier);
               }),
             ]),
 
@@ -257,4 +259,48 @@ Widget _buildSettingsCard({required List<Widget> children}) {
       ),
     );
   }
+
+  // Maneja el toggle de offersPromotions verificando si el usuario es PRO
+  void _handleOffersPromotionsToggle(
+    bool newValue,
+    WidgetRef ref,
+    BuildContext context,
+    dynamic settingsNotifier,
+  ) {
+    // Si intenta activar anuncios (true), verificar si es PRO
+    if (newValue == true) {
+      final membership = ref.watch(membershipProvider);
+      
+      membership.when(
+        data: (membershipData) {
+          final isPro = membershipData?.isProActive ?? false;
+          
+          if (!isPro) {
+            // Usuario NO es PRO, mostrar dialog de suscripción
+            showDialog(
+              context: context,
+              builder: (_) => const ProMembershipDialog(),
+            );
+          } else {
+            // Usuario ES PRO, permitir cambio
+            settingsNotifier.updateOffersPromotions(newValue);
+          }
+        },
+        loading: () {
+          // Mostrar loading while verificamos
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Verificando tu suscripción...')),
+          );
+        },
+        error: (error, stack) {
+          // En caso de error, permitir cambio (fail-open)
+          settingsNotifier.updateOffersPromotions(newValue);
+        },
+      );
+    } else {
+      // Si intenta desactivar anuncios (false), siempre permitir
+      settingsNotifier.updateOffersPromotions(newValue);
+    }
+  }
 }
+

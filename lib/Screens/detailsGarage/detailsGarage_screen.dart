@@ -515,7 +515,8 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
   }
 
   Widget _buildAvailabilityBanner(Garaje plaza, int plazaId, User? user, AppLocalizations l10n) {
-    bool isAvailable = plaza.alquiler == null;
+    // ⚠️ NOTA: isAvailable se definirá DENTRO del StreamBuilder 
+    // porque depende del activeRental que viene del stream
     print('🔍 _buildAvailabilityBanner: plazaId=$plazaId, plaza.idPlaza=${plaza.idPlaza}, alquiler=${plaza.alquiler}');
     
     // Si hay un alquiler mensual (AlquilerNormal), mostrar UI con opción de liberar si es el propietario
@@ -617,6 +618,11 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
       builder: (context, snapshot) {
         final activeRental = snapshot.data;
         final isUserRental = activeRental != null && activeRental.idArrendatario == user?.uid;
+        
+        // ✅ CORRECCIÓN: isAvailable debe considerar AMBOS tipos de alquiler
+        final isAvailable = plaza.alquiler == null && activeRental == null;
+        
+        debugPrint('🔍 [BANNER] isUserRental=$isUserRental, activeRental=$activeRental, isAvailable=$isAvailable');
         
         if (isUserRental) {
           // Mostrar información del alquiler activo del usuario

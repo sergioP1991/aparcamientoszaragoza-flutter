@@ -268,10 +268,10 @@ class RentalByHoursService {
   /// Stream para monitorear alquileres activos del usuario
   static Stream<List<AlquilerPorHoras>> watchUserActiveRentals() {
     final user = _auth.currentUser;
-    print('🔍 watchUserActiveRentals - Usuario: ${user?.uid ?? "NO AUTENTICADO"}');
+    debugPrint('🔍 [WATCH_RENTALS] Usuario: ${user?.uid ?? "NO AUTENTICADO"}');
     
     if (user == null) {
-      print('❌ Usuario no autenticado, retornando stream vacío');
+      debugPrint('❌ [WATCH_RENTALS] Usuario no autenticado');
       return Stream.value([]);
     }
 
@@ -288,22 +288,30 @@ class RentalByHoursService {
                 try {
                   debugPrint('📝 [WATCH_RENTALS] Procesando doc: ${doc.id}');
                   final rental = AlquilerPorHoras.fromFirestore(doc);
-                  debugPrint('   [WATCH_RENTALS] documentId capturado: ${rental.documentId}');
+                  debugPrint('   ✅ [WATCH_RENTALS] documentId=${rental.documentId}');
                   final estado = rental.estado.toString();
-                  debugPrint('   [WATCH_RENTALS] Estado: $estado, Liberado: ${estado.contains("liberado")}');
-                    print('   ❌ Excluido (liberado)');
+                  debugPrint('   🔄 [WATCH_RENTALS] Estado: $estado');
+                  
+                  // Solo incluir alquileres que no estén liberados
+                  if (!estado.contains('liberado')) {
+                    debugPrint('   ✅ Alquiler activo incluido');
+                    return rental;
+                  } else {
+                    debugPrint('   ❌ Alquiler liberado, excluido');
+                    return null;
                   }
                 } catch (e) {
-                  print('❌ Error al parsear alquiler del usuario: $e');
+                  debugPrint('❌ [WATCH_RENTALS] Error parse: $e');
+                  return null;
                 }
                 return null;
               })
               .whereType<AlquilerPorHoras>()
               .toList();
-          
-          print('📈 Total alquileres activos retornados: ${rentals.length}');
-          return rentals;
-        });
+            
+            debugPrint('📈 [WATCH_RENTALS] Total alquileres activos: ${rentals.length}');
+            return rentals;
+          });
   }
 
   /// Obtiene la información de una plaza (dirección) basándose en el ID
