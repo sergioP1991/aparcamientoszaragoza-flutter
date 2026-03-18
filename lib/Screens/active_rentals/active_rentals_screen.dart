@@ -118,8 +118,10 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
                 itemBuilder: (context, index) {
                   final rental = rentals[index];
                   final plaza = plazaMap[rental.idPlaza];
-                  final plazaAddress = plaza?.direccion ?? 'Plaza #${rental.idPlaza}';
-                  return _buildRentalCard(context, rental, l10n, plazaAddress, plaza);
+                  final plazaAddress = plaza?.direccion ?? 'Plaza #${rental.idPlaza}';                  
+                  // 🔑 DEBUG: Validar documentId
+                  debugPrint('🔍 [RENTAL_CARD] documentId="${rental.documentId}", idPlaza=${rental.idPlaza}');
+                                    return _buildRentalCard(context, rental, l10n, plazaAddress, plaza);
                 },
               );
             },
@@ -504,8 +506,26 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               onPressed: () {
-                debugPrint('🔵 [BUTTON] Botón liberar presionado. documentId=${rental.documentId}');
-                _releaseRental(context, rental, rental.documentId ?? 'NULL');
+                final documentId = rental.documentId;
+                debugPrint('🔵 [BUTTON] Intento de liberación. documentId=\"$documentId\"');
+                
+                // 🔴 VALIDACIÓN CRÍTICA: documentId no puede ser null, vacío o 'NULL'
+                if (documentId == null || documentId.isEmpty || documentId == 'NULL') {
+                  debugPrint('❌ [BUTTON] ERROR: documentId inválido: \"$documentId\"');
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('❌ Error interno: documentId faltante. Recarga la app.'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  }
+                  return;
+                }
+                
+                debugPrint('✅ [BUTTON] documentId válido, proceediendo...');
+                _releaseRental(context, rental, documentId);
               },
               child: const Text('Liberar Ahora', style: TextStyle(color: Colors.blue)),
             ),
@@ -607,17 +627,29 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
             if (!mounted) return;
             
             // Mostrar confirmación con el monto total
-            final precioFinal = rental.calcularPrecioFinal();
-            ScaffoldMessenger.of(context).removeCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '✅ Plaza liberada. Total: €${precioFinal.toStringAsFixed(2)}',
+            try {
+              final precioFinal = rental.calcularPrecioFinal();
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '✅ Plaza liberada. Total: €${precioFinal.toStringAsFixed(2)}',
+                  ),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 3),
                 ),
-                backgroundColor: Colors.green,
-                duration: const Duration(seconds: 3),
-              ),
-            );
+              );
+            } catch (calcError) {
+              debugPrint('⚠️ [ACTIVE_RENTALS] Error al calcular precio: $calcError');
+              ScaffoldMessenger.of(context).removeCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('✅ Plaza liberada correctamente'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
             
             debugPrint('📲 [ACTIVE_RENTALS] Esperando para navegar de vuelta');
             

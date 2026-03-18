@@ -108,6 +108,11 @@ class RentalByHoursService {
   /// Calcula el precio final según tiempo usado y actualiza estado
   static Future<void> releaseRental(String rentalId) async {
     try {
+      // 🔴 VALIDACIÓN INICIAL: rentalId no puede ser null o inválido
+      if (rentalId.isEmpty || rentalId == 'NULL') {
+        throw Exception('❌ Error crítico: rentalId inválido: "$rentalId". El documento se creó sin capturar su ID.');
+      }
+
       final user = _auth.currentUser;
       if (user == null) {
         throw Exception('Usuario no autenticado');
@@ -117,7 +122,9 @@ class RentalByHoursService {
       
       final rental = await _firestore.collection('alquileres').doc(rentalId).get();
       if (!rental.exists) {
-        throw Exception('Alquiler no encontrado con ID: $rentalId');
+        throw Exception('❌ DOCUMENTO NO ENCONTRADO: rentalId="$rentalId"\n'
+          'Esto significa que el documento se guardó pero sin el ID correcto en el modelo.\n'
+          'Causa probable: AlquilerPorHoras.fromFirestore() NO capturó snapshot.id correctamente.');
       }
 
       final alquiler = AlquilerPorHoras.fromFirestore(rental);
@@ -136,8 +143,9 @@ class RentalByHoursService {
       debugPrint('💰 [RENTAL_SERVICE] Tiempo usado: $tiempoUsado min, Precio final: €$precioFinal');
 
       // Actualizar documento con estado liberado
+      debugPrint('🔧 [RENTAL_SERVICE] Guardando estado como: ${EstadoAlquilerPorHoras.liberado.name}');
       await _firestore.collection('alquileres').doc(rentalId).update({
-        'estado': EstadoAlquilerPorHoras.liberado.toString(), // "EstadoAlquilerPorHoras.liberado"
+        'estado': EstadoAlquilerPorHoras.liberado.name, // Guardar SOLO el nombre: "liberado"
         'tiempoUsado': tiempoUsado,
         'precioCalculado': precioFinal,
         'fechaLiberacion': DateTime.now().toIso8601String(),
@@ -167,8 +175,9 @@ class RentalByHoursService {
       final precioFinal = alquiler.calcularPrecioFinal();
 
       // Actualizar documento con estado liberado
+      debugPrint('🔧 [RENTAL_SERVICE_ADMIN] Guardando estado como: ${EstadoAlquilerPorHoras.liberado.name}');
       await _firestore.collection('alquileres').doc(rentalId).update({
-        'estado': EstadoAlquilerPorHoras.liberado.toString(),
+        'estado': EstadoAlquilerPorHoras.liberado.name, // Guardar SOLO el nombre: "liberado"
         'tiempoUsado': tiempoUsado,
         'precioCalculado': precioFinal,
         'fechaLiberacion': DateTime.now().toIso8601String(),
@@ -279,37 +288,37 @@ class RentalByHoursService {
         .collection('alquileres')
         .where('idArrendatario', isEqualTo: user.uid)
         .where('tipo', isEqualTo: 2)
+        .where('estado', isNotEqualTo: EstadoAlquilerPorHoras.liberado.name) // 🔴 FILTRO EN FIRESTORE: Excluir liberados
         .snapshots()
         .map((snapshot) {
-          debugPrint('📊 [WATCH_RENTALS] Total documentos encontrados: ${snapshot.docs.length}');
+          debugPrint('📊 [WATCH_RENTALS] Total documentos encontrados (NO liberados): ${snapshot.docs.length}');
           
           final rentals = snapshot.docs
               .map((doc) {
                 try {
                   debugPrint('📝 [WATCH_RENTALS] Procesando doc: ${doc.id}');
                   final rental = AlquilerPorHoras.fromFirestore(doc);
-                  debugPrint('   ✅ [WATCH_RENTALS] documentId=${rental.documentId}');
-                  final estado = rental.estado.toString();
-                  debugPrint('   🔄 [WATCH_RENTALS] Estado: $estado');
+                  debugPrint('   ✅ [WATCH_RENTALS] documentId="${rental.documentId}" (esperado: "${doc.id}")');
+                  debugPrint('   🔄 [WATCH_RENTALS] Estado: ${rental.estado}');
                   
-                  // Solo incluir alquileres que no estén liberados
-                  if (!estado.contains('liberado')) {
-                    debugPrint('   ✅ Alquiler activo incluido');
-                    return rental;
-                  } else {
-                    debugPrint('   ❌ Alquiler liberado, excluido');
-                    return null;
+                  // 🔴 VALIDACIÓN CRÍTICA: Asegurar que documentId se capturó correctamente
+                  if (rental.documentId == null || rental.documentId != doc.id) {
+                    debugPrint('   ⚠️ [WATCH_RENTALS] ADVERTENCIA: documentId no coincide con doc.id');
+                    debugPrint('      Capturado: "${rental.documentId}", Esperado: "${doc.id}"');
                   }
+                  
+                  // El filtro de Firestore ya excluyó los liberados, así que incluir todos
+                  debugPrint('   ✅ Alquiler activo incluido');
+                  return rental;
                 } catch (e) {
                   debugPrint('❌ [WATCH_RENTALS] Error parse: $e');
                   return null;
                 }
-                return null;
               })
               .whereType<AlquilerPorHoras>()
               .toList();
             
-            debugPrint('📈 [WATCH_RENTALS] Total alquileres activos: ${rentals.length}');
+            debugPrint('📈 [WATCH_RENTALS] Total alquileres activos enviados: ${rentals.length}');
             return rentals;
           });
   }

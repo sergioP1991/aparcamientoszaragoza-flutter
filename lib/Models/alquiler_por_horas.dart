@@ -1,5 +1,6 @@
 import 'package:aparcamientoszaragoza/Models/alquiler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 enum EstadoAlquilerPorHoras {
   activo,        // Alquiler en curso
@@ -150,18 +151,33 @@ class AlquilerPorHoras extends Alquiler {
       throw Exception('Documento de alquiler está vacío');
     }
     
-    // Parsear el estado del string
+    // Parsear el estado del string - Soporta AMBOS formatos: "liberado" y "EstadoAlquilerPorHoras.liberado"
     EstadoAlquilerPorHoras estado = EstadoAlquilerPorHoras.activo;
     try {
-      String estadoStr = data['estado'] ?? 'EstadoAlquilerPorHoras.activo';
-      if (estadoStr.contains('.')) {
-        estado = EstadoAlquilerPorHoras.values.firstWhere(
-          (e) => e.toString() == estadoStr,
-          orElse: () => EstadoAlquilerPorHoras.activo,
-        );
+      String estadoStr = data['estado'] ?? 'activo';
+      estadoStr = estadoStr.trim().toLowerCase();
+      
+      // 🔍 INTENTO 1: Parsear como nombre simple (nuevo formato) - "liberado"
+      for (var e in EstadoAlquilerPorHoras.values) {
+        if (e.name.toLowerCase() == estadoStr) {
+          estado = e;
+          debugPrint('✅ [PARSE_ESTADO] Parseado como nombre: $estadoStr → $e');
+          break;
+        }
+      }
+      
+      // 🔍 INTENTO 2: Si no encontró, intentar como .toString() (antiguo formato) - "EstadoAlquilerPorHoras.liberado"
+      if (estado == EstadoAlquilerPorHoras.activo && estadoStr.contains('alquiler')) {
+        for (var e in EstadoAlquilerPorHoras.values) {
+          if (e.toString().toLowerCase() == estadoStr) {
+            estado = e;
+            debugPrint('✅ [PARSE_ESTADO] Parseado como .toString(): $estadoStr → $e');
+            break;
+          }
+        }
       }
     } catch (e) {
-      print('Error parsing estado: $e');
+      debugPrint('⚠️ [PARSE_ESTADO] Error parsing estado: $e');
     }
 
     // Helper function to parse DateTime/Timestamp
@@ -195,18 +211,32 @@ class AlquilerPorHoras extends Alquiler {
   }
 
   factory AlquilerPorHoras.fromMap(Map<String, dynamic> map) {
-    // Parsear el estado del string
+    // Parsear el estado del string - Soporta AMBOS formatos: "liberado" y "EstadoAlquilerPorHoras.liberado"
     EstadoAlquilerPorHoras estado = EstadoAlquilerPorHoras.activo;
     try {
-      String estadoStr = map['estado'] ?? 'EstadoAlquilerPorHoras.activo';
-      if (estadoStr.contains('.')) {
-        estado = EstadoAlquilerPorHoras.values.firstWhere(
-          (e) => e.toString() == estadoStr,
-          orElse: () => EstadoAlquilerPorHoras.activo,
-        );
+      String estadoStr = (map['estado'] ?? 'activo').toString().trim().toLowerCase();
+      
+      // 🔍 INTENTO 1: Parsear como nombre simple (nuevo formato) - "liberado"
+      for (var e in EstadoAlquilerPorHoras.values) {
+        if (e.name.toLowerCase() == estadoStr) {
+          estado = e;
+          debugPrint('✅ [PARSE_ESTADO_MAP] Parseado como nombre: $estadoStr → $e');
+          break;
+        }
+      }
+      
+      // 🔍 INTENTO 2: Si no encontró, intentar como .toString() (antiguo formato) - "EstadoAlquilerPorHoras.liberado"
+      if (estado == EstadoAlquilerPorHoras.activo && estadoStr.contains('alquiler')) {
+        for (var e in EstadoAlquilerPorHoras.values) {
+          if (e.toString().toLowerCase() == estadoStr) {
+            estado = e;
+            debugPrint('✅ [PARSE_ESTADO_MAP] Parseado como .toString(): $estadoStr → $e');
+            break;
+          }
+        }
       }
     } catch (e) {
-      print('Error parsing estado: $e');
+      debugPrint('⚠️ [PARSE_ESTADO_MAP] Error parsing estado: $e');
     }
 
     return AlquilerPorHoras(
