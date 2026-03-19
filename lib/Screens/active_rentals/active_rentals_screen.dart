@@ -113,6 +113,7 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
               }
 
               return ListView.builder(
+                key: const PageStorageKey('activeRentalsListView'), // 🔴 MANTIENE POSICIÓN DE SCROLL
                 padding: const EdgeInsets.all(16),
                 itemCount: rentals.length,
                 itemBuilder: (context, index) {
