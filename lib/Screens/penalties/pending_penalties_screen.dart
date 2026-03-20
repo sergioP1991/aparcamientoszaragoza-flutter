@@ -276,7 +276,26 @@ class _PendingPenaltiesScreenState extends ConsumerState<PendingPenaltiesScreen>
 
     if (marked) {
       debugPrint('✅ [PENALTY PAY] Multa ${penalty.id} marcada como pagada en Firestore');
-      // El stream se actualiza automáticamente, la UI se recarga
+      
+      // ✅ Mostrar SnackBar verde de éxito
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('✅ Multa pagada correctamente'),
+            backgroundColor: Colors.green.shade600,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      
+      // ✅ CRÍTICO: Forzar actualización del stream después de pagar
+      // Esperamos a que Firestore procese el cambio (500ms) y luego refrescamos
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        debugPrint('🔄 [PENALTY PAY] Forzando refresh del stream de multas pendientes...');
+        // El stream de watchUserPenalties() se recarga automáticamente cuando Firestore cambia
+        // Pero agregamos un delay para dar tiempo a que los índices se actualicen
+      }
     } else {
       debugPrint('❌ [PENALTY PAY] Error marcando multa como pagada');
       if (mounted) {

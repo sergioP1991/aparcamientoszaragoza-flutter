@@ -68,21 +68,30 @@ class PenaltyService {
   }
 
   /// Obtener todas las multas pendientes del usuario actual
+  /// ✅ FIX ARQUITECTÓNICO: Ordenar en cliente en lugar de en Firestore
   static Future<List<Multa>> getPendingPenaltiesForCurrentUser() async {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser == null) return [];
 
+      debugPrint('🔍 [PENALTY] Obteniendo multas pendientes para usuario: ${currentUser.uid}');
+
       final snapshot = await _firestore
           .collection('multas')
           .where('idArrendatario', isEqualTo: currentUser.uid)
           .where('estado', isEqualTo: EstadoMulta.pendiente.name)
-          .orderBy('fechaCreacion', descending: true)
+          // ✅ REMOVIDO orderBy para evitar requerimiento de índice compuesto
           .get();
 
-      return snapshot.docs
+      final penalties = snapshot.docs
           .map((doc) => Multa.fromFirestore(doc))
           .toList();
+      
+      // ✅ Ordenar en cliente
+      penalties.sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
+      
+      debugPrint('✅ [PENALTY] Obtenidas ${penalties.length} multas pendientes ordenadas por fecha');
+      return penalties;
     } catch (e) {
       debugPrint('❌ [PENALTY] Error obteniendo multas: $e');
       return [];
@@ -90,23 +99,36 @@ class PenaltyService {
   }
 
   /// Obtener todas las multas PENDIENTES del usuario (excluye pagadas y condonadas)
-  /// ✅ FIX 1: Filtro en Firestore para excluir multas pagadas automáticamente
+  /// ✅ FIX ARQUITECTÓNICO: Sin orderBy para evitar requerimiento de índice compuesto
+  /// El ordenamiento se hace en el cliente (Dart) en lugar de en Firestore
   static Stream<List<Multa>> watchUserPenalties() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
+      debugPrint('⚠️ [PENALTY] No hay usuario autenticado');
       return Stream.value([]);
     }
+
+    debugPrint('🔍 [PENALTY STREAM] Iniciando stream de multas pendientes para usuario: ${currentUser.uid}');
 
     return _firestore
         .collection('multas')
         .where('idArrendatario', isEqualTo: currentUser.uid)
         .where('estado', isEqualTo: EstadoMulta.pendiente.name)
-        .orderBy('fechaCreacion', descending: true)
+        // ✅ REMOVIDO orderBy para evitar requerimiento de índice Firestore
+        // El ordenamiento se hace en el cliente
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
+      debugPrint('📦 [PENALTY STREAM] Firestore devolvió ${snapshot.docs.length} multas pendientes');
+      
+      final penalties = snapshot.docs
           .map((doc) => Multa.fromFirestore(doc))
           .toList();
+      
+      // ✅ Ordenar en cliente (más robusto que en Firestore)
+      penalties.sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
+      
+      debugPrint('✅ [PENALTY STREAM] Emitiendo ${penalties.length} multas ordenadas por fecha');
+      return penalties;
     });
   }
 
@@ -184,22 +206,33 @@ class PenaltyService {
   }
 
   /// Obtener las primeras N multas pendientes
+  /// ✅ FIX ARQUITECTÓNICO: Ordenar en cliente en lugar de en Firestore
   static Future<List<Multa>> getTopPendingPenalties({int limit = 5}) async {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser == null) return [];
 
+      debugPrint('🔝 [PENALTY] Obteniendo top $limit multas pendientes');
+
       final snapshot = await _firestore
           .collection('multas')
           .where('idArrendatario', isEqualTo: currentUser.uid)
           .where('estado', isEqualTo: EstadoMulta.pendiente.name)
-          .orderBy('fechaCreacion', descending: true)
-          .limit(limit)
+          // ✅ REMOVIDO orderBy para evitar requerimiento de índice compuesto
           .get();
 
-      return snapshot.docs
+      final penalties = snapshot.docs
           .map((doc) => Multa.fromFirestore(doc))
           .toList();
+      
+      // ✅ Ordenar en cliente
+      penalties.sort((a, b) => b.fechaCreacion.compareTo(a.fechaCreacion));
+      
+      // Limitar al número solicitado
+      final top = penalties.take(limit).toList();
+      
+      debugPrint('✅ [PENALTY] Top $limit multas: ${top.length} de ${penalties.length} obtenidas');
+      return top;
     } catch (e) {
       debugPrint('❌ [PENALTY] Error obteniendo multas top: $e');
       return [];

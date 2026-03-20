@@ -128,16 +128,30 @@ class _PaymentPenaltyScreenState extends State<PaymentPenaltyScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context); // Cerrar diálogo
-              // Llamar callback
-              widget.onPaymentSuccess(widget.penalty, result.paymentIntentId ?? 'unknown');
-              // Cerrar esta pantalla
-              Navigator.pop(context);
+              
+              // ✅ AHORA ESPERA a que el callback complete (actualización en Firestore)
+              _completePaymentAndClose(result.paymentIntentId ?? 'unknown');
             },
             child: const Text('Continuar', style: TextStyle(color: Colors.greenAccent)),
           ),
         ],
       ),
     );
+  }
+
+  /// ✅ NUEVO: Método async para esperar a que Firestore se actualice antes de cerrar
+  Future<void> _completePaymentAndClose(String paymentIntentId) async {
+    debugPrint('⏳ [PAYMENT] Esperando a que se actualice Firestore...');
+    
+    // Esperar a que el callback complete (actualiza estado a 'pagada' en Firestore)
+    await widget.onPaymentSuccess(widget.penalty, paymentIntentId);
+    
+    debugPrint('✅ [PAYMENT] Firestore actualizado, cerrando pantalla de pago');
+    
+    // Cerrar la pantalla de pago DESPUÉS de la actualización
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   @override
