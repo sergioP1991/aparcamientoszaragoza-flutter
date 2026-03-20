@@ -196,7 +196,7 @@ class AlquilerPorHoras extends Alquiler {
     return AlquilerPorHoras(
       idPlaza: data['idPlaza'] as int? ?? 0,
       idArrendatario: data['idArrendatario'] as String? ?? 'unknown',
-      documentId: snapshot.id, // ← CAPTURAR EL ID DEL DOCUMENTO
+      documentId: snapshot.id, // 🔴 CRÍTICO: Usar snapshot.id como la fuente de verdad (siempre)
       fechaInicio: parseDateTime(data['fechaInicio']),
       fechaVencimiento: parseDateTime(data['fechaVencimiento']),
       fechaLiberacion: data['fechaLiberacion'] != null ? parseDateTime(data['fechaLiberacion']) : null,

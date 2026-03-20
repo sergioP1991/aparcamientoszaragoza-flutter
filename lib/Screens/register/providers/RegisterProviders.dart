@@ -37,7 +37,10 @@ class UserRegisterState extends StateNotifier<AsyncValue<UserCredential?>> {
 
       return userCredential;
     });
-    return null;
+    return state.maybeWhen(
+      data: (credential) => credential,
+      orElse: () => null,
+    );
   }
 }
 

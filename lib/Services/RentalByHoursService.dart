@@ -36,11 +36,16 @@ class RentalByHoursService {
         estado: EstadoAlquilerPorHoras.activo,
       );
 
-      final data = alquiler.objectToMap();
+      var data = alquiler.objectToMap();
       debugPrint('💾 [RENTAL_SERVICE] Guardando alquiler: $data');
       
       final docRef = await _firestore.collection('alquileres').add(data);
       debugPrint('✅ [RENTAL_SERVICE] Alquiler creado con ID: ${docRef.id}');
+      
+      // 🔴 CRÍTICO: Guardar el documentId en el documento para poder recuperarlo después
+      debugPrint('🔑 [RENTAL_SERVICE] Guardando documentId="${docRef.id}" en el documento');
+      await docRef.update({'documentId': docRef.id});
+      
       debugPrint('📍 [RENTAL_SERVICE] PlazaId: $plazaId, Tipo: 2, Estado: ${alquiler.estado}');
       return docRef.id;
     } catch (e) {

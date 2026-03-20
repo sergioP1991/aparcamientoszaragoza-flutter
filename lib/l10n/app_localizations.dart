@@ -2324,6 +2324,30 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'minutos'**
   String get minutes;
+
+  /// No description provided for @registrationError.
+  ///
+  /// In es, this message translates to:
+  /// **'Error durante el registro. Intenta nuevamente.'**
+  String get registrationError;
+
+  /// No description provided for @registrationSuccess.
+  ///
+  /// In es, this message translates to:
+  /// **'¡Registro Exitoso!'**
+  String get registrationSuccess;
+
+  /// No description provided for @registrationWelcome.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta ha sido creada correctamente'**
+  String get registrationWelcome;
+
+  /// No description provided for @continueToLogin.
+  ///
+  /// In es, this message translates to:
+  /// **'Continuar a Login'**
+  String get continueToLogin;
 }
 
 class _AppLocalizationsDelegate

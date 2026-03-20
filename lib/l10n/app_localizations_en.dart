@@ -1186,4 +1186,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get minutes => 'minutes';
+
+  @override
+  String get registrationError => 'Registration error. Please try again.';
+
+  @override
+  String get registrationSuccess => 'Registration Successful!';
+
+  @override
+  String get registrationWelcome =>
+      'Your account has been created successfully';
+
+  @override
+  String get continueToLogin => 'Continue to Login';
 }

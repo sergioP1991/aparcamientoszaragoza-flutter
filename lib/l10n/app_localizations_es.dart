@@ -1196,4 +1196,17 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get minutes => 'minutos';
+
+  @override
+  String get registrationError =>
+      'Error durante el registro. Intenta nuevamente.';
+
+  @override
+  String get registrationSuccess => '¡Registro Exitoso!';
+
+  @override
+  String get registrationWelcome => 'Tu cuenta ha sido creada correctamente';
+
+  @override
+  String get continueToLogin => 'Continuar a Login';
 }

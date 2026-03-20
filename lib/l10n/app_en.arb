@@ -377,5 +377,13 @@
   "estimatedPrice": "Estimated price",
   "min": "min",
   "minute": "minute",
-  "minutes": "minutes"
+  "minutes": "minutes",
+  "registrationError": "Registration error. Please try again.",
+  "registrationSuccess": "Registration Successful!",
+  "registrationWelcome": "Your account has been created successfully",
+  "continueToLogin": "Continue to Login",
+  "notYou": "Not you",
+  "rememberMe": "Remember me",
+  "dontHaveAccount": "Don't have an account?",
+  "processingPayment": "Processing payment..."
 }

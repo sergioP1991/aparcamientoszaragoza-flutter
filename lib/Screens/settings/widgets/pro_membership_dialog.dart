@@ -375,85 +375,79 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withOpacity(0.06),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.info_outline, color: Colors.white70, size: 16),
-              SizedBox(width: 8),
+              Icon(
+                Icons.info_outline,
+                color: Colors.white.withOpacity(0.4),
+                size: 14,
+              ),
+              const SizedBox(width: 6),
               Text(
                 'Comparación de planes',
                 style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.5),
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Plan Mensual:',
-                style: TextStyle(color: Colors.white, fontSize: 13),
-              ),
-              Text(
-                '€${monthlyPrice.toStringAsFixed(2)}/mes',
-                style: const TextStyle(
-                  color: AppColors.primaryColor,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          const SizedBox(height: 10),
+          _buildPricingRow(
+            'Mensual',
+            '€${monthlyPrice.toStringAsFixed(2)}/mes',
+            AppColors.primaryColor,
           ),
           const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Plan Anual:',
-                style: TextStyle(color: Colors.white, fontSize: 13),
-              ),
-              Text(
-                '€${monthlyFromAnnual.toStringAsFixed(2)}/mes',
-                style: const TextStyle(
-                  color: AppColors.accentGreen,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          _buildPricingRow(
+            'Anual',
+            '€${monthlyFromAnnual.toStringAsFixed(2)}/mes',
+            AppColors.accentGreen,
           ),
           const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Ahorro anual:',
-                style: TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-              Text(
-                '€${(savings * 12).toStringAsFixed(2)}',
-                style: const TextStyle(
-                  color: AppColors.accentGreen,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+          _buildPricingRow(
+            'Ahorro anual',
+            '€${(savings * 12).toStringAsFixed(2)}',
+            AppColors.accentGreen,
+            isBold: true,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPricingRow(String label, String value, Color color, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 

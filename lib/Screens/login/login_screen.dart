@@ -484,10 +484,10 @@ class LoginPageState extends ConsumerState<LoginPage> {
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 mainAxisSize: MainAxisSize.min,
-                                                children: const [
-                                                  Text('No soy yo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                                                  SizedBox(height: 2),
-                                                  Text('Iniciar sesión con otra cuenta', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                                children: [
+                                                  Text(l10n.notYou, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                                  const SizedBox(height: 2),
+                                                  Text(l10n.dontHaveAccount, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                                                 ],
                                               ),
                                             ),

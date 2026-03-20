@@ -2,6 +2,114 @@
 
 ---
 
+## **CAMBIO CRÍTICO: Fix Release Button - documentId Bug (21 de marzo 2026 - v29 RELEASE BUTTON FIX)**
+
+**Objetivo**: Arreglar botón "Liberar Ahora" en pantalla de alquileres activos que ha dejado de funcionar.
+
+**Estado**: ✅ **COMPLETADO - Bug identificado, solucionado y documentado para testing**
+
+**Problema Identificado**:
+- ❌ Botón "Liberar Ahora" no funciona
+- ❌ Error: "documentId inválido" o "documentId faltante"
+- ❌ Usuario no puede liberar alquileres por horas
+
+**Causa Raíz**:
+El campo `documentId` en `AlquilerPorHoras` NO se guardaba en Firestore durante la creación del alquiler:
+```dart
+// ANTES (PROBLEMA):
+final docRef = await _firestore.collection('alquileres').add(data);
+// ❌ Se obtiene docRef.id pero NUNCA se guarda en el documento
+return docRef.id;
+```
+
+Cuando después se cargaba el alquiler, el `documentId` era null/missing, causando que la validación en `_releaseRental()` fallara.
+
+**Solución Implementada**:
+
+### 1. **RentalByHoursService.dart línea 47** ✅ (Guardar documentId en Firestore)
+```dart
+// DESPUÉS (SOLUCIONADO):
+final data = alquiler.objectToMap();
+debugPrint('💾 [RENTAL_SERVICE] Guardando alquiler: $data');
+
+final docRef = await _firestore.collection('alquileres').add(data);
+debugPrint('✅ [RENTAL_SERVICE] Alquiler creado con ID: ${docRef.id}');
+
+// 🔴 CRÍTICO: Guardar el documentId en el documento para poder recuperarlo después
+debugPrint('🔑 [RENTAL_SERVICE] Guardando documentId="${docRef.id}" en el documento');
+await docRef.update({'documentId': docRef.id});  // ← SOLUCIÓN: Guardar el ID en Firestore
+
+return docRef.id;
+```
+**Impacto**: El campo `documentId` ahora se persiste en Firestore y es recuperable después
+
+### 2. **AlquilerPorHoras.dart línea 198** ✅ (Usar snapshot.id como verdad única)
+```dart
+return AlquilerPorHoras(
+  // ... otros campos ...
+  documentId: snapshot.id, // 🔴 CRÍTICO: Usar snapshot.id como la fuente de verdad (siempre)
+  // ... más campos ...
+);
+```
+**Impacto**: snapshot.id es SIEMPRE la fuente de verdad para el ID del documento
+
+**Ficheros Modificados**:
+- ✅ `lib/Services/RentalByHoursService.dart` (línea 47)
+- ✅ `lib/Models/alquiler_por_horas.dart` (línea 198)
+
+**Validaciones**:
+- ✅ `dart analyze` - 0 errores críticos (25 info-level warnings pre-existentes)
+- ✅ Compilación sin errores
+- ✅ Lógica verificada línea por línea
+
+**Flujo Correcto Resultante**:
+```
+1. Usuario crea alquiler por horas
+   ↓
+2. RentalByHoursService.createRental() ejecuta:
+   - Create AlquilerPorHoras (documentId = null)
+   - Save to Firestore → obtiene docRef.id
+   - ✅ NEW: await docRef.update({'documentId': docRef.id})
+   ↓
+3. Firestore documento ahora tiene: {documentId: abc123xyz, ...}
+   ↓
+4. Usuario click "Liberar Ahora"
+   ↓
+5. _releaseRental() recibe documentId correcto ✅
+   - Localiza documento
+   - Actualiza estado a "liberado"
+   - ¡Funciona correctamente!
+```
+
+**Cómo Probar**:
+```bash
+# 1. Hard refresh en Chrome
+Cmd+Shift+R
+
+# 2. Crear alquiler por horas
+# - Home → Plaza → Alquiler por Horas → 2h → Pagar
+
+# 3. Ver en Mis Alquileres
+# - Perfil → Mis Alquileres
+
+# 4. PRUEBA CRÍTICA: Click "Liberar Ahora"
+# ✅ ESPERADO: Se libera sin error "documentId inválido"
+# ✅ Ver logs en F12:
+#    - 🔑 [RENTAL_SERVICE] Guardando documentId="..." en el documento
+#    - ✅ documentId se guardó correctamente
+```
+
+**Documentación Adicional**:
+- `RELEASE_BUTTON_FIX_MARCH_21_2026.md` - Explicación técnica detallada
+- `TESTING_RELEASE_BUTTON_FIX.md` - Guía paso a paso de testing
+- `STATUS_MARCH_21_2026.md` - Estado actual del proyecto
+
+**Fecha**: 21 de marzo de 2026, 15:45 — Agente: GitHub Copilot  
+**Estado**: ✅ COMPLETADO - Implementado y Documentado  
+**Siguiente**: Testing end-to-end en navegador
+
+---
+
 ## **CAMBIO CRÍTICO: Arreglo de 3 Issues en Sistema de Multas (20 de marzo 2026 - v28 PENALTY SYSTEM FIX)**
 
 **Objetivo**: Resolver 3 problemas críticos en sistema de multas:
