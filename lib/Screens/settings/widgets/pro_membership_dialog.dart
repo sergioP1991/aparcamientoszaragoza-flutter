@@ -35,75 +35,65 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
     final membership = ref.watch(membershipProvider).value;
 
     return Dialog(
-      backgroundColor: Colors.black.withOpacity(0.7),
-      insetPadding: const EdgeInsets.all(24),
-      elevation: 24,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A2E),
-          borderRadius: BorderRadius.circular(24),
+          color: const Color(0xFF0F0F14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.primaryColor.withOpacity(0.5),
-            width: 1.5,
+            color: Colors.white.withOpacity(0.08),
+            width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primaryColor.withOpacity(0.3),
-              blurRadius: 20,
-              spreadRadius: 1,
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 16, 0),
+                child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.primaryColor.withOpacity(0.25),
-                            AppColors.primaryColor.withOpacity(0.15),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.primaryColor.withOpacity(0.4),
-                          width: 1,
-                        ),
+                        color: Colors.amber.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
                         Icons.workspace_premium,
                         color: Colors.amber,
-                        size: 28,
+                        size: 24,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Upgrade a PRO',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
                             ),
                           ),
                           Text(
                             'Desbloquea funciones premium',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.white60,
-                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -111,101 +101,113 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, color: Colors.white60),
+                      icon: Icon(
+                        Icons.close,
+                        color: Colors.white.withOpacity(0.4),
+                        size: 20,
+                      ),
                       visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+              ),
+              const SizedBox(height: 16),
 
-                // Features
-                _buildFeaturesList(l10n),
-                const SizedBox(height: 24),
+              // Features
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _buildFeaturesList(l10n),
+              ),
+              const SizedBox(height: 18),
 
-                // Plan Selection
-                _buildPlanSelection(l10n),
-                const SizedBox(height: 24),
+              // Plan Selection
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _buildPlanSelection(l10n),
+              ),
+              const SizedBox(height: 18),
 
-                // Pricing
-                _buildPricingInfo(l10n),
-                const SizedBox(height: 24),
+              // Pricing
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: _buildPricingInfo(l10n),
+              ),
+              const SizedBox(height: 20),
 
-                // Subscribe Button
-                Container(
-                  width: double.infinity,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primaryColor,
-                        AppColors.primaryColor.withOpacity(0.85),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primaryColor.withOpacity(0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: isLoading ? null : () => _handleSubscribe(context),
-                      borderRadius: BorderRadius.circular(14),
-                      child: Center(
+              // Buttons
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    // Subscribe Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : () => _handleSubscribe(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryColor,
+                          disabledBackgroundColor: AppColors.primaryColor.withOpacity(0.5),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
                         child: isLoading
                             ? const SizedBox(
-                                width: 24,
-                                height: 24,
+                                width: 20,
+                                height: 20,
                                 child: CircularProgressIndicator(
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  strokeWidth: 2.5,
+                                  strokeWidth: 2,
                                 ),
                               )
                             : Text(
                                 'Suscribirse Ahora',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: isLoading ? Colors.white.withOpacity(0.6) : Colors.white,
                                 ),
                               ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 14),
+                    const SizedBox(height: 10),
 
-                // Cancel Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: Material(
-                    color: Colors.white.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(14),
-                    child: InkWell(
-                      onTap: () => Navigator.pop(context),
-                      borderRadius: BorderRadius.circular(14),
-                      child: Center(
+                    // Cancel Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.05),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(
+                              color: Colors.white.withOpacity(0.1),
+                              width: 1,
+                            ),
+                          ),
+                        ),
                         child: Text(
                           'No ahora',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white70,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withOpacity(0.7),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 24),
+            ],
           ),
         ),
       ),
@@ -213,36 +215,37 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
   }
 
   Widget _buildFeaturesList(AppLocalizations l10n) {
-    final features = {
-      'Sin anuncios': Icons.notifications_off,
-      'Soporte prioritario': Icons.support_agent,
-      'Acceso a funciones avanzadas': Icons.stars,
-    };
+    final features = [
+      ('Sin anuncios', Icons.notifications_off),
+      ('Soporte prioritario', Icons.support_agent),
+      ('Acceso a funciones avanzadas', Icons.stars),
+    ];
 
     return Column(
-      children: features.entries.map((entry) {
+      children: features.map((entry) {
         return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.only(bottom: 10),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: AppColors.accentGreen.withOpacity(0.2),
+                  color: AppColors.primaryColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  entry.value,
-                  color: AppColors.accentGreen,
-                  size: 18,
+                  entry.$2,
+                  color: AppColors.primaryColor,
+                  size: 16,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Text(
-                entry.key,
+                entry.$1,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -293,43 +296,45 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
       child: Stack(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: selected
-                  ? AppColors.primaryColor.withOpacity(0.2)
-                  : Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
+                  ? AppColors.primaryColor.withOpacity(0.12)
+                  : Colors.white.withOpacity(0.03),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: selected
-                    ? AppColors.primaryColor
-                    : Colors.white.withOpacity(0.1),
-                width: selected ? 2 : 1,
+                    ? AppColors.primaryColor.withOpacity(0.4)
+                    : Colors.white.withOpacity(0.08),
+                width: 1.5,
               ),
             ),
             child: Column(
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(selected ? 1 : 0.7),
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   price,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
                   ),
                 ),
                 Text(
                   period,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
@@ -337,20 +342,21 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
           ),
           if (showBadge)
             Positioned(
-              top: -8,
-              right: -8,
+              top: -6,
+              right: 8,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.accentGreen,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Text(
                   'Ahorra 17%',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ),

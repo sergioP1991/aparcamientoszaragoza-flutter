@@ -5,6 +5,7 @@ import 'package:aparcamientoszaragoza/Services/PenaltyService.dart';
 import 'package:aparcamientoszaragoza/Values/app_colors.dart';
 import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:aparcamientoszaragoza/Screens/payment/payment_screen.dart';
+import 'package:aparcamientoszaragoza/Screens/penalties/payment_penalty_screen.dart';
 
 class PendingPenaltiesScreen extends ConsumerStatefulWidget {
   static const routeName = '/pendingPenalties';
@@ -253,12 +254,40 @@ class _PendingPenaltiesScreenState extends ConsumerState<PendingPenaltiesScreen>
   }
 
   void _navigateToPayPenalty(BuildContext context, Multa penalty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Pago de multa en desarrollo'),
-        duration: Duration(seconds: 2),
+    // ✅ IMPLEMENTADO: Navegación a pantalla de pago con datos de la multa
+    debugPrint('🚀 [PENALTY PAY] Navegando a pago de multa: ID=${penalty.id}, monto=€${penalty.monto}');
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PaymentPenaltyScreen(penalty: penalty, onPaymentSuccess: _handlePaymentSuccess),
       ),
     );
+  }
+
+  /// Callback cuando el pago de una multa es exitoso
+  Future<void> _handlePaymentSuccess(Multa penalty, String paymentIntentId) async {
+    debugPrint('✅ [PENALTY PAY] Pago exitoso para multa ${penalty.id}');
+    
+    // Marcar multa como pagada en Firestore
+    final marked = await PenaltyService.markPenaltyAsPaid(
+      penaltyId: penalty.id!,
+      paymentIntentId: paymentIntentId,
+    );
+
+    if (marked) {
+      debugPrint('✅ [PENALTY PAY] Multa ${penalty.id} marcada como pagada en Firestore');
+      // El stream se actualiza automáticamente, la UI se recarga
+    } else {
+      debugPrint('❌ [PENALTY PAY] Error marcando multa como pagada');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al procesar el pago'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _showPayAllPenaltiesDialog(BuildContext context, List<Multa> penalties) {
