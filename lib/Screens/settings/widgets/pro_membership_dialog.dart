@@ -444,7 +444,7 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
       if (mounted) {
         // Trigger subscription in Riverpod
         await ref
-            .read(membershipProvider.notifier)
+            .read(membershipNotifierProvider.notifier)
             .subscribeToProPlan(selectedPlan == 'annual' ? 'annual' : 'monthly');
 
         widget.onSubscribeSuccess?.call();

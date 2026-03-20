@@ -81,7 +81,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   
                   return _buildToggleItem(
                     Icons.campaign, 
-                    l10n.offersPromotions + (isPro ? ' (${l10n.proOnly ?? "PRO"})' : ''),
+                    l10n.offersPromotions + (isPro ? ' (PRO)' : ''),
                     settings.offersPromotions, 
                     isPro 
                       ? (_) {} // No-op para usuarios PRO (deshabilitado)
