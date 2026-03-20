@@ -9,6 +9,7 @@ class PenaltyService {
 
   /// Crear una multa por exceso de tiempo
   /// Este método es llamado cuando el alquiler pasa el margen de 5 minutos
+  /// VALIDACIÓN: Solo permite 1 multa no-pagada por plaza
   static Future<Multa?> createPenalty({
     required int idPlaza,
     required String idArrendatario,
@@ -18,6 +19,20 @@ class PenaltyService {
   }) async {
     try {
       debugPrint('💰 [PENALTY] Creando multa por: $razon, monto: €$monto');
+
+      // ✅ FIX 2: Validar que no exista otra multa no-pagada para esta plaza
+      final existingQuery = await _firestore
+          .collection('multas')
+          .where('idPlaza', isEqualTo: idPlaza)
+          .where('idArrendatario', isEqualTo: idArrendatario)
+          .where('estado', isNotEqualTo: EstadoMulta.pagada.name)
+          .limit(1)
+          .get();
+
+      if (existingQuery.docs.isNotEmpty) {
+        debugPrint('⚠️ [PENALTY] Ya existe multa para plaza $idPlaza (arrendatario: $idArrendatario). No crear duplicado.');
+        return null;
+      }
 
       final multa = Multa(
         idPlaza: idPlaza,
@@ -74,7 +89,8 @@ class PenaltyService {
     }
   }
 
-  /// Obtener todas las multas (pendientes y pagadas) del usuario
+  /// Obtener todas las multas PENDIENTES del usuario (excluye pagadas y condonadas)
+  /// ✅ FIX 1: Filtro en Firestore para excluir multas pagadas automáticamente
   static Stream<List<Multa>> watchUserPenalties() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -84,6 +100,7 @@ class PenaltyService {
     return _firestore
         .collection('multas')
         .where('idArrendatario', isEqualTo: currentUser.uid)
+        .where('estado', isEqualTo: EstadoMulta.pendiente.name)
         .orderBy('fechaCreacion', descending: true)
         .snapshots()
         .map((snapshot) {

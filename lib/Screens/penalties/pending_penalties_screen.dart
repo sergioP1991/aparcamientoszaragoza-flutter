@@ -51,11 +51,10 @@ class _PendingPenaltiesScreenState extends ConsumerState<PendingPenaltiesScreen>
             );
           }
 
-          final allPenalties = snapshot.data ?? [];
-          final pendingPenalties = allPenalties.where((p) => p.estaPendiente).toList();
-          final paidPenalties = allPenalties.where((p) => p.estaPagada).toList();
+          // ✅ FIX 1: Stream ya filtra multas pagadas, solo devuelve pendientes
+          final pendingPenalties = snapshot.data ?? [];
 
-          if (allPenalties.isEmpty) {
+          if (pendingPenalties.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -150,30 +149,7 @@ class _PendingPenaltiesScreenState extends ConsumerState<PendingPenaltiesScreen>
                           ),
                         ),
                         const SizedBox(height: 12),
-                        ...pendingPenalties.map((penalty) => _buildPenaltyCard(context, penalty, isPaid: false)),
-                      ],
-                    ),
-                  ),
-
-                const SizedBox(height: 24),
-
-                // Lista de multas pagadas
-                if (paidPenalties.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Multas Pagadas',
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ...paidPenalties.map((penalty) => _buildPenaltyCard(context, penalty, isPaid: true)),
+                        ...pendingPenalties.map((penalty) => _buildPenaltyCard(context, penalty)),
                       ],
                     ),
                   ),
@@ -187,15 +163,15 @@ class _PendingPenaltiesScreenState extends ConsumerState<PendingPenaltiesScreen>
     );
   }
 
-  Widget _buildPenaltyCard(BuildContext context, Multa penalty, {required bool isPaid}) {
-    final borderColor = isPaid ? Colors.green : Colors.red;
-    final bgColor = isPaid ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1);
+  Widget _buildPenaltyCard(BuildContext context, Multa penalty) {
+    const borderColor = Colors.red;
+    const bgColor = Colors.redAccent;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: bgColor.withOpacity(0.1),
         border: Border.all(color: borderColor, width: 1.5),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -226,32 +202,18 @@ class _PendingPenaltiesScreenState extends ConsumerState<PendingPenaltiesScreen>
                   ),
                 ],
               ),
-              if (isPaid)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.2),
-                    border: Border.all(color: Colors.green),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Pagada',
-                    style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.2),
-                    border: Border.all(color: Colors.red),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text(
-                    'Pendiente',
-                    style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.2),
+                  border: Border.all(color: Colors.red),
+                  borderRadius: BorderRadius.circular(4),
                 ),
+                child: const Text(
+                  'Pendiente',
+                  style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -270,23 +232,21 @@ class _PendingPenaltiesScreenState extends ConsumerState<PendingPenaltiesScreen>
               fontSize: 12,
             ),
           ),
-          if (!isPaid) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => _navigateToPayPenalty(context, penalty),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.withOpacity(0.8),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                ),
-                child: const Text(
-                  'Pagar Multa',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _navigateToPayPenalty(context, penalty),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.withOpacity(0.8),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              child: const Text(
+                'Pagar Multa',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );

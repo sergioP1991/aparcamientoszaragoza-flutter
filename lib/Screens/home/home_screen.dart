@@ -614,8 +614,72 @@ class HomePageState extends ConsumerState<HomePage> {
 
   Widget viewScafoldOptions(LocationState location, AsyncValue<HomeData?> homeData) {
     return homeData.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text(AppLocalizations.of(context)!.genericError(err.toString()))),
+      loading: () => const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Cargando plazas...',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ],
+        ),
+      ),
+      error: (err, stack) {
+        debugPrint('🔴 ERROR en fetchHomeProvider: $err\n$stack');
+        return Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red.withOpacity(0.7),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error al cargar las plazas',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  err.toString(),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                    ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  ),
+                  child: const Text(
+                    'Reintentar',
+                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
       data: (data) {
         if (data == null) return Center(child: Text(AppLocalizations.of(context)!.noData));
 

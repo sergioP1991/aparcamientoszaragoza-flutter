@@ -111,23 +111,52 @@ class HomeState extends StateNotifier<AsyncValue<HomeData>> {
 
 @Riverpod(keepAlive: true)
 Future<HomeData?> fetchHome(Ref ref, {required bool allGarages, bool onlyMine = false}) async {
-  AsyncValue<User?> user = ref.watch(loginUserProvider);
+  try {
+    AsyncValue<User?> user = ref.watch(loginUserProvider);
+    
+    if (user.value == null) {
+      debugPrint('⚠️ [HOME PROVIDER] User is null, returning empty list');
+      return HomeData(
+        listGarajes: [],
+        listFavorite: [],
+        user: null,
+      );
+    }
 
-  List<Garaje> filtrada = List.empty(growable: true);
-  final QuerySnapshot<Map<String, dynamic>> snapshotGarage = await FirebaseFirestore
-      .instance.collection('garaje').get();
+    List<Garaje> filtrada = List.empty(growable: true);
+    
+    debugPrint('🔄 [HOME PROVIDER] Fetching garajes from Firestore...');
+    final QuerySnapshot<Map<String, dynamic>> snapshotGarage = await FirebaseFirestore
+        .instance.collection('garaje').get();
+    debugPrint('✅ [HOME PROVIDER] Fetched ${snapshotGarage.docs.length} garajes');
 
-  String userId = user?.value?.email ?? "";
+    String userId = user.value?.email ?? "";
 
-  // Buscar documentos donde coincidan userId e idPlaza
-  final snapshotFavorite = await FirebaseFirestore.instance
-      .collection('favorites')
-      .where('userId', isEqualTo: userId)
-      .get();
+    // Buscar documentos donde coincidan userId e idPlaza
+    debugPrint('🔄 [HOME PROVIDER] Fetching favorites...');
+    final snapshotFavorite = await FirebaseFirestore.instance
+        .collection('favorites')
+        .where('userId', isEqualTo: userId)
+        .get();
+    debugPrint('✅ [HOME PROVIDER] Fetched ${snapshotFavorite.docs.length} favorites');
 
-  List<Favorite> listFavorites = snapshotFavorite.docs.map<Favorite>((docFavorite) => Favorite.fromFirestore(docFavorite)).toList();
-  List<Garaje> listResult = snapshotGarage.docs.map<Garaje>((doc) =>
-      Garaje.fromFirestore(doc)).toList();
+    List<Favorite> listFavorites = snapshotFavorite.docs.map<Favorite>((docFavorite) {
+      try {
+        return Favorite.fromFirestore(docFavorite);
+      } catch (e) {
+        debugPrint('❌ Error parsing favorite: $e');
+        return Favorite('', '-1');  // Error fallback con valores por defecto
+      }
+    }).where((fav) => fav.idPlaza != null && fav.idPlaza != '-1').toList();
+    
+    List<Garaje> listResult = snapshotGarage.docs.map<Garaje>((doc) {
+      try {
+        return Garaje.fromFirestore(doc);
+      } catch (e) {
+        debugPrint('❌ Error parsing garaje: $e');
+        rethrow;
+      }
+    }).toList();
 
   listResult.forEach((c) => c.addFavorites(Favorite.filterFavorite(listFavorites, c.idPlaza.toString())));
 
@@ -145,54 +174,70 @@ Future<HomeData?> fetchHome(Ref ref, {required bool allGarages, bool onlyMine = 
     filtrada = listResult;
   }
 
-  final QuerySnapshot<Map<String, dynamic>> snapshotRent = await FirebaseFirestore.instance.collection('alquileres').get();
-  List<Alquiler> listAlquileres = snapshotRent.docs
-      .where((doc) {
-        // 🔥 FILTRO CRÍTICO: Solo incluir alquileres ACTIVOS
-        // Para tipo 0 (AlquilerNormal): no filtrar por estado, siempre activo
-        // Para tipo 1 (AlquilerEspecial): no filtrar por estado, siempre activo
-        // Para tipo 2 (AlquilerPorHoras): excluir si estado contiene "liberado" o "vencido"
-        if (doc['tipo'] == 2) {
-          final estado = doc['estado'] as String?;
-          if (estado != null && (estado.contains('liberado') || estado.contains('vencido'))) {
-            return false; // Excluir este alquiler
+    debugPrint('🔄 [HOME PROVIDER] Fetching rentals...');
+    final QuerySnapshot<Map<String, dynamic>> snapshotRent = await FirebaseFirestore.instance.collection('alquileres').get();
+    debugPrint('✅ [HOME PROVIDER] Fetched ${snapshotRent.docs.length} rentals');
+    
+    List<Alquiler> listAlquileres = snapshotRent.docs
+        .where((doc) {
+          // 🔥 FILTRO CRÍTICO: Solo incluir alquileres ACTIVOS
+          // Para tipo 0 (AlquilerNormal): no filtrar por estado, siempre activo
+          // Para tipo 1 (AlquilerEspecial): no filtrar por estado, siempre activo
+          // Para tipo 2 (AlquilerPorHoras): excluir si estado contiene "liberado" o "vencido"
+          if (doc['tipo'] == 2) {
+            final estado = doc['estado'] as String?;
+            if (estado != null && (estado.contains('liberado') || estado.contains('vencido'))) {
+              return false; // Excluir este alquiler
+            }
           }
+          return true; // Incluir este alquiler
+        })
+        .map<Alquiler>((doc) {
+      try {
+        if (doc['tipo'] == 0) {
+          return AlquilerNormal.fromFirestore(doc);
+        } else if (doc['tipo'] == 1) {
+          return AlquilerEspecial.fromFirestore(doc);
+        } else if (doc['tipo'] == 2) {
+          // Alquiler por horas
+          return AlquilerPorHoras.fromFirestore(doc);
+        } else {
+          return AlquilerEspecial.fromFirestore(doc);
         }
-        return true; // Incluir este alquiler
-      })
-      .map<Alquiler>((doc) {
-    try {
-      if (doc['tipo'] == 0) {
-        return AlquilerNormal.fromFirestore(doc);
-      } else if (doc['tipo'] == 1) {
-        return AlquilerEspecial.fromFirestore(doc);
-      } else if (doc['tipo'] == 2) {
-        // Alquiler por horas
-        return AlquilerPorHoras.fromFirestore(doc);
-      } else {
-        return AlquilerEspecial.fromFirestore(doc);
+      } catch (e) {
+        debugPrint('❌ Error parsing rental doc: $e');
+        // Crear un dummy rental para no bloquear
+        return AlquilerEspecial(
+          dias: [],
+          idArrendatario: 'error',
+          idPlaza: -1,
+        );
       }
-    } catch (e) {
-      print('Error parsing alquiler: $e');
-      // Retornar null para filtrar después
-      return AlquilerEspecial(
-        dias: [],
-        idArrendatario: 'error',
-        idPlaza: -1,
-      );
-    }
-  }).toList();
+    }).toList();
 
-  for (var alquiler in listAlquileres) {
-    Garaje? garage = searchGarageId(filtrada, alquiler?.idPlaza ?? -1);
-    if (garage != null) {
-      garage.alquiler = alquiler;
+    debugPrint('🔄 [HOME PROVIDER] Linking rentals to garages...');
+    for (var alquiler in listAlquileres) {
+      try {
+        Garaje? garage = searchGarageId(filtrada, alquiler?.idPlaza ?? -1);
+        if (garage != null) {
+          garage.alquiler = alquiler;
+        }
+      } catch (e) {
+        debugPrint('❌ Error linking rental to garage: $e');
+      }
     }
+
+    debugPrint('✅ [HOME PROVIDER] HomeData prepared successfully with ${filtrada.length} garages');
+    return HomeData(
+      listGarajes: filtrada,
+      listFavorite: listFavorites,
+      user: user.value,
+    );
+  } catch (e, stackTrace) {
+    debugPrint('❌ [HOME PROVIDER] CRITICAL ERROR in fetchHome: $e');
+    debugPrintStack(stackTrace: stackTrace);
+    rethrow; // Propagar el error a Riverpod
   }
-
-  return HomeData(  listGarajes: filtrada,
-                    listFavorite: listFavorites,
-                    user: user.value);
 }
 
 Garaje? searchGarageId (List<Garaje> listGarage, int? idPlaza) {
