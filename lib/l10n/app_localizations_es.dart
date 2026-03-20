@@ -1209,4 +1209,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get continueToLogin => 'Continuar a Login';
+
+  @override
+  String get notYou => 'No soy yo';
+
+  @override
+  String get rememberMe => 'Recuérdame';
+
+  @override
+  String get dontHaveAccount => '¿No tienes cuenta?';
 }

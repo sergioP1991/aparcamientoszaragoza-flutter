@@ -2348,6 +2348,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Continuar a Login'**
   String get continueToLogin;
+
+  /// No description provided for @notYou.
+  ///
+  /// In es, this message translates to:
+  /// **'No soy yo'**
+  String get notYou;
+
+  /// No description provided for @rememberMe.
+  ///
+  /// In es, this message translates to:
+  /// **'Recuérdame'**
+  String get rememberMe;
+
+  /// No description provided for @dontHaveAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'¿No tienes cuenta?'**
+  String get dontHaveAccount;
 }
 
 class _AppLocalizationsDelegate

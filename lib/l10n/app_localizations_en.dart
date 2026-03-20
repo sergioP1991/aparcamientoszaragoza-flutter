@@ -769,7 +769,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get processingPayment => 'Processing Payment...';
+  String get processingPayment => 'Processing payment...';
 
   @override
   String get uploadingImages => 'Uploading images...';
@@ -1199,4 +1199,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get continueToLogin => 'Continue to Login';
+
+  @override
+  String get notYou => 'Not you';
+
+  @override
+  String get rememberMe => 'Remember me';
+
+  @override
+  String get dontHaveAccount => 'Don\'t have an account?';
 }
