@@ -56,4 +56,26 @@ class MembershipNotifier extends StateNotifier<AsyncValue<MembershipSubscription
       rethrow;
     }
   }
+
+  /// Subscripción a plan PRO 
+  /// NOTA: En producción, esto debe integrase con Stripe y llamar DESDE Cloud Functions
+  /// después de que Stripe confirme el pago (via webhook)
+  /// Por ahora, es un placeholder que recarga el estado de membresía
+  Future<void> subscribeToProPlan(String planType) async {
+    try {
+      // TODO: Integrar con Stripe Payment Sheet para iniciar compra
+      // El webhook de Stripe llamará a Cloud Function que ejecutará:
+      // await MembershipService.createProSubscription(
+      //   userId: userId,
+      //   plan: plan,
+      //   stripeSubscriptionId: stripeId
+      // );
+      
+      // Por ahora, simplemente refrescamos el estado para mostrar cualquier cambio
+      await refreshMembership();
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+      rethrow;
+    }
+  }
 }
