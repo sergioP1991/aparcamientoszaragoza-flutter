@@ -1,0 +1,465 @@
+<!DOCTYPE html><html><head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/aparcamientoszaragoza-flutter/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Aparcamientos Zaragoza">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="aparcamientoszaragoza">
+  <meta name="google-signin-client_id" content="342617603309-126hj08escgutrlq6pvjeqtj1rsvm7md.apps.googleusercontent.com">
+
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <title>aparcamientoszaragoza</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    // The value below is injected by flutter build, do not touch.
+    const serviceWorkerVersion = "334993834" /* Flutter's service worker is deprecated and will be removed in a future Flutter release. */;
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer=""></script>
+  
+  <!-- 🔐 reCAPTCHA v3 Integration for bot protection -->
+  <!-- Replace YOUR_SITE_KEY with your actual reCAPTCHA v3 site key from Google Admin Console -->
+  <script src="https://www.google.com/recaptcha/api.js?render=6LecWLsqAAAAAKKvMqSmAWPfYf0Nn5TYSbIqvf8l"></script>
+  <script>
+    // Expose reCAPTCHA token getter to Dart via window object
+    window.getRecaptchaToken = async function(action) {
+      try {
+        if (typeof grecaptcha !== 'undefined') {
+          const token = await grecaptcha.execute('6LecWLsqAAAAAKKvMqSmAWPfYf0Nn5TYSbIqvf8l', {action: action});
+          console.log('✅ reCAPTCHA token obtained for action:', action);
+          return token;
+        } else {
+          console.error('❌ reCAPTCHA not loaded');
+          return '';
+        }
+      } catch (error) {
+        console.error('❌ Error getting reCAPTCHA token:', error);
+        return '';
+      }
+    };
+
+    // Mock score for testing (0.0-1.0, where 1.0 = human, 0.0 = bot)
+    window.getRecaptchaScore = function() {
+      // In production, this score would come from server verification
+      // For now, return random score for testing
+      const score = Math.random();
+      console.log('🎯 reCAPTCHA score (test):', score);
+      return score;
+    };
+  </script>
+  <style id="splash-screen-style">
+    html {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      background-color: #42a5f5;
+          background-size: 100% 100%;
+    }
+
+    .center {
+      margin: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      -ms-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+    }
+
+    .contain {
+      display:block;
+      width:100%; height:100%;
+      object-fit: contain;
+    }
+
+    .stretch {
+      display:block;
+      width:100%; height:100%;
+    }
+
+    .cover {
+      display:block;
+      width:100%; height:100%;
+      object-fit: cover;
+    }
+
+    .bottom {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      -ms-transform: translate(-50%, 0);
+      transform: translate(-50%, 0);
+    }
+
+    .bottomLeft {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+    }
+
+    .bottomRight {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+    }
+  </style>
+  <script id="splash-screen-script">
+    function removeSplashFromWeb() {
+      document.getElementById("splash")?.remove();
+      document.getElementById("splash-branding")?.remove();
+      document.body.style.background = "transparent";
+    }
+  </script>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+
+    <!-- // Other stuff -->
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDSSp7Fn4_rqpqWdBuE3tkR5u75CXgkTmM"></script>
+
+    <!-- EmailJS v3 desde unpkg -->
+    <script type="text/javascript" src="https://unpkg.com/emailjs-com@3/dist/email.min.js"></script>
+
+    <!-- ─── Google Pay Web SDK (síncrono) ────────────────────────────────────── -->
+    <!-- Sin 'async': garantiza que el SDK esté disponible cuando Flutter lo llame -->
+    <script src="https://pay.google.com/gp/p/js/pay.js"></script>
+
+    <!-- ─── Stripe.js v3 ─ Apple Pay nativo en Safari ──────────────────── -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+      var _stripeJs = null;
+
+      function _getStripeJs() {
+        if (!_stripeJs && typeof Stripe !== 'undefined') {
+          _stripeJs = Stripe('pk_test_51SuUod2KaK54WVOoow3ceAdHyLefry0S7wHHA5R0SfjFyB9mVyfwpocCmt0adzDFDiwsaM4diLCht1E98oJV8UWU00H20ta2MQ');
+        }
+        return _stripeJs;
+      }
+
+      /**
+       * Google Pay Web SDK — ventana nativa de Google Pay.
+       * Usa CALLBACK para compatibilidad con Dart.
+       *
+       * NOTAS IMPORTANTES:
+       * - environment: 'TEST' FUERZA la Test Card Suite (no tarjetas "reales")
+       * - stripe:version: '2020-08-27' es moderno y soportado por la mayoría de integraciones
+       * - allowedAuthMethods: ['PAN_ONLY'] para aislar; CRYPTOGRAM_3DS puede causar OR_BIBED_08 en test
+       * - Si aparece OR_BIBED_08, checkea:
+       *   a) ¿Aparece la Test Card Suite en el popup? (si no, no estás en TEST)
+       *   b) ¿Estás usando solo PAN_ONLY? (si no, prueba sin CRYPTOGRAM_3DS)
+       */
+      window.showGooglePayDirect = function(options, onComplete) {
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('📞 Google Pay Web SDK: iniciando (environment: TEST)...');
+        console.log('═══════════════════════════════════════════════════════════');
+        
+        var called = false; // Prevenir doble-llamada al callback
+        function safeComplete(result) {
+          if (!called) {
+            called = true;
+            console.log('  → safeComplete llamado con:', result);
+            onComplete(result);
+          }
+        }
+
+        // Si el SDK no está listo
+        if (typeof google === 'undefined' || !google.payments || !google.payments.api) {
+          console.error('❌ Google Pay SDK no cargado');
+          safeComplete({ success: false, error: 'google_pay_sdk_not_loaded' });
+          return;
+        }
+
+        var PUBLISHABLE_KEY = 'pk_test_51SuUod2KaK54WVOoow3ceAdHyLefry0S7wHHA5R0SfjFyB9mVyfwpocCmt0adzDFDiwsaM4diLCht1E98oJV8UWU00H20ta2MQ';
+
+        console.log('  ✓ SDK disponible, creando paymentMethod...');
+
+        var paymentMethod = {
+          type: 'CARD',
+          parameters: {
+            // PAN_ONLY: happy path, evita OR_BIBED_08 en TEST
+            // Para producción o si necesitas 3DS, agrega 'CRYPTOGRAM_3DS'
+            allowedAuthMethods: ['PAN_ONLY'],
+            allowedCardNetworks: ['VISA', 'MASTERCARD'],
+          },
+          tokenizationSpecification: {
+            type: 'PAYMENT_GATEWAY',
+            parameters: {
+              gateway: 'stripe',
+              'stripe:version': '2020-08-27',      // Moderno, not legacy (deprecated 2018-10-31)
+              'stripe:publishableKey': PUBLISHABLE_KEY,
+            },
+          },
+        };
+
+        console.log('  ✓ Creando PaymentsClient (environment TEST)...');
+        var client = new google.payments.api.PaymentsClient({ environment: 'TEST' });
+
+        console.log('  ✓ Verificando isReadyToPay...');
+        client.isReadyToPay({ 
+          apiVersion: 2, apiVersionMinor: 0, 
+          allowedPaymentMethods: [paymentMethod] 
+        })
+          .then(function(ready) {
+            console.log('  ✓ isReadyToPay resultado:', ready.result);
+            if (!ready.result) {
+              console.warn('  ⚠️ Google Pay no está listo en este navegador');
+              safeComplete({ success: false, error: 'google_pay_not_ready' });
+              return null;
+            }
+
+            console.log('  ✓ Google Pay LISTO. Abriendo loadPaymentData...');
+            console.log('  ℹ️ En TEST, deberías ver la "Test Card Suite" de Google Pay');
+            
+            return client.loadPaymentData({
+              apiVersion: 2,
+              apiVersionMinor: 0,
+              allowedPaymentMethods: [paymentMethod],
+              merchantInfo: { merchantName: 'Aparcamientos Zaragoza' },
+              transactionInfo: {
+                totalPriceStatus: 'FINAL',
+                totalPrice: (options.amountInCents / 100).toFixed(2),
+                currencyCode: (options.currency || 'eur').toUpperCase(),
+                countryCode: 'ES',
+              },
+            });
+          })
+          .then(function(paymentData) {
+            if (!paymentData) {
+              console.warn('  ⚠️ paymentData es null (usuario probablemente canceló)');
+              return;
+            }
+            console.log('  ✅ Google Pay retornó paymentData');
+            console.log('  ✓ Parseando tokenizationData.token...');
+            try {
+              var token = JSON.parse(paymentData.paymentMethodData.tokenizationData.token);
+              console.log('  ✅ Token parseado, type:', token.type, 'id:', token.id);
+              safeComplete({ success: true, paymentMethodId: token.id });
+            } catch (parseErr) {
+              console.error('  ❌ Error al parsear token:', parseErr);
+              safeComplete({ success: false, error: 'token_parse_error' });
+            }
+          })
+          .catch(function(err) {
+            console.error('  ❌ Excepción en loadPaymentData:', err);
+            if (err && (err.statusCode === 'CANCELED' || err.statusCode === 'canceled')) {
+              console.log('  → Usuario CANCELÓ Google Pay');
+              safeComplete({ success: false, error: 'cancelled' });
+            } else {
+              var errMsg = '';
+              if (err && err.statusMessage) errMsg = err.statusMessage;
+              else if (err && err.message) errMsg = err.message;
+              else if (err && typeof err === 'string') errMsg = err;
+              else errMsg = 'google_pay_error (unknown)';
+              
+              console.error('  → Error específico:', errMsg);
+              // Si ves "OR_BIBED_08" aquí, checkea:
+              // 1) ¿Aparece Test Card Suite en el popup?
+              // 2) ¿Estás usando PAN_ONLY o CRYPTOGRAM_3DS + 3DS?
+              safeComplete({ success: false, error: errMsg });
+            }
+          });
+
+        // Fallback: si Google Pay no responde en 120s (cubre escenarios de cuelgue)
+        setTimeout(function() { 
+          console.warn('  ⏱️ TIMEOUT: Google Pay no respondió en 120 segundos');
+          safeComplete({ success: false, error: 'google_pay_timeout' }); 
+        }, 120000);
+      };
+
+      console.log('✅ window.showGooglePayDirect definida (TEST, PAN_ONLY, stripe:2020-08-27)');
+    </script>
+
+    <script>
+      /**
+       * Payment Request API via Stripe.js (para Apple Pay en Safari).
+       * Usa CALLBACK para compatibilidad con Dart.
+       * 
+       * ORDEN CRÍTICO:
+       * 1. Crear PaymentRequest
+       * 2. Registrar handlers INMEDIATAMENTE
+       * 3. Verificar canMakePayment()
+       * 4. Solo si está disponible, llamar show()
+       */
+      window.showStripePaymentRequest = function(options, onComplete) {
+        console.log('═══════════════════════════════════════════════════════════');
+        console.log('🍎 Stripe Payment Request API: iniciando...');
+        console.log('═══════════════════════════════════════════════════════════');
+        
+        var stripe = _getStripeJs();
+        if (!stripe) {
+          console.error('❌ Stripe.js no cargado');
+          onComplete({ success: false, error: 'stripe_not_loaded' });
+          return;
+        }
+
+        console.log('  ✓ Creando PaymentRequest...');
+        var pr = stripe.paymentRequest({
+          country: 'ES',
+          currency: (options.currency || 'eur').toLowerCase(),
+          total: { label: options.label || 'Alquiler plaza', amount: options.amountInCents || 0 },
+          requestPayerName: false,
+          requestPayerEmail: false,
+        });
+
+        console.log('  ✓ Registrando listeners...');
+        // IMPORTANTE: Registrar handlers ANTES de cualquier otra operación
+        pr.on('paymentmethod', function(evt) {
+          console.log('  ✅ paymentmethod event recibido');
+          evt.complete('success');
+          var pmId = evt.paymentMethod.id;
+          console.log('  ✓ Retornando payment method:', pmId);
+          onComplete({ success: true, paymentMethodId: pmId });
+        });
+        
+        pr.on('cancel', function() {
+          console.log('  ⚠️ Usuario canceló Payment Request');
+          onComplete({ success: false, error: 'cancelled' });
+        });
+
+        console.log('  ✓ Verificando canMakePayment()...');
+        // Ahora sí, verificar disponibilidad
+        pr.canMakePayment().then(function(result) {
+          if (!result) {
+            console.warn('  ⚠️ Payment Request API no disponible en este navegador');
+            console.log('     (Normal en Chrome/desktop sin Apple Pay, Edge, Firefox, etc.)');
+            onComplete({ success: false, error: 'payment_request_not_available' });
+            return;
+          }
+          
+          console.log('  ✓ Payment Request disponible. Llamando show()...');
+          if (result.applePay) console.log('     → Apple Pay detectado (Safari)');
+          if (result.googlePay) console.log('     → Google Pay detectado (Chrome)');
+          
+          // Solo llamar show() DESPUÉS de verificar canMakePayment()
+          pr.show().catch(function(err) {
+            console.error('  ❌ Error en pr.show():', err?.message || err);
+            onComplete({ success: false, error: err?.message || 'show_error' });
+          });
+        }).catch(function(err) {
+          console.error('  ❌ Error en canMakePayment():', err?.message || err);
+          onComplete({ success: false, error: err?.message || 'canMakePayment_error' });
+        });
+      };
+
+      console.log('✅ window.showStripePaymentRequest definida (con canMakePayment() check)');
+    </script>
+    <!-- ─────────────────────────────────────────────────────────────────── -->
+
+</head>
+<body>
+  <!-- Inicializar EmailJS ANTES de que cargue Flutter -->
+  <script>
+    console.log('🔄 Inicializando EmailJS v3...');
+    
+    // Esperar a que EmailJS esté disponible
+    var emailjsReady = false;
+    var attempts = 0;
+    var maxAttempts = 50;
+    
+    function initEmailJS() {
+      if (typeof emailjs !== 'undefined') {
+        emailjs.init('-dh-mInaZZb1fVrkm');
+        console.log('✅ EmailJS inicializado correctamente');
+        emailjsReady = true;
+      } else if (attempts < maxAttempts) {
+        attempts++;
+        setTimeout(initEmailJS, 100);
+      } else {
+        console.error('❌ No se pudo cargar EmailJS');
+      }
+    }
+    
+    initEmailJS();
+    
+    // Función global para enviar emails desde Dart
+    window.sendEmailViaEmailJS = function(serviceId, templateId, to, name, title) {
+      console.log('\n' + '='.repeat(60));
+      console.log('📤 ENVIANDO EMAIL CON EMAILJS');
+      console.log('='.repeat(60));
+      console.log('Service ID:', serviceId);
+      console.log('Template ID:', templateId);
+      console.log('Parámetros:');
+      console.log('  • to:', to);
+      console.log('  • name:', name);
+      console.log('  • title:', title);
+
+      if (!emailjsReady || typeof emailjs === 'undefined') {
+        return Promise.reject(new Error('EmailJS no está inicializado'));
+      }
+
+      console.log('\n📨 Llamando emailjs.send()...');
+      
+      // Enviar el email
+      return emailjs.send(serviceId, templateId, {
+        to: to,
+        name: name,
+        title: title
+      })
+        .then(function(response) {
+          console.log('\n' + '='.repeat(60));
+          console.log('✅ EMAIL ENVIADO EXITOSAMENTE');
+          console.log('='.repeat(60));
+          console.log('Status:', response.status);
+          console.log('Message ID:', response.text);
+          return { 
+            success: true, 
+            messageId: response.text,
+            status: response.status 
+          };
+        })
+        .catch(function(error) {
+          console.log('\n' + '='.repeat(60));
+          console.error('❌ ERROR AL ENVIAR EMAIL');
+          console.error('='.repeat(60));
+          console.error('Status:', error.status);
+          console.error('Text:', error.text);
+          console.error('Error:', error);
+          
+          throw new Error(`EmailJS Error ${error.status}: ${error.text || error.message}`);
+        });
+    };
+
+    console.log('✅ Función window.sendEmailViaEmailJS definida');
+  </script>
+
+  <script>
+    window.addEventListener('load', function(ev) {
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
+
+
+</body></html>
