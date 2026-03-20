@@ -136,12 +136,14 @@ class StripeService {
       debugPrint('🔑 createPaymentIntent: Creando intent real en Stripe...');
       debugPrint('💰 Monto: ${(amountInCents / 100).toStringAsFixed(2)} $currency');
       
-      // Crear autenticación Bearer con el Secret Key
+      // Crear autenticación Basic (requerida por Stripe API)
+      final basicAuth = base64Encode(utf8.encode('$secretKey:'));
+      
       // Llamar a Stripe API para crear un PaymentIntent
       final response = await http.post(
         Uri.parse('https://api.stripe.com/v1/payment_intents'),
         headers: {
-          'Authorization': 'Bearer $secretKey',
+          'Authorization': 'Basic $basicAuth',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {
@@ -194,10 +196,14 @@ class StripeService {
   }) async {
     try {
       debugPrint('💳 Creando PaymentMethod con datos de tarjeta...');
+      
+      // Crear autenticación Basic (requerida por Stripe API)
+      final basicAuth = base64Encode(utf8.encode('$secretKey:'));
+      
       final response = await http.post(
         Uri.parse('https://api.stripe.com/v1/payment_methods'),
         headers: {
-          'Authorization': 'Bearer $secretKey',
+          'Authorization': 'Basic $basicAuth',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {
@@ -245,11 +251,14 @@ class StripeService {
         // Extraer el Payment Intent ID del client secret
         final paymentIntentId = clientSecret.split('_secret_')[0];
         
+        // Crear autenticación Basic (requerida por Stripe API)
+        final basicAuth = base64Encode(utf8.encode('$secretKey:'));
+        
         // Confirmar el PaymentIntent usando la API de Stripe (server-side con Secret Key)
         final confirmResponse = await http.post(
           Uri.parse('https://api.stripe.com/v1/payment_intents/$paymentIntentId/confirm'),
           headers: {
-            'Authorization': 'Bearer $secretKey',
+            'Authorization': 'Basic $basicAuth',
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: {
@@ -430,10 +439,13 @@ class StripeService {
       if (paymentMethodId.startsWith('tok_')) {
         debugPrint('  ⚠️ Detectado TOKEN (tok_xxx). Convirtiendo a PaymentMethod...');
         
+        // Crear autenticación Basic (requerida por Stripe API)
+        final basicAuth = base64Encode(utf8.encode('$secretKey:'));
+        
         final pmResponse = await http.post(
           Uri.parse('https://api.stripe.com/v1/payment_methods'),
           headers: {
-            'Authorization': 'Bearer $secretKey',
+            'Authorization': 'Basic $basicAuth',
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           body: {
@@ -457,11 +469,14 @@ class StripeService {
 
       debugPrint('  ✓ Confirmando PaymentIntent con: $finalPaymentMethodId');
       
+      // Crear autenticación Basic (requerida por Stripe API)
+      final basicAuth = base64Encode(utf8.encode('$secretKey:'));
+      
       final response = await http.post(
         Uri.parse(
             'https://api.stripe.com/v1/payment_intents/$paymentIntentId/confirm'),
         headers: {
-          'Authorization': 'Bearer $secretKey',
+          'Authorization': 'Basic $basicAuth',
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {
