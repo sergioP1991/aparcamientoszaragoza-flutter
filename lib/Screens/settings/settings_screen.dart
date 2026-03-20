@@ -72,12 +72,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _buildToggleItem(
                   Icons.notifications, l10n.reservationAlerts, settings.reservationAlerts, (val) {
                 settingsNotifier.updateReservationAlerts(val);
-              }),
+              }, enabled: true),
               const Divider(color: Colors.white10),
-              _buildToggleItem(
-                  Icons.campaign, l10n.offersPromotions, settings.offersPromotions, (val) {
-                _handleOffersPromotionsToggle(val, ref, context, settingsNotifier);
-              }),
+              Consumer(
+                builder: (context, ref, _) {
+                  final membership = ref.watch(membershipProvider);
+                  final isPro = membership.whenData((m) => m?.isProActive ?? false).value ?? false;
+                  
+                  return _buildToggleItem(
+                    Icons.campaign, 
+                    l10n.offersPromotions + (isPro ? ' (${l10n.proOnly ?? "PRO"})' : ''),
+                    settings.offersPromotions, 
+                    isPro 
+                      ? (_) {} // No-op para usuarios PRO (deshabilitado)
+                      : (val) => _handleOffersPromotionsToggle(val, ref, context, settingsNotifier),
+                    enabled: !isPro, // Deshabilitar para usuarios PRO
+                    isProFeature: isPro,
+                  );
+                },
+              ),
             ]),
 
             const SizedBox(height: 32),
@@ -234,7 +247,14 @@ Widget _buildSettingsCard({required List<Widget> children}) {
     );
   }
 
-  Widget _buildToggleItem(IconData icon, String title, bool value, Function(bool) onChanged) {
+  Widget _buildToggleItem(
+    IconData icon,
+    String title,
+    bool value,
+    Function(bool) onChanged, {
+    bool enabled = true,
+    bool isProFeature = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -244,12 +264,16 @@ Widget _buildSettingsCard({required List<Widget> children}) {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(
+                color: enabled ? Colors.white : Colors.grey.shade500,
+                fontSize: 16,
+                fontWeight: enabled ? FontWeight.normal : FontWeight.w400,
+              ),
             ),
           ),
           Switch(
-            value: value,
-            onChanged: onChanged,
+            value: isProFeature ? false : value, // PRO users always see OFF
+            onChanged: enabled ? onChanged : null, // Deshabilitar si enabled=false
             activeColor: AppColors.primaryColor,
             activeTrackColor: AppColors.primaryColor.withOpacity(0.3),
             inactiveThumbColor: Colors.grey.shade400,

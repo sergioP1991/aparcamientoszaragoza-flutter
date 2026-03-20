@@ -5,6 +5,8 @@ import 'package:aparcamientoszaragoza/l10n/app_localizations.dart';
 import 'package:aparcamientoszaragoza/Screens/settings/providers/membership_provider.dart';
 import 'package:aparcamientoszaragoza/Models/membership_subscription.dart';
 
+/// Premium PRO subscription dialog with modern Uncodixfy design
+/// Linear, Raycast, Stripe aesthetic - clean, minimal, professional
 class ProMembershipDialog extends ConsumerStatefulWidget {
   final VoidCallback? onSubscribeSuccess;
   final String? initialTab; // 'monthly' o 'annual'
@@ -12,7 +14,7 @@ class ProMembershipDialog extends ConsumerStatefulWidget {
   const ProMembershipDialog({
     super.key,
     this.onSubscribeSuccess,
-    this.initialTab = 'monthly',
+    this.initialTab = 'annual', // Annual by default for better conversion
   });
 
   @override
@@ -26,31 +28,28 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
   @override
   void initState() {
     super.initState();
-    selectedPlan = widget.initialTab ?? 'monthly';
+    selectedPlan = widget.initialTab ?? 'annual';
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final membership = ref.watch(membershipProvider).value;
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
+        constraints: const BoxConstraints(maxWidth: 420),
         decoration: BoxDecoration(
           color: const Color(0xFF0F0F14),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.08),
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 24,
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
               offset: const Offset(0, 8),
             ),
           ],
@@ -59,98 +58,187 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header
+              // Close button top-right
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 16, 0),
+                padding: const EdgeInsets.all(16),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.workspace_premium,
-                        color: Colors.amber,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 32),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Upgrade a PRO',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            'Unlock PRO',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                               color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 20,
+                              letterSpacing: -0.5,
                             ),
                           ),
+                          const SizedBox(height: 6),
                           Text(
-                            'Desbloquea funciones premium',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.white.withOpacity(0.5),
-                              fontSize: 12,
+                            'Premium parking experience',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.6),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Icon(
                         Icons.close,
                         color: Colors.white.withOpacity(0.4),
                         size: 20,
                       ),
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
 
-              // Features
+              // Features showcase (3 cols)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _buildFeaturesList(l10n),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  children: [
+                    _featureItem(
+                      icon: Icons.ads_click,
+                      label: 'Ad-free',
+                      color: Colors.blue,
+                    ),
+                    const SizedBox(width: 12),
+                    _featureItem(
+                      icon: Icons.priority_high,
+                      label: 'Priority support',
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(width: 12),
+                    _featureItem(
+                      icon: Icons.check_circle,
+                      label: 'Full access',
+                      color: AppColors.accentGreen,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 18),
 
-              // Plan Selection
+              const SizedBox(height: 24),
+
+              // Pricing cards (side by side)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _buildPlanSelection(l10n),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _pricingCard(
+                        plan: 'Monthly',
+                        price: '€9.99',
+                        period: '/month',
+                        isSelected: selectedPlan == 'monthly',
+                        onTap: () => setState(() => selectedPlan = 'monthly'),
+                        highlight: false,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          _pricingCard(
+                            plan: 'Annual',
+                            price: '€99.99',
+                            period: '/year',
+                            isSelected: selectedPlan == 'annual',
+                            onTap: () => setState(() => selectedPlan = 'annual'),
+                            highlight: true,
+                          ),
+                          Positioned(
+                            top: -12,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentGreen,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'Best deal',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 18),
 
-              // Pricing
+              const SizedBox(height: 24),
+
+              // Comparison breakdown
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: _buildPricingInfo(l10n),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.03),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withOpacity(0.06), width: 1),
+                  ),
+                  child: Column(
+                    children: [
+                      _comparisonRow(
+                        'Monthly',
+                        '€9.99',
+                        Colors.white.withOpacity(0.6),
+                      ),
+                      const SizedBox(height: 10),
+                      _comparisonRow(
+                        'Annual (monthly avg)',
+                        '€8.33',
+                        AppColors.accentGreen,
+                      ),
+                      Divider(
+                        color: Colors.white.withOpacity(0.1),
+                        height: 14,
+                      ),
+                      _comparisonRow(
+                        'Save per year',
+                        '€19.92',
+                        AppColors.accentGreen,
+                        isBold: true,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 20),
 
-              // Buttons
+              const SizedBox(height: 24),
+
+              // Action buttons
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    // Subscribe Button
+                    // Subscribe CTA
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: isLoading ? null : () => _handleSubscribe(context),
+                        onPressed: isLoading ? null : () => _handleSubscribe(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryColor,
                           disabledBackgroundColor: AppColors.primaryColor.withOpacity(0.5),
-                          foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -158,47 +246,50 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
                         ),
                         child: isLoading
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                                width: 18,
+                                height: 18,
                                 child: CircularProgressIndicator(
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   strokeWidth: 2,
                                 ),
                               )
                             : Text(
-                                'Suscribirse Ahora',
+                                'Subscribe now',
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: isLoading ? Colors.white.withOpacity(0.6) : Colors.white,
+                                  color: Colors.white,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                       ),
                     ),
                     const SizedBox(height: 10),
 
-                    // Cancel Button
+                    // Cancel button
                     SizedBox(
                       width: double.infinity,
                       height: 44,
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: TextButton.styleFrom(
-                          backgroundColor: Colors.white.withOpacity(0.05),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            side: BorderSide(
+                      child: GestureDetector(
+                        onTap: isLoading ? null : () => Navigator.pop(context),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
                               color: Colors.white.withOpacity(0.1),
                               width: 1,
                             ),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                        ),
-                        child: Text(
-                          'No ahora',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withOpacity(0.7),
+                          child: Center(
+                            child: Text(
+                              'Maybe later',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withOpacity(0.7),
+                                letterSpacing: 0.2,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -206,7 +297,8 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -214,220 +306,105 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
     );
   }
 
-  Widget _buildFeaturesList(AppLocalizations l10n) {
-    final features = [
-      ('Sin anuncios', Icons.notifications_off),
-      ('Soporte prioritario', Icons.support_agent),
-      ('Acceso a funciones avanzadas', Icons.stars),
-    ];
-
-    return Column(
-      children: features.map((entry) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  entry.$2,
-                  color: AppColors.primaryColor,
-                  size: 16,
-                ),
+  Widget _featureItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.2), width: 1),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
               ),
-              const SizedBox(width: 10),
-              Text(
-                entry.$1,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildPlanSelection(AppLocalizations l10n) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildPlanCard(
-            'Mensual',
-            '€9.99',
-            '/mes',
-            selectedPlan == 'monthly',
-            () => setState(() => selectedPlan = 'monthly'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildPlanCard(
-            'Anual',
-            '€99.99',
-            '/año',
-            selectedPlan == 'annual',
-            () => setState(() => selectedPlan = 'annual'),
-            showBadge: true,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPlanCard(
-    String title,
-    String price,
-    String period,
-    bool selected,
-    VoidCallback onTap, {
-    bool showBadge = false,
+  Widget _pricingCard({
+    required String plan,
+    required String price,
+    required String period,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required bool highlight,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Stack(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: selected
-                  ? AppColors.primaryColor.withOpacity(0.12)
-                  : Colors.white.withOpacity(0.03),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: selected
-                    ? AppColors.primaryColor.withOpacity(0.4)
-                    : Colors.white.withOpacity(0.08),
-                width: 1.5,
-              ),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(selected ? 1 : 0.7),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  price,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                Text(
-                  period,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryColor.withOpacity(0.12)
+              : Colors.white.withOpacity(0.03),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primaryColor.withOpacity(0.4)
+                : Colors.white.withOpacity(0.1),
+            width: 1.5,
           ),
-          if (showBadge)
-            Positioned(
-              top: -6,
-              right: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.accentGreen,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  'Ahorra 17%',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                  ),
-                ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              plan,
+              style: TextStyle(
+                color: Colors.white.withOpacity(isSelected ? 1 : 0.7),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPricingInfo(AppLocalizations l10n) {
-    final monthlyPrice = 9.99;
-    final annualPrice = 99.99;
-    final monthlyFromAnnual = annualPrice / 12;
-    final savings = monthlyPrice - monthlyFromAnnual;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.06),
+            const SizedBox(height: 10),
+            Text(
+              price,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              period,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.info_outline,
-                color: Colors.white.withOpacity(0.4),
-                size: 14,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Comparación de planes',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _buildPricingRow(
-            'Mensual',
-            '€${monthlyPrice.toStringAsFixed(2)}/mes',
-            AppColors.primaryColor,
-          ),
-          const SizedBox(height: 6),
-          _buildPricingRow(
-            'Anual',
-            '€${monthlyFromAnnual.toStringAsFixed(2)}/mes',
-            AppColors.accentGreen,
-          ),
-          const SizedBox(height: 6),
-          _buildPricingRow(
-            'Ahorro anual',
-            '€${(savings * 12).toStringAsFixed(2)}',
-            AppColors.accentGreen,
-            isBold: true,
-          ),
-        ],
-      ),
     );
   }
 
-  Widget _buildPricingRow(String label, String value, Color color, {bool isBold = false}) {
+  Widget _comparisonRow(
+    String label,
+    String value,
+    Color valueColor, {
+    bool isBold = false,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -442,43 +419,57 @@ class _ProMembershipDialogState extends ConsumerState<ProMembershipDialog> {
         Text(
           value,
           style: TextStyle(
-            color: color,
+            color: valueColor,
             fontSize: 12,
             fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+            letterSpacing: 0.2,
           ),
         ),
       ],
     );
   }
 
-  Future<void> _handleSubscribe(BuildContext context) async {
+  Future<void> _handleSubscribe() async {
     setState(() => isLoading = true);
 
     try {
-      // TODO: Aqui se integrará con Stripe para procesar el pago
-      // Por ahora, mostramos un diálogo de éxito simulado
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('¡Iniciando suscripción PRO!'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      // TODO: Integración con Stripe Payment Sheet
+      // Stripe SDK will handle the subscription flow:
+      // 1. Create SetupIntent on backend
+      // 2. Present Stripe payment UI
+      // 3. Return to app on completion
 
-      // Simular conexión a Stripe
-      await Future.delayed(const Duration(seconds: 1));
+      await Future.delayed(const Duration(seconds: 2));
 
       if (mounted) {
+        // Trigger subscription in Riverpod
+        await ref
+            .read(membershipProvider.notifier)
+            .subscribeToProPlan(selectedPlan == 'annual' ? 'annual' : 'monthly');
+
         widget.onSubscribeSuccess?.call();
-        Navigator.pop(context);
+
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Welcome to PRO! 🎉'),
+              backgroundColor: AppColors.accentGreen,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red.withOpacity(0.8),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => isLoading = false);

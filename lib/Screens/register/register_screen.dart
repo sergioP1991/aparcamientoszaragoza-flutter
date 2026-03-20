@@ -51,6 +51,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
+  
+  // Track registration state
+  bool _isRegistering = false;
+  bool _registrationSuccess = false;
 
   @override
   void initState() {
@@ -179,30 +183,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
 
   void _handleRegister() {
-    final l10n = AppLocalizations.of(context)!;
+    debugPrint('📝 [REGISTER] Starting registration...');
     
-    // Escuchar cambios del provider de registro
-    ref.listen(registerUserProvider, (previous, next) {
-      next.when(
-        data: (userCredential) {
-          if (userCredential != null) {
-            // ✅ ÉXITO: Mostrar diálogo y navegar a login
-            _showSuccessDialog(l10n);
-          }
-        },
-        loading: () {
-          // Mostrar spinner de carga (opcional - dependerá del UI)
-          debugPrint('📝 Registrando usuario...');
-        },
-        error: (error, stack) {
-          // ❌ ERROR: Mostrar mensaje de error
-          SnackbarHelper.showSnackBar(
-            isError: true,
-            l10n.registrationError,
-          );
-          debugPrint('❌ Error en registro: $error');
-        },
-      );
+    setState(() {
+      _isRegistering = true;
+      _registrationSuccess = false;
     });
     
     // Ejecutar el registro
@@ -217,77 +202,82 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   }
   
   void _showSuccessDialog(AppLocalizations l10n) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF1E2235),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Icono de éxito con animación
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.green, width: 2),
-                ),
-                child: const Icon(Icons.check_rounded, color: Colors.green, size: 50),
-              ),
-              const SizedBox(height: 24),
-              
-              // Título
-              Text(
-                l10n.registrationSuccess,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              
-              // Descripción
-              Text(
-                l10n.registrationWelcome,
-                style: const TextStyle(
-                  color: Colors.white60,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              
-              // Botón "Continuar a Login"
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4FC3F7),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    // Asegurar que la navegación ocurra después del frame actual para evitar conflictos
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: const Color(0xFF1E2235),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono de éxito con animación
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.green, width: 2),
                   ),
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Cerrar diálogo
-                    Navigator.of(context).pushReplacementNamed(LoginPage.routeName); // Ir a login
-                  },
-                  child: Text(
-                    l10n.continueToLogin,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  child: const Icon(Icons.check_rounded, color: Colors.green, size: 50),
+                ),
+                const SizedBox(height: 24),
+                
+                // Título
+                Text(
+                  l10n.registrationSuccess,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                
+                // Descripción
+                Text(
+                  l10n.registrationWelcome,
+                  style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                
+                // Botón "Continuar a Login"
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4FC3F7),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Cerrar diálogo
+                      Navigator.of(context).pushReplacementNamed(LoginPage.routeName); // Ir a login
+                    },
+                    child: Text(
+                      l10n.continueToLogin,
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+              ],
+            ),
+          );
+        },
+      );
+    });
   }
 
   void _previousStep() {
@@ -302,6 +292,38 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
+    // 🔐 IMPORTANTE: Escuchar el estado del registro en build() para evitar race conditions
+    // Este listener se registra de forma segura sin conflictos de Riverpod
+    ref.listen(registerUserProvider, (previous, next) {
+      next.when(
+        data: (userCredential) {
+          if (userCredential != null && _isRegistering) {
+            debugPrint('✅ [REGISTER] Registro exitoso, mostrando diálogo...');
+            // ✅ ÉXITO: Mostrar diálogo y navegar a login
+            _isRegistering = false;
+            _registrationSuccess = true;
+            _showSuccessDialog(l10n);
+          }
+        },
+        loading: () {
+          debugPrint('⏳ [REGISTER] Registrando usuario en Firebase...');
+        },
+        error: (error, stack) {
+          // ❌ ERROR: Mostrar mensaje de error
+          if (_isRegistering) {
+            _isRegistering = false;
+            SnackbarHelper.showSnackBar(
+              isError: true,
+              l10n.registrationError,
+            );
+            debugPrint('❌ [REGISTER] Error en registro: $error\n$stack');
+          }
+        },
+      );
+    });
+    
     return Scaffold(
       backgroundColor: const Color(0xFF070914),
       appBar: _buildAppBar(),

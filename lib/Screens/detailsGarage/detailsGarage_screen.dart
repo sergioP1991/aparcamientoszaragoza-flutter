@@ -61,97 +61,183 @@ class _DetailsGaragePageState extends ConsumerState<DetailsGarajePage> {
   Widget build(BuildContext context) {
     final int idPlaza = (ModalRoute.of(context)?.settings.arguments ?? 0) as int;
     final homeDataState = ref.watch(fetchHomeProvider(allGarages: true));
-    final plaza = homeDataState.value?.getGarageById(idPlaza);
-    final user = homeDataState.value?.user;
-
-    debugPrint('🔍 DetailScreen DEBUG - idPlaza: $idPlaza');
-    if (plaza != null) {
-      debugPrint('🔍 DetailScreen DEBUG - plaza.imagenes: ${plaza.imagenes.length} imágenes');
-      for (int i = 0; i < plaza.imagenes.length; i++) {
-        debugPrint('   [$i] ${plaza.imagenes[i]}');
-      }
-    } else {
-      debugPrint('🔍 DetailScreen DEBUG - Plaza NO ENCONTRADA en home provider');
-    }
-
-    if (plaza == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final bool isFavorite = plaza.isFavorite(user?.email);
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      backgroundColor: AppColors.darkestBlue,
-      body: Stack(
-        children: [
-          SingleChildScrollView(
+    return homeDataState.when(
+      loading: () => Scaffold(
+        backgroundColor: AppColors.darkestBlue,
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Cargando detalles de la plaza...', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+        ),
+      ),
+      error: (error, stackTrace) {
+        debugPrint('❌ [DETAIL_SCREEN] Error cargando plaza: $error');
+        debugPrint('   Stack: $stackTrace');
+        return Scaffold(
+          backgroundColor: AppColors.darkestBlue,
+          appBar: AppBar(
+            backgroundColor: AppColors.darkestBlue,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          body: Center(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildImageCarousel(context, ref, plaza, user, isFavorite),
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeaderInfo(plaza, l10n),
-                      const SizedBox(height: 20),
-                      _buildTags(plaza, l10n),
-                      if (plaza.propietario == user?.uid) ...[
-                        const SizedBox(height: 20),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryColor,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primaryColor.withOpacity(0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.person, color: Colors.black, size: 20),
-                              SizedBox(width: 8),
-                              Text(
-                                l10n.ownerBanner,
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 25),
-                      _buildAvailabilityBanner(plaza, idPlaza, user, l10n),
-                      const SizedBox(height: 25),
-                      _buildDescription(plaza, l10n),
-                      const SizedBox(height: 25),
-                      _buildActionButtons(context, l10n),
-                      const SizedBox(height: 25),
-                      _buildLocationPreview(context, plaza, l10n),
-                      const SizedBox(height: 25),
-                      _buildCommentsButton(context, idPlaza, l10n),
-                      const SizedBox(height: 120),
-                    ],
-                  ),
+                const Icon(Icons.error, size: 64, color: Colors.redAccent),
+                const SizedBox(height: 16),
+                const Text(
+                  'Error al cargar los detalles de la plaza',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Error: $error',
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => ref.refresh(fetchHomeProvider(allGarages: true)),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Reintentar'),
                 ),
               ],
             ),
           ),
+        );
+      },
+      data: (homeData) {
+        final plaza = homeData?.getGarageById(idPlaza);
+        final user = homeData?.user;
+
+        debugPrint('🔍 [DETAIL_SCREEN] idPlaza: $idPlaza');
+        if (plaza != null) {
+          debugPrint('🔍 [DETAIL_SCREEN] plaza.imagenes: ${plaza.imagenes.length} imágenes');
+          for (int i = 0; i < plaza.imagenes.length; i++) {
+            debugPrint('   [$i] ${plaza.imagenes[i]}');
+          }
+        } else {
+          debugPrint('❌ [DETAIL_SCREEN] Plaza NO ENCONTRADA (idPlaza: $idPlaza)');
+          return Scaffold(
+            backgroundColor: AppColors.darkestBlue,
+            appBar: AppBar(
+              backgroundColor: AppColors.darkestBlue,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.location_off, size: 64, color: Colors.orangeAccent),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Plaza no encontrada',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Volver'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final bool isFavorite = plaza.isFavorite(user?.email);
+
+        return Scaffold(
+          backgroundColor: AppColors.darkestBlue,
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildImageCarousel(context, ref, plaza, user, isFavorite),
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHeaderInfo(plaza, l10n),
+                          const SizedBox(height: 20),
+                          _buildTags(plaza, l10n),
+                          if (plaza.propietario == user?.uid) ...[
+                            const SizedBox(height: 20),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryColor,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primaryColor.withOpacity(0.3),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.person, color: Colors.black, size: 20),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    l10n.ownerBanner,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 25),
+                          _buildAvailabilityBanner(plaza, idPlaza, user, l10n),
+                          const SizedBox(height: 25),
+                          _buildDescription(plaza, l10n),
+                          const SizedBox(height: 25),
+                          _buildActionButtons(context, l10n),
+                          const SizedBox(height: 25),
+                          _buildLocationPreview(context, plaza, l10n),
+                          const SizedBox(height: 25),
+                          _buildCommentsButton(context, idPlaza, l10n),
+                          const SizedBox(height: 120),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+          ),
           _buildFloatingRentButton(context, plaza, l10n),
         ],
       ),
+    );
+      },
     );
   }
 

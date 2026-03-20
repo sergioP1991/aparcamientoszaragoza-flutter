@@ -506,28 +506,7 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
                 side: const BorderSide(color: Colors.blue),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onPressed: () {
-                final documentId = rental.documentId;
-                debugPrint('🔵 [BUTTON] Intento de liberación. documentId=\"$documentId\"');
-                
-                // 🔴 VALIDACIÓN CRÍTICA: documentId no puede ser null, vacío o 'NULL'
-                if (documentId == null || documentId.isEmpty || documentId == 'NULL') {
-                  debugPrint('❌ [BUTTON] ERROR: documentId inválido: \"$documentId\"');
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('❌ Error interno: documentId faltante. Recarga la app.'),
-                        backgroundColor: Colors.red,
-                        duration: const Duration(seconds: 4),
-                      ),
-                    );
-                  }
-                  return;
-                }
-                
-                debugPrint('✅ [BUTTON] documentId válido, proceediendo...');
-                _releaseRental(context, rental, documentId);
-              },
+              onPressed: () => _releaseRentalDialog(context, rental, l10n),
               child: const Text('Liberar Ahora', style: TextStyle(color: Colors.blue)),
             ),
           ),
@@ -536,160 +515,125 @@ class _ActiveRentalsScreenState extends ConsumerState<ActiveRentalsScreen> {
     }
   }
 
-  Future<void> _releaseRental(
-    BuildContext context,
-    AlquilerPorHoras rental,
-    String documentId,
-  ) async {
+
+  /// Diálogo para confirmar la liberación del alquiler
+  Future<void> _releaseRentalDialog(BuildContext context, AlquilerPorHoras rental, AppLocalizations l10n) async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.darkestBlue,
+        title: const Text(
+          'Liberar alquiler',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Confirma liberar la plaza. Se cobrará según el tiempo usado.',
+          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _performReleaseRental(rental, l10n);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Liberar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Ejecuta la liberación del alquiler
+  Future<void> _performReleaseRental(AlquilerPorHoras rental, AppLocalizations l10n) async {
     try {
-      // Validar que el documentId no esté vacío
-      debugPrint('🔵 [_RELEASE] Iniciando liberación');
-      debugPrint('   documentId recibido: "$documentId"');
-      debugPrint('   rental.documentId: "${rental.documentId}"');
-      debugPrint('   rental.idPlaza: ${rental.idPlaza}');
-      debugPrint('   rental.estado: ${rental.estado}');
-      
-      if (documentId.isEmpty || documentId == 'NULL') {
-        debugPrint('❌ [_RELEASE] Error: documentId está vacío o es NULL');
-        if (mounted) {
-          ScaffoldMessenger.of(context).removeCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error: ID del alquiler no válido (vacío o null)'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-        return;
+      // Validar que tenemos el ID del documento
+      if (rental.documentId == null || rental.documentId!.isEmpty) {
+        throw Exception('Error: No se encontró el ID del alquiler');
       }
 
-      debugPrint('✅ [_RELEASE] documentId válido, documentId existe: ${documentId.isNotEmpty}');
+      debugPrint('🔑 [ACTIVE_RENTALS] _performReleaseRental: Iniciando liberación de alquiler ${rental.documentId}');
 
-      final confirmation = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: AppColors.darkCardBackground,
-          title: const Text(
-            'Liberar Plaza',
-            style: TextStyle(color: Colors.white),
+      // Mostrar SnackBar de "liberando"
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⏳ Liberando plaza...'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 10),
           ),
-          content: Text(
-            '¿Deseas liberar la plaza? Se te cobrará solo por el tiempo que has estado.',
-            style: TextStyle(color: Colors.grey[300]),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Liberar', style: TextStyle(color: Colors.green)),
-            ),
-          ],
+        );
+      }
+
+      debugPrint('🔑 [ACTIVE_RENTALS] Llamando a RentalByHoursService.releaseRental()');
+      await RentalByHoursService.releaseRental(rental.documentId!);
+      debugPrint('✅ [ACTIVE_RENTALS] RentalByHoursService.releaseRental() completado');
+
+      // ⏳ Esperar 1200ms a que Firestore se sincronice (tiempo crítico)
+      debugPrint('⏳ [ACTIVE_RENTALS] Esperando 1200ms para sincronización de Firestore...');
+      await Future.delayed(const Duration(milliseconds: 1200));
+
+      if (!mounted) return;
+
+      debugPrint('🔄 [ACTIVE_RENTALS] Refrescando providers...');
+      ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
+      ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
+
+      // ⏳ Esperar 300ms a que los providers se procesen
+      debugPrint('⏳ [ACTIVE_RENTALS] Esperando 300ms para procesamiento de providers...');
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (!mounted) return;
+
+      // Eliminar SnackBar anterior (liberando)
+      ScaffoldMessenger.of(context).clearSnackBars();
+
+      // Calcular información final para mostrar
+      final tiempoUsado = rental.calcularTiempoUsado();
+      final precioFinal = rental.calcularPrecioFinal();
+      debugPrint('💰 [ACTIVE_RENTALS] Tiempo usado: $tiempoUsado min, Precio final: €$precioFinal');
+
+      // Mostrar SnackBar de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Alquiler liberado - Total: €${precioFinal.toStringAsFixed(2)}'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
         ),
       );
 
-      if (confirmation == true) {
-        debugPrint('✅ [ACTIVE_RENTALS] Usuario confirmó liberación');
+      debugPrint('⏳ [ACTIVE_RENTALS] Esperando 500ms para visual...');
+      await Future.delayed(const Duration(milliseconds: 500));
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).removeCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Liberando plaza...'),
-              duration: Duration(seconds: 10),
-            ),
-          );
-        }
-
-        try {
-          debugPrint('🔑 [ACTIVE_RENTALS] Llamando a RentalByHoursService.releaseRental($documentId)');
-          
-          // Llamar el servicio para liberar
-          await RentalByHoursService.releaseRental(documentId);
-          
-          debugPrint('✅ [ACTIVE_RENTALS] Alquiler liberado en Firestore');
-
-          // Esperar a que Firestore propague los cambios
-          await Future.delayed(const Duration(milliseconds: 1200));
-
-          if (mounted) {
-            debugPrint('🔄 [ACTIVE_RENTALS] Refrescando providers');
-            
-            // Refrescar ambos providers para actualizar el estado en toda la app
-            ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: false));
-            ref.refresh(fetchHomeProvider(allGarages: true, onlyMine: true));
-            
-            // Pequeño delay para que se procesen los refreshes
-            await Future.delayed(const Duration(milliseconds: 300));
-            
-            if (!mounted) return;
-            
-            // Mostrar confirmación con el monto total
-            try {
-              final precioFinal = rental.calcularPrecioFinal();
-              ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '✅ Plaza liberada. Total: €${precioFinal.toStringAsFixed(2)}',
-                  ),
-                  backgroundColor: Colors.green,
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-            } catch (calcError) {
-              debugPrint('⚠️ [ACTIVE_RENTALS] Error al calcular precio: $calcError');
-              ScaffoldMessenger.of(context).removeCurrentSnackBar();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ Plaza liberada correctamente'),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            }
-            
-            debugPrint('📲 [ACTIVE_RENTALS] Esperando para navegar de vuelta');
-            
-            // Esperar a que el usuario vea la confirmación
-            await Future.delayed(const Duration(milliseconds: 800));
-            
-            if (mounted) {
-              debugPrint('🏠 [ACTIVE_RENTALS] Navegando de vuelta a Home');
-              Navigator.pop(context);
-            }
-          }
-        } catch (e) {
-          debugPrint('❌ [ACTIVE_RENTALS] Error liberando: $e');
-          
-          if (mounted) {
-            ScaffoldMessenger.of(context).removeCurrentSnackBar();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error al liberar: $e'),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 5),
-              ),
-            );
-          }
-        }
-      } else {
-        debugPrint('⚠️ [ACTIVE_RENTALS] Usuario canceló la liberación');
-      }
-    } catch (e) {
-      debugPrint('❌ [ACTIVE_RENTALS] Error inesperado: $e');
-      
+      // Forzar reconstrucción de la pantalla actual para actualizar el banner
       if (mounted) {
+        debugPrint('🔄 [ACTIVE_RENTALS] Llamando setState() para actualizar UI');
+        setState(() {});
+      }
+
+      debugPrint('✅ [ACTIVE_RENTALS] Liberación completada exitosamente');
+    } catch (e) {
+      debugPrint('❌ [ACTIVE_RENTALS] Error al liberar alquiler: $e');
+
+      if (mounted) {
+        // Eliminar SnackBar anterior
+        ScaffoldMessenger.of(context).clearSnackBars();
+
+        // Mostrar error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error inesperado: $e'),
+            content: Text('❌ Error: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
     }
   }
+
 }
